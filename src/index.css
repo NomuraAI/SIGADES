@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-slate-100 text-slate-800 antialiased font-sans overflow-hidden;
+    }
+}
+
+@layer components {
+
+    /* Glass Panel with Lobar Blue Tint */
+    .glass-panel {
+        @apply bg-white/80 backdrop-blur-md border border-lobar-blue/10 shadow-xl;
+    }
+
+    .glass-button {
+        @apply px-4 py-2 bg-gradient-to-r from-lobar-blue to-lobar-blue-dark text-white rounded-lg hover:brightness-110 transition-all duration-300 shadow-lg shadow-lobar-blue/30 active:scale-95 flex items-center gap-2;
+    }
+
+    .sidebar-item {
+        @apply flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer border-l-4 border-transparent;
+    }
+
+    .sidebar-item.active {
+        @apply bg-gradient-to-r from-lobar-blue/20 to-transparent text-white border-lobar-yellow;
+    }
+
+    .glass-popup .leaflet-popup-content-wrapper {
+        @apply bg-white/90 backdrop-blur-sm shadow-xl rounded-xl p-0 border border-lobar-blue/20;
+    }
+
+    .glass-popup .leaflet-popup-tip {
+        @apply bg-white/90;
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-slate-900;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-lobar-blue/50 rounded-full hover:bg-lobar-blue;
+}
