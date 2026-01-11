@@ -73,7 +73,7 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
                             </div>
                         )}
                     </div>
-                    
+
                     {/* Summary Total Anggaran Desa */}
                     <div className="bg-indigo-50 rounded-md p-2 mb-3 border border-indigo-100 shadow-sm">
                         <div className="flex justify-between items-center">
@@ -86,6 +86,12 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
 
                     <div className="space-y-3 text-sm">
                         <div className="flex flex-col">
+                            {item.perangkatDaerah && (
+                                <div className="mb-2">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">OPD Penanggung Jawab</span>
+                                    <span className="text-xs text-lobar-blue font-bold">{item.perangkatDaerah}</span>
+                                </div>
+                            )}
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Paket Pekerjaan</span>
                             <span className="text-slate-800 font-bold leading-tight">{item.pekerjaan || 'Pembangunan Infrastruktur'}</span>
                         </div>
