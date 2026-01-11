@@ -73,6 +73,16 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
                             </div>
                         )}
                     </div>
+                    
+                    {/* Summary Total Anggaran Desa */}
+                    <div className="bg-indigo-50 rounded-md p-2 mb-3 border border-indigo-100 shadow-sm">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">Total Pagu (Semua Paket)</span>
+                            <span className="text-xs font-extrabold text-indigo-700">
+                                {formatRupiah(items.reduce((sum, curr) => sum + (curr.paguAnggaran || 0), 0))}
+                            </span>
+                        </div>
+                    </div>
 
                     <div className="space-y-3 text-sm">
                         <div className="flex flex-col">
