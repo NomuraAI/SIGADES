@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MapContainer as LMapContainer, TileLayer, ZoomControl, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -31,6 +31,29 @@ interface MapContainerProps {
 const SearchSyncHandler = ({ onProjectFound }: { onProjectFound: (project: ProjectData | null) => void }) => {
     const map = useMap();
 
+    const mapSupabaseToProjectData = useCallback((item: any, lat?: number, lng?: number): ProjectData => ({
+        id: item.id,
+        aksiPrioritas: item.aksi_prioritas || '',
+        perangkatDaerah: item.perangkat_daerah || '',
+        program: item.program || '',
+        kegiatan: item.kegiatan || '',
+        subKegiatan: item.sub_kegiatan || '',
+        pekerjaan: item.pekerjaan || '',
+        paguAnggaran: item.pagu_anggaran || 0,
+        desa: item.desa || '',
+        kecamatan: item.kecamatan || '',
+        luasWilayah: item.luas_wilayah || '',
+        jumlahPenduduk: item.jumlah_penduduk || 0,
+        jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
+        jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
+        potensiDesa: item.potensi_desa || '',
+        keterangan: item.keterangan || '',
+        // Prioritaskan koordinat DB, fallback ke koordinat geosearch
+        lat: item.lat || lat,
+        lng: item.lng || lng
+    }), []);
+
+
     useEffect(() => {
         const handleSearch = async (e: any) => {
             const searchTerm = e.location.label;
@@ -46,39 +69,19 @@ const SearchSyncHandler = ({ onProjectFound }: { onProjectFound: (project: Proje
                 const item = data[0];
                 
                 // 2. Petakan data Supabase ke ProjectData format
-                const foundProject: ProjectData = {
-                    id: item.id,
-                    aksiPrioritas: item.aksi_prioritas || '',
-                    perangkatDaerah: item.perangkat_daerah || '',
-                    program: item.program || '',
-                    kegiatan: item.kegiatan || '',
-                    subKegiatan: item.sub_kegiatan || '',
-                    pekerjaan: item.pekerjaan || '',
-                    paguAnggaran: item.pagu_anggaran || 0,
-                    desa: item.desa || '',
-                    kecamatan: item.kecamatan || '',
-                    luasWilayah: item.luas_wilayah || '',
-                    jumlahPenduduk: item.jumlah_penduduk || 0,
-                    jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
-                    jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
-                    potensiDesa: item.potensi_desa || '',
-                    keterangan: item.keterangan || '',
-                    // Gunakan koordinat dari database jika tersedia, jika tidak gunakan koordinat hasil geosearch
-                    lat: item.lat || e.location.y,
-                    lng: item.lng || e.location.x
-                };
+                const foundProject = mapSupabaseToProjectData(item, e.location.y, e.location.x);
                 
                 // 3. Kirim data proyek yang ditemukan ke MapContainer
                 onProjectFound(foundProject);
             } else {
-                // Jika tidak ada data proyek terkait, hanya tampilkan marker geosearch biasa
+                // Jika tidak ada data proyek terkait, reset activeProject
                 onProjectFound(null);
             }
         };
 
         map.on('geosearch/showlocation', handleSearch);
         return () => { map.off('geosearch/showlocation', handleSearch); };
-    }, [map, onProjectFound]);
+    }, [map, onProjectFound, mapSupabaseToProjectData]);
 
     return null;
 };
@@ -88,7 +91,57 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [activeProject, setActiveProject] = useState<ProjectData | null>(null);
+    
+    // State untuk mengelola proyek yang perlu difokuskan (dari tabel atau pencarian)
+    const [projectToFocus, setProjectToFocus] = useState<ProjectData | null>(null);
     const mapRef = useRef<L.Map>(null);
+
+    // Sync selectedProject (dari DataDesa table) ke projectToFocus
+    useEffect(() => {
+        if (selectedProject) {
+            setProjectToFocus(selectedProject);
+            setActiveProject(selectedProject); // Set active project untuk rendering marker
+        }
+    }, [selectedProject]);
+
+    // Sync activeProject (dari SearchSyncHandler) ke projectToFocus
+    const handleProjectFound = useCallback((project: ProjectData | null) => {
+        setActiveProject(project);
+        setProjectToFocus(project);
+    }, []);
+
+    // Effect untuk menangani pergerakan peta ketika projectToFocus berubah
+    useEffect(() => {
+        if (projectToFocus && mapRef.current) {
+            const map = mapRef.current;
+            const provider = new OpenStreetMapProvider();
+
+            const flyToLocation = async () => {
+                if (projectToFocus.lat && projectToFocus.lng) {
+                    map.flyTo([projectToFocus.lat, projectToFocus.lng], 15);
+                } else {
+                    // Jika koordinat hilang, coba geocode lokasi
+                    const query = `Desa ${projectToFocus.desa}, ${projectToFocus.kecamatan}, Lombok Barat`;
+                    const results = await provider.search({ query });
+                    if (results.length > 0) {
+                        map.flyTo([results[0].y, results[0].x], 15);
+                    }
+                }
+            };
+            
+            // Beri waktu sebentar agar Leaflet siap
+            const timer = setTimeout(flyToLocation, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [projectToFocus]);
+    
+    // Handle user location flyTo
+    useEffect(() => {
+        if (userLocation && mapRef.current) {
+            mapRef.current.flyTo(userLocation, 15);
+        }
+    }, [userLocation]);
+
 
     const layers = {
         streets: { 
@@ -114,24 +167,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
         }
     };
 
-    useEffect(() => {
-        if (selectedProject) {
-            setActiveProject(selectedProject);
-            const timer = setTimeout(async () => {
-                if (selectedProject.lat && selectedProject.lng) {
-                    mapRef.current?.flyTo([selectedProject.lat, selectedProject.lng], 15);
-                } else {
-                    const provider = new OpenStreetMapProvider();
-                    const results = await provider.search({ query: `Desa ${selectedProject.desa}, ${selectedProject.kecamatan}, Lombok Barat` });
-                    if (results.length > 0) {
-                        mapRef.current?.flyTo([results[0].y, results[0].x], 15);
-                    }
-                }
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, [selectedProject]);
-
     const handleMyLocation = () => {
         setIsLocating(true);
         navigator.geolocation.getCurrentPosition(
@@ -139,11 +174,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 const newPos: [number, number] = [pos.coords.latitude, pos.coords.longitude];
                 setUserLocation(newPos);
                 setIsLocating(false);
-                mapRef.current?.flyTo(newPos, 15);
             },
             () => setIsLocating(false)
         );
     };
+    
 
     return (
         <div className="w-full h-full relative z-0">
@@ -153,7 +188,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 <SearchControl />
                 
                 {/* SearchSyncHandler akan mencari data proyek berdasarkan hasil geosearch */}
-                <SearchSyncHandler onProjectFound={setActiveProject} />
+                <SearchSyncHandler onProjectFound={handleProjectFound} />
 
                 {/* ProjectMarkers akan menampilkan marker dan popup jika activeProject ada */}
                 {activeProject && <ProjectMarkers projects={[activeProject]} />}
