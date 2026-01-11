@@ -407,7 +407,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
 
                                     <td className="px-3 py-2.5 sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
                                         <div className="flex justify-center gap-1">
-                                            <button onClick={() => onViewMap && onViewMap(item)} title="Peta" className="p-1 text-lobar-blue hover:bg-blue-100 rounded transition-colors"><MapPin size={14} /></button>
+                                            <button onClick={() => onViewMap && onViewMap(item)} title="Lihat Peta" className="p-1 text-lobar-blue hover:bg-blue-100 rounded transition-colors"><MapPin size={14} /></button>
                                             <button onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} title="Edit" className="p-1 text-amber-600 hover:bg-amber-100 rounded transition-colors"><Edit2 size={14} /></button>
                                             <button onClick={() => handleDelete(item.id)} title="Hapus" className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"><Trash2 size={14} /></button>
                                         </div>

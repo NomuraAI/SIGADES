@@ -62,7 +62,7 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
             const { data, error } = await supabase
                 .from('projects')
                 .select('*')
-                .or(`desa.ilike.%${searchKeyword}%,kecamatan.ilike.%${searchKeyword}%`); // Hapus limit untuk dapatkan semua
+                .or(`desa.ilike.%${searchKeyword}%,kecamatan.ilike.%${searchKeyword}%`);
 
             if (!error && data && data.length > 0) {
                 // 2. Petakan data Supabase ke ProjectData format
@@ -89,8 +89,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     const [isLocating, setIsLocating] = useState(false);
     const [activeProjects, setActiveProjects] = useState<ProjectData[]>([]);
     const [searchResult, setSearchResult] = useState<{ lat: number, lng: number, label: string } | null>(null);
-
-    // State untuk mengelola proyek yang perlu difokuskan (dari tabel atau pencarian)
     const [projectToFocus, setProjectToFocus] = useState<ProjectData | null>(null);
     const mapRef = useRef<L.Map>(null);
 
@@ -98,8 +96,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     useEffect(() => {
         const fetchRelatedProjects = async () => {
             if (selectedProject) {
-                // Jangan set projectToFocus dulu, kita butuh koordinat pasti nanti
-
                 // 1. Fetch projects with same Desa
                 let relatedProjects: ProjectData[] = [];
                 if (selectedProject.desa) {
@@ -109,7 +105,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                         .eq('desa', selectedProject.desa);
 
                     if (!error && data) {
-                        // Mapping awal tanpa koordinat fallback
                         relatedProjects = data.map(item => mapItemToProjectData(item));
                     }
                 }
@@ -118,8 +113,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                     relatedProjects = [selectedProject];
                 }
 
-                // 2. Cari koordinat desa jika perlu (geocoding)
-                // Kita cari lokasi desa untuk fallback projects yang tidak punya koordinat
+                // 2. Cari koordinat desa jika perlu (geocoding) untuk fallback
                 const provider = new OpenStreetMapProvider();
                 const query = `Desa ${selectedProject.desa}, ${selectedProject.kecamatan}, Lombok Barat`;
 
@@ -182,31 +176,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
             }
         }
     }, []);
-
-    // Effect untuk menangani pergerakan peta ketika projectToFocus berubah
-    useEffect(() => {
-        if (projectToFocus && mapRef.current) {
-            const map = mapRef.current;
-            const provider = new OpenStreetMapProvider();
-
-            const flyToLocation = async () => {
-                if (projectToFocus.lat && projectToFocus.lng) {
-                    map.flyTo([projectToFocus.lat, projectToFocus.lng], 15);
-                } else {
-                    // Jika koordinat hilang, coba geocode lokasi
-                    const query = `Desa ${projectToFocus.desa}, ${projectToFocus.kecamatan}, Lombok Barat`;
-                    const results = await provider.search({ query });
-                    if (results.length > 0) {
-                        map.flyTo([results[0].y, results[0].x], 15);
-                    }
-                }
-            };
-
-            // Beri waktu sebentar agar Leaflet siap
-            const timer = setTimeout(flyToLocation, 100);
-            return () => clearTimeout(timer);
-        }
-    }, [projectToFocus]);
 
     // Handle user location flyTo
     useEffect(() => {
