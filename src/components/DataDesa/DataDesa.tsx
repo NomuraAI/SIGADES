@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2 } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2, Wallet, Briefcase, Landmark } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { ProjectData } from '../../types';
@@ -176,6 +176,11 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
 
     const formatRupiah = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
+    // Calculate Stats
+    const totalPagu = data.reduce((sum, item) => sum + (item.paguAnggaran || 0), 0);
+    const totalDesa = new Set(data.map(item => item.desa)).size;
+    const totalPekerjaan = data.length;
+
     return (
         <div className="flex flex-col h-full bg-slate-50 p-6 overflow-hidden">
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".xlsx, .xls" />
@@ -199,7 +204,40 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 </div>
             </div>
 
-            {/* Search & Stats Bar */}
+            {/* Info Cards Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center">
+                        <Wallet size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Pagu Anggaran</p>
+                        <h3 className="text-xl font-extrabold text-slate-800">{formatRupiah(totalPagu)}</h3>
+                    </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-blue-100 text-lobar-blue rounded-xl flex items-center justify-center">
+                        <Landmark size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Desa Terdata</p>
+                        <h3 className="text-xl font-extrabold text-slate-800">{totalDesa} <span className="text-sm font-medium text-slate-400 ml-1">Desa</span></h3>
+                    </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow">
+                    <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+                        <Briefcase size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Pekerjaan</p>
+                        <h3 className="text-xl font-extrabold text-slate-800">{totalPekerjaan} <span className="text-sm font-medium text-slate-400 ml-1">Paket</span></h3>
+                    </div>
+                </div>
+            </div>
+
+            {/* Search Bar */}
             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-4 flex flex-col md:flex-row gap-4 items-center">
                 <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -212,11 +250,11 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                     />
                 </div>
                 <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    <div className="px-3 py-1 bg-slate-100 rounded-full border">Total: <span className="text-lobar-blue">{filteredData.length}</span></div>
+                    <div className="px-3 py-1 bg-slate-100 rounded-full border">Hasil: <span className="text-lobar-blue font-bold">{filteredData.length}</span></div>
                 </div>
             </div>
 
-            {/* Main Table Area with Horizontal Scroll */}
+            {/* Main Table Area */}
             <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                 <div className="overflow-x-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
                     <table className="w-full text-[13px] text-left border-collapse min-w-[1600px]">
