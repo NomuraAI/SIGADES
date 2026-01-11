@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MapContainer as LMapContainer, TileLayer, ZoomControl, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { Layers, Navigation, Loader2 } from 'lucide-react';
+import { Map as MapIcon, Satellite, Mountain, Navigation, Loader2 } from 'lucide-react';
 import SearchControl from './SearchControl';
 import ProjectMarkers from './ProjectMarkers';
 import { supabase } from '../../lib/supabase';
@@ -28,15 +28,11 @@ interface MapContainerProps {
     selectedProject?: ProjectData | null;
 }
 
-// Component to handle search events and sync with database
 const SearchSyncHandler = ({ onProjectFound }: { onProjectFound: (project: ProjectData | null) => void }) => {
     const map = useMap();
 
     useEffect(() => {
         const handleSearch = async (e: any) => {
-            const label = e.location.label.toLowerCase();
-            
-            // Cari data di Supabase yang cocok dengan label hasil pencarian
             const { data, error } = await supabase
                 .from('projects')
                 .select('*')
@@ -85,17 +81,32 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     const mapRef = useRef<L.Map>(null);
 
     const layers = {
-        streets: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; OSM' },
-        satellite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: '&copy; Esri' },
-        terrain: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', attribution: '&copy; Esri' }
+        streets: { 
+            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', 
+            attribution: '&copy; OSM',
+            name: 'Peta Jalan',
+            icon: <MapIcon size={20} />,
+            color: 'bg-blue-500'
+        },
+        satellite: { 
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 
+            attribution: '&copy; Esri',
+            name: 'Satelit',
+            icon: <Satellite size={20} />,
+            color: 'bg-emerald-600'
+        },
+        terrain: { 
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', 
+            attribution: '&copy; Esri',
+            name: 'Topografi',
+            icon: <Mountain size={20} />,
+            color: 'bg-amber-600'
+        }
     };
 
-    // Sinkronkan saat prop selectedProject berubah (dari tabel Data Desa)
     useEffect(() => {
         if (selectedProject) {
             setActiveProject(selectedProject);
-            
-            // Fly to location
             const timer = setTimeout(async () => {
                 if (selectedProject.lat && selectedProject.lng) {
                     mapRef.current?.flyTo([selectedProject.lat, selectedProject.lng], 15);
@@ -132,7 +143,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 <SearchControl />
                 <SearchSyncHandler onProjectFound={setActiveProject} />
 
-                {/* Hanya tampilkan pin jika ada project aktif (dipilih/dicari) */}
                 {activeProject && <ProjectMarkers projects={[activeProject]} />}
 
                 {userLocation && (
@@ -143,15 +153,39 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 )}
             </LMapContainer>
 
+            {/* Float Controls */}
             <div className="absolute top-4 right-4 z-[400] flex flex-col gap-3">
-                <button onClick={handleMyLocation} className="bg-white p-2.5 rounded-lg shadow-xl border border-slate-200">
-                    {isLocating ? <Loader2 size={20} className="animate-spin text-lobar-blue" /> : <Navigation size={20} className={userLocation ? 'text-lobar-blue fill-current' : ''} />}
-                </button>
-                <div className="bg-white/90 backdrop-blur-md p-2 rounded-lg shadow-xl flex flex-col gap-2">
-                    {(['streets', 'satellite', 'terrain'] as const).map(l => (
-                        <button key={l} onClick={() => setActiveLayer(l)} className={`p-2 rounded-md ${activeLayer === l ? 'bg-lobar-blue text-white' : 'text-slate-600'}`}>
-                            {l === 'streets' ? <Layers size={20} /> : <div className="w-5 h-5 rounded-sm border border-current"></div>}
-                        </button>
+                {/* My Location Button */}
+                <div className="group relative">
+                    <button 
+                        onClick={handleMyLocation} 
+                        className="bg-white p-2.5 rounded-lg shadow-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+                    >
+                        {isLocating ? <Loader2 size={20} className="animate-spin text-lobar-blue" /> : <Navigation size={20} className={userLocation ? 'text-lobar-blue fill-current' : 'text-slate-600'} />}
+                    </button>
+                    <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        Lokasi Saya
+                    </span>
+                </div>
+
+                {/* Layer Switcher */}
+                <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-1.5">
+                    {(Object.keys(layers) as Array<keyof typeof layers>).map((key) => (
+                        <div key={key} className="group relative">
+                            <button 
+                                onClick={() => setActiveLayer(key)} 
+                                className={`p-2.5 rounded-lg transition-all duration-300 flex items-center justify-center
+                                    ${activeLayer === key 
+                                        ? `${layers[key].color} text-white shadow-lg scale-105` 
+                                        : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                            >
+                                {layers[key].icon}
+                            </button>
+                            {/* Hover Tooltip */}
+                            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
+                                {layers[key].name}
+                            </span>
+                        </div>
                     ))}
                 </div>
             </div>
