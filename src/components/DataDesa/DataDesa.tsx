@@ -219,7 +219,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
             {/* Main Table Area with Horizontal Scroll */}
             <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                 <div className="overflow-x-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
-                    <table className="w-full text-[13px] text-left border-collapse min-w-[1500px]">
+                    <table className="w-full text-[13px] text-left border-collapse min-w-[1600px]">
                         <thead className="bg-slate-50 text-slate-600 font-bold sticky top-0 z-20 border-b">
                             <tr>
                                 <th className="px-4 py-4 whitespace-nowrap">Aksi Prioritas</th>
@@ -227,7 +227,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                 <th className="px-4 py-4 whitespace-nowrap">Perangkat Daerah (OPD)</th>
                                 <th className="px-4 py-4 whitespace-nowrap">Program</th>
                                 <th className="px-4 py-4 whitespace-nowrap">Kegiatan / Sub Kegiatan</th>
-                                <th className="px-4 py-4 whitespace-nowrap">Lokasi (Desa/Kec)</th>
+                                <th className="px-4 py-4 whitespace-nowrap">Desa</th>
+                                <th className="px-4 py-4 whitespace-nowrap">Kecamatan</th>
                                 <th className="px-4 py-4 whitespace-nowrap text-right">Pagu Anggaran</th>
                                 <th className="px-4 py-4 whitespace-nowrap text-center">Kemiskinan</th>
                                 <th className="px-4 py-4 whitespace-nowrap text-center">Stunting</th>
@@ -238,9 +239,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
-                                <tr><td colSpan={12} className="text-center py-20 text-slate-400"><Loader2 className="animate-spin mx-auto mb-2" /> Memproses data...</td></tr>
+                                <tr><td colSpan={13} className="text-center py-20 text-slate-400"><Loader2 className="animate-spin mx-auto mb-2" /> Memproses data...</td></tr>
                             ) : filteredData.length === 0 ? (
-                                <tr><td colSpan={12} className="text-center py-20 text-slate-400">Data tidak ditemukan.</td></tr>
+                                <tr><td colSpan={13} className="text-center py-20 text-slate-400">Data tidak ditemukan.</td></tr>
                             ) : filteredData.map((item) => (
                                 <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
                                     <td className="px-4 py-3 font-medium text-slate-700">{item.aksiPrioritas || '-'}</td>
@@ -251,10 +252,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                         <div className="text-slate-700">{item.kegiatan || '-'}</div>
                                         <div className="text-[10px] text-slate-400">{item.subKegiatan || '-'}</div>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <div className="font-semibold text-lobar-blue">{item.desa}</div>
-                                        <div className="text-[11px] text-slate-500">{item.kecamatan}</div>
-                                    </td>
+                                    <td className="px-4 py-3 font-semibold text-lobar-blue">{item.desa || '-'}</td>
+                                    <td className="px-4 py-3 text-slate-600 font-medium">{item.kecamatan || '-'}</td>
                                     <td className="px-4 py-3 text-right font-bold text-green-700">{formatRupiah(item.paguAnggaran)}</td>
                                     <td className="px-4 py-3 text-center">
                                         <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[11px] font-bold">{item.jumlahAngkaKemiskinan} Jiwa</span>
