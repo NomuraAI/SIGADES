@@ -1,9 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MapContainer as LMapContainer, TileLayer, ScaleControl, ZoomControl, Marker, Popup, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Layers, Navigation, Loader2 } from 'lucide-react';
 import SearchControl from './SearchControl';
+import ProjectMarkers from './ProjectMarkers';
+import { supabase } from '../../lib/supabase';
+import { ProjectData } from '../../types';
 
 // Fix for default Leaflet marker icons in React
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -18,10 +21,9 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 import { OpenStreetMapProvider } from 'leaflet-geosearch';
-import { ProjectData } from '../../types';
 
 // Lombok Barat coordinates
-const CENTER: [number, number] = [-8.6756, 116.1157]; // Approximate center
+const CENTER: [number, number] = [-8.6756, 116.1157];
 const ZOOM = 11;
 
 interface MapContainerProps {
@@ -32,6 +34,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
+    const [projects, setProjects] = useState<ProjectData[]>([]);
     const mapRef = useRef<L.Map>(null);
 
     const layers = {
@@ -45,9 +48,40 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
         },
         terrain: {
             url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+            attribution: 'Tiles &copy; Esri'
         }
     };
+
+    // Load all projects for markers
+    useEffect(() => {
+        const fetchProjects = async () => {
+            const { data, error } = await supabase.from('projects').select('*');
+            if (!error && data) {
+                const mappedData: ProjectData[] = data.map(item => ({
+                    id: item.id,
+                    aksiPrioritas: item.aksi_prioritas || '',
+                    perangkatDaerah: item.perangkat_daerah || '',
+                    program: item.program || '',
+                    kegiatan: item.kegiatan || '',
+                    subKegiatan: item.sub_kegiatan || '',
+                    pekerjaan: item.pekerjaan || '',
+                    paguAnggaran: item.pagu_anggaran || 0,
+                    desa: item.desa || '',
+                    kecamatan: item.kecamatan || '',
+                    luasWilayah: item.luas_wilayah || '',
+                    jumlahPenduduk: item.jumlah_penduduk || 0,
+                    jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
+                    jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
+                    potensiDesa: item.potensi_desa || '',
+                    keterangan: item.keterangan || '',
+                    lat: item.lat,
+                    lng: item.lng
+                }));
+                setProjects(mappedData);
+            }
+        };
+        fetchProjects();
+    }, []);
 
     // Formatter Rupiah
     const formatRupiah = (value: number) => {
@@ -58,72 +92,27 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
         }).format(value);
     };
 
-    // Handle selected Project from prop
-    React.useEffect(() => {
+    // Handle selected Project from prop (Fly to)
+    useEffect(() => {
         if (selectedProject) {
             const locateProject = async () => {
                 const provider = new OpenStreetMapProvider();
                 let results = [];
 
-                // 1. Priority: Desa + Kecamatan
+                // Jika sudah ada lat/lng di DB, gunakan itu
+                if (selectedProject.lat && selectedProject.lng) {
+                    mapRef.current?.flyTo([selectedProject.lat, selectedProject.lng], 15, { duration: 2 });
+                    return;
+                }
+
+                // Jika tidak, cari koordinatnya
                 try {
                     results = await provider.search({ query: `Desa ${selectedProject.desa}, ${selectedProject.kecamatan}, Lombok Barat` });
                 } catch (e) { console.error(e); }
 
-                // 2. Fallback: Just Kecamatan
-                if (!results || results.length === 0) {
-                    try {
-                        results = await provider.search({ query: `Kecamatan ${selectedProject.kecamatan}, Lombok Barat` });
-                        if (results.length > 0) console.log('Using Kecamatan fallback location');
-                    } catch (e) { console.error(e); }
-                }
-
                 if (results && results.length > 0) {
                     const { x, y } = results[0];
-                    // Fly to location
                     mapRef.current?.flyTo([y, x], 15, { duration: 2 });
-
-                    // Create detailed popup content
-                    const popupContent = `
-                        <div class="p-1 min-w-[300px]">
-                            <h3 class="font-bold text-lg mb-2 border-b pb-1 text-slate-800">Desa ${selectedProject.desa}</h3>
-                             <p class="text-xs text-slate-500 italic mb-2">Kecamatan ${selectedProject.kecamatan}</p>
-                            
-                            <div class="grid grid-cols-[110px_1fr] gap-x-2 gap-y-1.5 text-sm">
-                                <span class="font-semibold text-slate-600">Pekerjaan:</span>
-                                <span class="text-slate-800 font-medium">${selectedProject.pekerjaan}</span>
-                                
-                                <span class="font-semibold text-slate-600">Pagu Anggaran:</span>
-                                <span class="font-bold text-green-700">${formatRupiah(selectedProject.paguAnggaran)}</span>
-
-                                <span class="font-semibold text-slate-600">Program:</span>
-                                <span class="text-slate-800">${selectedProject.program || '-'}</span>
-                                
-                                <span class="font-semibold text-slate-600">Perangkat Daerah:</span>
-                                <span class="text-slate-800">${selectedProject.perangkatDaerah || '-'}</span>
-
-                                <div class="col-span-2 border-t border-dashed border-slate-200 my-1"></div>
-
-                                <span class="font-semibold text-slate-600">Kemiskinan:</span>
-                                <span class="text-slate-800">${selectedProject.jumlahAngkaKemiskinan?.toLocaleString() || '0'} Jiwa</span>
-
-                                <span class="font-semibold text-slate-600">Stunting:</span>
-                                <span class="text-slate-800">${selectedProject.jumlahBalitaStunting?.toLocaleString() || '0'} Jiwa</span>
-                                
-                                <span class="font-semibold text-slate-600">Potensi:</span>
-                                <span class="text-slate-800">${selectedProject.potensiDesa || '-'}</span>
-                            </div>
-                        </div>
-                    `;
-
-                    // Show Popup
-                    L.popup({ minWidth: 300, maxWidth: 350 })
-                        .setLatLng([y, x])
-                        .setContent(popupContent)
-                        .openOn(mapRef.current!);
-                } else {
-                    console.warn(`Lokasi desa ${selectedProject.desa} tidak ditemukan`);
-                    alert(`Lokasi Desa ${selectedProject.desa} atau Kecamatan ${selectedProject.kecamatan} tidak ditemukan di peta.`);
                 }
             };
 
@@ -134,7 +123,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     const handleMyLocation = () => {
         setIsLocating(true);
         if (!navigator.geolocation) {
-            alert("Geolocation is not supported by your browser");
+            alert("Geolocation tidak didukung browser Anda");
             setIsLocating(false);
             return;
         }
@@ -145,21 +134,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 const newPos: [number, number] = [latitude, longitude];
                 setUserLocation(newPos);
                 setIsLocating(false);
-
-                // Fly to location
-                mapRef.current?.flyTo(newPos, 15, {
-                    duration: 2
-                });
+                mapRef.current?.flyTo(newPos, 15, { duration: 2 });
             },
-            (error) => {
-                console.error(error);
-                alert("Tidak dapat mengambil lokasi Anda. Pastikan GPS aktif.");
+            () => {
+                alert("Gagal mengambil lokasi.");
                 setIsLocating(false);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
             }
         );
     };
@@ -181,7 +160,9 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 <ZoomControl position="bottomright" />
                 <SearchControl />
 
-                {/* User Location Marker & Accuracy Circle */}
+                {/* Render markers for all projects */}
+                <ProjectMarkers projects={projects} />
+
                 {userLocation && (
                     <>
                         <Marker position={userLocation}>
@@ -199,10 +180,9 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
 
             {/* Layer Control & My Location */}
             <div className="absolute top-4 right-4 z-[400] flex flex-col gap-3">
-                {/* My Location Button */}
                 <button
                     onClick={handleMyLocation}
-                    className="bg-white hover:bg-slate-50 text-slate-700 p-2.5 rounded-lg shadow-xl border border-slate-200 transition-all active:scale-95 flex items-center justify-center group"
+                    className="bg-white hover:bg-slate-50 text-slate-700 p-2.5 rounded-lg shadow-xl border border-slate-200 transition-all active:scale-95 flex items-center justify-center"
                     title="Lokasi Saya"
                 >
                     {isLocating ? (
@@ -212,7 +192,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                     )}
                 </button>
 
-                {/* Layer Toggles */}
                 <div className="bg-white/90 backdrop-blur-md border border-white/20 p-2 rounded-lg shadow-xl flex flex-col gap-2">
                     <button
                         onClick={() => setActiveLayer('streets')}
