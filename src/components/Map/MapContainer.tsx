@@ -28,63 +28,57 @@ interface MapContainerProps {
     selectedProject?: ProjectData | null;
 }
 
-const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: any, project: ProjectData | null) => void }) => {
+const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectData => ({
+    id: item.id,
+    aksiPrioritas: item.aksi_prioritas || '',
+    perangkatDaerah: item.perangkat_daerah || '',
+    program: item.program || '',
+    kegiatan: item.kegiatan || '',
+    subKegiatan: item.sub_kegiatan || '',
+    pekerjaan: item.pekerjaan || '',
+    paguAnggaran: item.pagu_anggaran || 0,
+    desa: item.desa || '',
+    kecamatan: item.kecamatan || '',
+    luasWilayah: item.luas_wilayah || '',
+    jumlahPenduduk: item.jumlah_penduduk || 0,
+    jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
+    jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
+    potensiDesa: item.potensi_desa || '',
+    keterangan: item.keterangan || '',
+    // Prioritaskan koordinat DB, fallback ke koordinat geosearch
+    lat: item.lat || lat,
+    lng: item.lng || lng
+});
+
+const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: any, projects: ProjectData[]) => void }) => {
     const map = useMap();
-
-    const mapSupabaseToProjectData = useCallback((item: any, lat?: number, lng?: number): ProjectData => ({
-        id: item.id,
-        aksiPrioritas: item.aksi_prioritas || '',
-        perangkatDaerah: item.perangkat_daerah || '',
-        program: item.program || '',
-        kegiatan: item.kegiatan || '',
-        subKegiatan: item.sub_kegiatan || '',
-        pekerjaan: item.pekerjaan || '',
-        paguAnggaran: item.pagu_anggaran || 0,
-        desa: item.desa || '',
-        kecamatan: item.kecamatan || '',
-        luasWilayah: item.luas_wilayah || '',
-        jumlahPenduduk: item.jumlah_penduduk || 0,
-        jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
-        jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
-        potensiDesa: item.potensi_desa || '',
-        keterangan: item.keterangan || '',
-        // Prioritaskan koordinat DB, fallback ke koordinat geosearch
-        lat: item.lat || lat,
-        lng: item.lng || lng
-    }), []);
-
 
     useEffect(() => {
         const handleSearch = async (e: any) => {
             const searchTerm = e.location.label;
-            // Ambil kata kunci pertama dari hasil pencarian (misal: "Senggigi, ..." -> "Senggigi")
-            // Ini meningkatkan akurasi pencocokan dengan nama desa di database
             const searchKeyword = searchTerm.split(',')[0].trim();
 
             // 1. Cari data proyek di Supabase berdasarkan nama desa/kecamatan
             const { data, error } = await supabase
                 .from('projects')
                 .select('*')
-                .or(`desa.ilike.%${searchKeyword}%,kecamatan.ilike.%${searchKeyword}%`)
-                .limit(1);
+                .or(`desa.ilike.%${searchKeyword}%,kecamatan.ilike.%${searchKeyword}%`); // Hapus limit untuk dapatkan semua
 
             if (!error && data && data.length > 0) {
-                const item = data[0];
-
                 // 2. Petakan data Supabase ke ProjectData format
-                const foundProject = mapSupabaseToProjectData(item, e.location.y, e.location.x);
+                const foundProjects = data.map(item => mapItemToProjectData(item, e.location.y, e.location.x));
 
                 // 3. Kirim data proyek yang ditemukan ke MapContainer
-                onSearchComplete(e.location, foundProject);
+                onSearchComplete(e.location, foundProjects);
             } else {
                 // Jika tidak ada data proyek terkait, kirim lokasi saja
-                onSearchComplete(e.location, null);
+                onSearchComplete(e.location, []);
             }
         };
 
         map.on('geosearch/showlocation', handleSearch);
         return () => { map.off('geosearch/showlocation', handleSearch); };
-    }, [map, onSearchComplete, mapSupabaseToProjectData]);
+    }, [map, onSearchComplete]);
 
     return null;
 };
@@ -93,30 +87,52 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
-    const [activeProject, setActiveProject] = useState<ProjectData | null>(null);
+    const [activeProjects, setActiveProjects] = useState<ProjectData[]>([]);
     const [searchResult, setSearchResult] = useState<{ lat: number, lng: number, label: string } | null>(null);
 
     // State untuk mengelola proyek yang perlu difokuskan (dari tabel atau pencarian)
     const [projectToFocus, setProjectToFocus] = useState<ProjectData | null>(null);
     const mapRef = useRef<L.Map>(null);
 
-    // Sync selectedProject (dari DataDesa table) ke projectToFocus
+    // Sync selectedProject (dari DataDesa table) ke projectToFocus dan fetch related
     useEffect(() => {
-        if (selectedProject) {
-            setProjectToFocus(selectedProject);
-            setActiveProject(selectedProject); // Set active project untuk rendering marker
-            setSearchResult(null); // Clear search result kalau dipilih dari tabel
-        }
+        const fetchRelatedProjects = async () => {
+            if (selectedProject) {
+                setProjectToFocus(selectedProject);
+
+                // Fetch projects with same Desa
+                if (selectedProject.desa) {
+                    const { data, error } = await supabase
+                        .from('projects')
+                        .select('*')
+                        .eq('desa', selectedProject.desa);
+
+                    if (!error && data) {
+                        const mappedProjects = data.map(item => mapItemToProjectData(item));
+                        // Pastikan selectedProject ada di list dan preserve coordinatnya jika sudah ada
+                        // (kadang DB coordinat kosong tapi di client mungkin di set logic lain, tapi disini kita trust DB/mapItem)
+                        setActiveProjects(mappedProjects);
+                    } else {
+                        setActiveProjects([selectedProject]);
+                    }
+                } else {
+                    setActiveProjects([selectedProject]);
+                }
+
+                setSearchResult(null);
+            }
+        };
+        fetchRelatedProjects();
     }, [selectedProject]);
 
     // Handle search complete event
-    const handleSearchComplete = useCallback((location: any, project: ProjectData | null) => {
-        if (project) {
-            setActiveProject(project);
-            setProjectToFocus(project);
-            setSearchResult(null); // Jika project ditemukan, tidak perlu marker search result
+    const handleSearchComplete = useCallback((location: any, projects: ProjectData[]) => {
+        if (projects.length > 0) {
+            setActiveProjects(projects);
+            setProjectToFocus(projects[0]);
+            setSearchResult(null);
         } else {
-            setActiveProject(null);
+            setActiveProjects([]);
             setProjectToFocus(null);
             setSearchResult({
                 lat: location.y,
@@ -210,11 +226,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 {/* SearchSyncHandler akan mencari data proyek berdasarkan hasil geosearch */}
                 <SearchSyncHandler onSearchComplete={handleSearchComplete} />
 
-                {/* ProjectMarkers akan menampilkan marker dan popup jika activeProject ada */}
-                {activeProject && <ProjectMarkers projects={[activeProject]} />}
+                {/* ProjectMarkers akan menampilkan marker dan popup jika activeProjects ada */}
+                {activeProjects.length > 0 && <ProjectMarkers projects={activeProjects} />}
 
                 {/* Jika tidak ada project match, tapi ada hasil search, tampilkan marker basic */}
-                {!activeProject && searchResult && (
+                {activeProjects.length === 0 && searchResult && (
                     <Marker position={[searchResult.lat, searchResult.lng]} icon={DefaultIcon}>
                         <Popup>{searchResult.label}</Popup>
                     </Marker>

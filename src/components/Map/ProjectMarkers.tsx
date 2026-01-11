@@ -7,6 +7,21 @@ interface ProjectMarkersProps {
 }
 
 const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
+    // Group projects by location (lat,lng)
+    const groupedProjects = React.useMemo(() => {
+        const groups: { [key: string]: ProjectData[] } = {};
+        projects.forEach(project => {
+            if (project.lat && project.lng) {
+                const key = `${project.lat},${project.lng}`;
+                if (!groups[key]) {
+                    groups[key] = [];
+                }
+                groups[key].push(project);
+            }
+        });
+        return groups;
+    }, [projects]);
+
     const formatRupiah = (value: number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -15,15 +30,100 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
         }).format(value);
     };
 
+    // Component internal untuk Popup dengan State pagination
+    const PaginatedPopup = ({ items }: { items: ProjectData[] }) => {
+        const [currentIndex, setCurrentIndex] = React.useState(0);
+        const item = items[currentIndex];
+        const totalItems = items.length;
+
+        const handleNext = () => {
+            setCurrentIndex((prev) => (prev + 1) % totalItems);
+        };
+
+        const handlePrev = () => {
+            setCurrentIndex((prev) => (prev - 1 + totalItems) % totalItems);
+        };
+
+        return (
+            <Popup className="glass-popup" minWidth={300}>
+                <div className="min-w-[280px] p-2">
+                    {/* Header dengan Navigasi jika items > 1 */}
+                    <div className="flex justify-between items-start mb-2 border-b pb-2">
+                        <div className="flex-1">
+                            <h3 className="font-bold text-lg text-lobar-blue">Desa {item.desa}</h3>
+                            <p className="text-[10px] text-slate-400 uppercase">{item.kecamatan}</p>
+                        </div>
+                        {totalItems > 1 && (
+                            <div className="flex items-center gap-2 pl-2">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                                    className="p-1 hover:bg-slate-100 rounded text-slate-600 text-xs font-bold"
+                                >
+                                    &lt;
+                                </button>
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                    {currentIndex + 1}/{totalItems}
+                                </span>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                                    className="p-1 hover:bg-slate-100 rounded text-slate-600 text-xs font-bold"
+                                >
+                                    &gt;
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-3 text-sm">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Paket Pekerjaan</span>
+                            <span className="text-slate-800 font-bold leading-tight">{item.pekerjaan || 'Pembangunan Infrastruktur'}</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 border-y border-dashed py-2">
+                            <div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Anggaran</span>
+                                <span className="text-green-700 font-extrabold">{formatRupiah(item.paguAnggaran)}</span>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Penduduk</span>
+                                <span className="text-slate-800 font-bold">{item.jumlahPenduduk?.toLocaleString() || '0'} Jiwa</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-1">
+                            <div className="bg-red-50 p-2 rounded-lg border border-red-100">
+                                <span className="text-[9px] font-bold text-red-600 uppercase block mb-0.5">Kemiskinan</span>
+                                <span className="text-red-700 font-bold">{item.jumlahAngkaKemiskinan} Jiwa</span>
+                            </div>
+                            <div className="bg-orange-50 p-2 rounded-lg border border-orange-100">
+                                <span className="text-[9px] font-bold text-orange-600 uppercase block mb-0.5">Stunting</span>
+                                <span className="text-orange-700 font-bold">{item.jumlahBalitaStunting} Balita</span>
+                            </div>
+                        </div>
+
+                        {item.potensiDesa && (
+                            <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
+                                <span className="text-[10px] font-bold text-lobar-blue uppercase block mb-1">Potensi Desa</span>
+                                <span className="text-xs text-slate-600 italic leading-relaxed">"{item.potensiDesa}"</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </Popup>
+        );
+    };
+
     return (
         <>
-            {projects.map((item) => {
-                if (!item.lat || !item.lng) return null;
-                
+            {Object.entries(groupedProjects).map(([key, groupItems]) => {
+                const position = groupItems[0]; // Ambil koordinat dari item pertama
+                if (!position.lat || !position.lng) return null;
+
                 return (
-                    <Marker 
-                        key={item.id} 
-                        position={[item.lat, item.lng]}
+                    <Marker
+                        key={key}
+                        position={[position.lat, position.lng]}
                         eventHandlers={{
                             add: (e) => {
                                 // Otomatis buka popup saat marker muncul
@@ -31,48 +131,7 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
                             }
                         }}
                     >
-                        <Popup className="glass-popup">
-                            <div className="min-w-[280px] p-2">
-                                <h3 className="font-bold text-lg mb-1 text-lobar-blue border-b pb-1">Desa {item.desa}</h3>
-                                <p className="text-[10px] text-slate-400 uppercase mb-3">{item.kecamatan}</p>
-                                
-                                <div className="space-y-3 text-sm">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Paket Pekerjaan</span>
-                                        <span className="text-slate-800 font-bold leading-tight">{item.pekerjaan || 'Pembangunan Infrastruktur'}</span>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-2 gap-4 border-y border-dashed py-2">
-                                        <div>
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Anggaran</span>
-                                            <span className="text-green-700 font-extrabold">{formatRupiah(item.paguAnggaran)}</span>
-                                        </div>
-                                        <div>
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Penduduk</span>
-                                            <span className="text-slate-800 font-bold">{item.jumlahPenduduk?.toLocaleString() || '0'} Jiwa</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4 pt-1">
-                                        <div className="bg-red-50 p-2 rounded-lg border border-red-100">
-                                            <span className="text-[9px] font-bold text-red-600 uppercase block mb-0.5">Kemiskinan</span>
-                                            <span className="text-red-700 font-bold">{item.jumlahAngkaKemiskinan} Jiwa</span>
-                                        </div>
-                                        <div className="bg-orange-50 p-2 rounded-lg border border-orange-100">
-                                            <span className="text-[9px] font-bold text-orange-600 uppercase block mb-0.5">Stunting</span>
-                                            <span className="text-orange-700 font-bold">{item.jumlahBalitaStunting} Balita</span>
-                                        </div>
-                                    </div>
-
-                                    {item.potensiDesa && (
-                                        <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
-                                            <span className="text-[10px] font-bold text-lobar-blue uppercase block mb-1">Potensi Desa</span>
-                                            <span className="text-xs text-slate-600 italic leading-relaxed">"{item.potensiDesa}"</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </Popup>
+                        <PaginatedPopup items={groupItems} />
                     </Marker>
                 );
             })}
