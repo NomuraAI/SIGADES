@@ -253,15 +253,16 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                 <th className="px-3 py-3 whitespace-nowrap text-center">Penduduk</th>
                                 <th className="px-3 py-3 whitespace-nowrap text-center">Kemiskinan</th>
                                 <th className="px-3 py-3 whitespace-nowrap text-center">Stunting</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Potensi Desa</th>
                                 <th className="px-3 py-3 whitespace-nowrap">Keterangan</th>
                                 <th className="px-3 py-3 sticky right-0 bg-slate-50 shadow-[-2px_0_5px_rgba(0,0,0,0.05)] text-center w-24">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
-                                <tr><td colSpan={16} className="text-center py-20 text-slate-400"><Loader2 className="animate-spin mx-auto mb-2" /> Memuat data...</td></tr>
+                                <tr><td colSpan={17} className="text-center py-20 text-slate-400"><Loader2 className="animate-spin mx-auto mb-2" /> Memuat data...</td></tr>
                             ) : filteredData.length === 0 ? (
-                                <tr><td colSpan={16} className="text-center py-20 text-slate-400">Data tidak ditemukan.</td></tr>
+                                <tr><td colSpan={17} className="text-center py-20 text-slate-400">Data tidak ditemukan.</td></tr>
                             ) : filteredData.map((item, index) => (
                                 <tr key={item.id} className="hover:bg-blue-50/50 transition-colors">
                                     <td className="px-3 py-2.5 text-center font-medium text-slate-400">{index + 1}</td>
@@ -282,6 +283,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                     <td className="px-3 py-2.5 text-center">
                                         <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-bold">{item.jumlahBalitaStunting}</span>
                                     </td>
+                                    <td className="px-3 py-2.5 text-slate-600">{item.potensiDesa || '-'}</td>
                                     <td className="px-3 py-2.5 text-slate-500 max-w-xs truncate" title={item.keterangan}>{item.keterangan || '-'}</td>
                                     <td className="px-3 py-2.5 sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
                                         <div className="flex justify-center gap-1">
