@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2, Wallet, Briefcase, Landmark } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2, Wallet, Briefcase, Landmark, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { ProjectData } from '../../types';
@@ -18,6 +18,10 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     const [editingItem, setEditingItem] = useState<ProjectData | null>(null);
     const [newItem, setNewItem] = useState<Partial<ProjectData>>({});
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 250;
 
     useEffect(() => {
         fetchData();
@@ -50,7 +54,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                     jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
                     jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
                     keterangan: item.keterangan || '',
-                    potensiDesa: item.potensi_desa || '', // Pemetaan potensi desa
+                    potensiDesa: item.potensi_desa || '',
                     lat: item.lat,
                     lng: item.lng
                 }));
@@ -173,6 +177,16 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         item.kecamatan.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    const indexOfLastRow = currentPage * rowsPerPage;
+    const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+    const currentRows = filteredData.slice(indexOfFirstRow, indexOfLastRow);
+
+    const handlePageChange = (pageNumber: number) => {
+        setCurrentPage(pageNumber);
+    };
+
     const formatRupiah = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
     return (
@@ -221,7 +235,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 </div>
             </div>
 
-            <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4">
+            <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 flex justify-between items-center">
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input 
@@ -229,9 +243,17 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         placeholder="Cari pekerjaan, desa atau kecamatan..." 
                         className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1); // Reset to page 1 on search
+                        }}
                     />
                 </div>
+                {totalPages > 1 && (
+                    <div className="text-xs text-slate-500 font-medium">
+                        Halaman {currentPage} dari {totalPages} ({filteredData.length} data)
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
@@ -261,11 +283,11 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr><td colSpan={17} className="text-center py-20 text-slate-400"><Loader2 className="animate-spin mx-auto mb-2" /> Memuat data...</td></tr>
-                            ) : filteredData.length === 0 ? (
+                            ) : currentRows.length === 0 ? (
                                 <tr><td colSpan={17} className="text-center py-20 text-slate-400">Data tidak ditemukan.</td></tr>
-                            ) : filteredData.map((item, index) => (
+                            ) : currentRows.map((item, index) => (
                                 <tr key={item.id} className="hover:bg-blue-50/50 transition-colors">
-                                    <td className="px-3 py-2.5 text-center font-medium text-slate-400">{index + 1}</td>
+                                    <td className="px-3 py-2.5 text-center font-medium text-slate-400">{indexOfFirstRow + index + 1}</td>
                                     <td className="px-3 py-2.5 font-medium text-slate-700">{item.aksiPrioritas || '-'}</td>
                                     <td className="px-3 py-2.5 text-slate-600">{item.perangkatDaerah || '-'}</td>
                                     <td className="px-3 py-2.5 text-slate-500">{item.program || '-'}</td>
@@ -297,6 +319,54 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="bg-slate-50 px-6 py-3 border-t flex items-center justify-between">
+                        <div className="text-xs text-slate-500">
+                            Menampilkan <span className="font-bold">{indexOfFirstRow + 1}</span> - <span className="font-bold">{Math.min(indexOfLastRow, filteredData.length)}</span> dari <span className="font-bold">{filteredData.length}</span> data
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="p-1.5 bg-white border border-slate-200 rounded-md text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    let pageNum = currentPage;
+                                    if (currentPage <= 3) pageNum = i + 1;
+                                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                                    else pageNum = currentPage - 2 + i;
+
+                                    if (pageNum > 0 && pageNum <= totalPages) {
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => handlePageChange(pageNum)}
+                                                className={`w-8 h-8 rounded-md text-xs font-bold transition-all ${currentPage === pageNum ? 'bg-lobar-blue text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600 hover:border-lobar-blue hover:text-lobar-blue'}`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    }
+                                    return null;
+                                })}
+                            </div>
+
+                            <button 
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="p-1.5 bg-white border border-slate-200 rounded-md text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {(isAddModalOpen || isEditModalOpen) && (
