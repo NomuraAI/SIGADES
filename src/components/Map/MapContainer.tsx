@@ -98,9 +98,10 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     useEffect(() => {
         const fetchRelatedProjects = async () => {
             if (selectedProject) {
-                setProjectToFocus(selectedProject);
+                // Jangan set projectToFocus dulu, kita butuh koordinat pasti nanti
 
-                // Fetch projects with same Desa
+                // 1. Fetch projects with same Desa
+                let relatedProjects: ProjectData[] = [];
                 if (selectedProject.desa) {
                     const { data, error } = await supabase
                         .from('projects')
@@ -108,15 +109,51 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                         .eq('desa', selectedProject.desa);
 
                     if (!error && data) {
-                        const mappedProjects = data.map(item => mapItemToProjectData(item));
-                        // Pastikan selectedProject ada di list dan preserve coordinatnya jika sudah ada
-                        // (kadang DB coordinat kosong tapi di client mungkin di set logic lain, tapi disini kita trust DB/mapItem)
-                        setActiveProjects(mappedProjects);
-                    } else {
-                        setActiveProjects([selectedProject]);
+                        // Mapping awal tanpa koordinat fallback
+                        relatedProjects = data.map(item => mapItemToProjectData(item));
                     }
-                } else {
-                    setActiveProjects([selectedProject]);
+                }
+
+                if (relatedProjects.length === 0) {
+                    relatedProjects = [selectedProject];
+                }
+
+                // 2. Cari koordinat desa jika perlu (geocoding)
+                // Kita cari lokasi desa untuk fallback projects yang tidak punya koordinat
+                const provider = new OpenStreetMapProvider();
+                const query = `Desa ${selectedProject.desa}, ${selectedProject.kecamatan}, Lombok Barat`;
+
+                try {
+                    const results = await provider.search({ query });
+
+                    if (results.length > 0) {
+                        const { x: lng, y: lat } = results[0];
+
+                        // 3. Update activeProjects dengan koordinat fallback
+                        const updatedProjects = relatedProjects.map(p => ({
+                            ...p,
+                            lat: p.lat || lat,
+                            lng: p.lng || lng
+                        }));
+
+                        setActiveProjects(updatedProjects);
+
+                        // Focus ke lokasi hasil geocode
+                        if (mapRef.current) {
+                            mapRef.current.flyTo([lat, lng], 15);
+                        }
+                    } else {
+                        // Jika geocode gagal, pakai data apa adanya
+                        setActiveProjects(relatedProjects);
+
+                        // Coba flyto jika selectedProject punya coord
+                        if (selectedProject.lat && selectedProject.lng && mapRef.current) {
+                            mapRef.current.flyTo([selectedProject.lat, selectedProject.lng], 15);
+                        }
+                    }
+                } catch (error) {
+                    console.error("Geocoding error:", error);
+                    setActiveProjects(relatedProjects);
                 }
 
                 setSearchResult(null);
