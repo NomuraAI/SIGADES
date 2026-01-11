@@ -57,20 +57,23 @@ const SearchSyncHandler = ({ onProjectFound }: { onProjectFound: (project: Proje
     useEffect(() => {
         const handleSearch = async (e: any) => {
             const searchTerm = e.location.label;
-            
+            // Ambil kata kunci pertama dari hasil pencarian (misal: "Senggigi, ..." -> "Senggigi")
+            // Ini meningkatkan akurasi pencocokan dengan nama desa di database
+            const searchKeyword = searchTerm.split(',')[0].trim();
+
             // 1. Cari data proyek di Supabase berdasarkan nama desa/kecamatan
             const { data, error } = await supabase
                 .from('projects')
                 .select('*')
-                .or(`desa.ilike.%${searchTerm}%,kecamatan.ilike.%${searchTerm}%`)
+                .or(`desa.ilike.%${searchKeyword}%,kecamatan.ilike.%${searchKeyword}%`)
                 .limit(1);
 
             if (!error && data && data.length > 0) {
                 const item = data[0];
-                
+
                 // 2. Petakan data Supabase ke ProjectData format
                 const foundProject = mapSupabaseToProjectData(item, e.location.y, e.location.x);
-                
+
                 // 3. Kirim data proyek yang ditemukan ke MapContainer
                 onProjectFound(foundProject);
             } else {
@@ -91,7 +94,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [activeProject, setActiveProject] = useState<ProjectData | null>(null);
-    
+
     // State untuk mengelola proyek yang perlu difokuskan (dari tabel atau pencarian)
     const [projectToFocus, setProjectToFocus] = useState<ProjectData | null>(null);
     const mapRef = useRef<L.Map>(null);
@@ -128,13 +131,13 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                     }
                 }
             };
-            
+
             // Beri waktu sebentar agar Leaflet siap
             const timer = setTimeout(flyToLocation, 100);
             return () => clearTimeout(timer);
         }
     }, [projectToFocus]);
-    
+
     // Handle user location flyTo
     useEffect(() => {
         if (userLocation && mapRef.current) {
@@ -144,22 +147,22 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
 
 
     const layers = {
-        streets: { 
-            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', 
+        streets: {
+            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             attribution: '&copy; OSM',
             name: 'Peta Jalan',
             icon: <MapIcon size={20} />,
             color: 'bg-blue-500'
         },
-        satellite: { 
-            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', 
+        satellite: {
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             attribution: '&copy; Esri',
             name: 'Satelit',
             icon: <Satellite size={20} />,
             color: 'bg-emerald-600'
         },
-        terrain: { 
-            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', 
+        terrain: {
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
             attribution: '&copy; Esri',
             name: 'Topografi',
             icon: <Mountain size={20} />,
@@ -178,7 +181,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
             () => setIsLocating(false)
         );
     };
-    
+
 
     return (
         <div className="w-full h-full relative z-0">
@@ -186,7 +189,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 <TileLayer attribution={layers[activeLayer].attribution} url={layers[activeLayer].url} />
                 <ZoomControl position="bottomright" />
                 <SearchControl />
-                
+
                 {/* SearchSyncHandler akan mencari data proyek berdasarkan hasil geosearch */}
                 <SearchSyncHandler onProjectFound={handleProjectFound} />
 
@@ -205,8 +208,8 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
             <div className="absolute top-4 right-4 z-[400] flex flex-col gap-3">
                 {/* My Location Button */}
                 <div className="group relative">
-                    <button 
-                        onClick={handleMyLocation} 
+                    <button
+                        onClick={handleMyLocation}
                         className="bg-white p-2.5 rounded-lg shadow-xl border border-slate-200 hover:bg-slate-50 transition-colors"
                     >
                         {isLocating ? <Loader2 size={20} className="animate-spin text-lobar-blue" /> : <Navigation size={20} className={userLocation ? 'text-lobar-blue fill-current' : 'text-slate-600'} />}
@@ -220,11 +223,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-1.5">
                     {(Object.keys(layers) as Array<keyof typeof layers>).map((key) => (
                         <div key={key} className="group relative">
-                            <button 
-                                onClick={() => setActiveLayer(key)} 
+                            <button
+                                onClick={() => setActiveLayer(key)}
                                 className={`p-2.5 rounded-lg transition-all duration-300 flex items-center justify-center
-                                    ${activeLayer === key 
-                                        ? `${layers[key].color} text-white shadow-lg scale-105` 
+                                    ${activeLayer === key
+                                        ? `${layers[key].color} text-white shadow-lg scale-105`
                                         : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
                             >
                                 {layers[key].icon}

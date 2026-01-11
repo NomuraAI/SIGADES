@@ -13,7 +13,7 @@ const SearchControl = () => {
         const searchControl = new GeoSearchControl({
             provider: provider,
             style: 'bar',
-            showMarker: false, // Diubah menjadi false agar marker hanya ditampilkan oleh ProjectMarkers
+            showMarker: true, // Diubah menjadi true agar marker tetap muncul walaupun data proyek tidak ditemukan
             showPopup: false,
             autoClose: true,
             retainZoomLevel: false,
