@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2, Wallet, Briefcase, Landmark, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2, Wallet, Briefcase, Landmark, ChevronLeft, ChevronRight, Filter, Check } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
 import { ProjectData } from '../../types';
@@ -18,14 +18,57 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     const [editingItem, setEditingItem] = useState<ProjectData | null>(null);
     const [newItem, setNewItem] = useState<Partial<ProjectData>>({});
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const filterRef = useRef<HTMLDivElement>(null);
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 250;
 
+    // Column Visibility State
+    const allColumns = [
+        { key: 'aksiPrioritas', label: 'Aksi Prioritas', align: 'left' },
+        { key: 'perangkatDaerah', label: 'Perangkat Daerah', align: 'left' },
+        { key: 'program', label: 'Program', align: 'left' },
+        { key: 'kegiatan', label: 'Kegiatan', align: 'left' },
+        { key: 'subKegiatan', label: 'Sub Kegiatan', align: 'left' },
+        { key: 'pekerjaan', label: 'Pekerjaan', align: 'left' },
+        { key: 'paguAnggaran', label: 'Pagu Anggaran', align: 'right' },
+        { key: 'desa', label: 'Desa', align: 'left' },
+        { key: 'kecamatan', label: 'Kecamatan', align: 'left' },
+        { key: 'luasWilayah', label: 'Luas', align: 'left' },
+        { key: 'jumlahPenduduk', label: 'Penduduk', align: 'center' },
+        { key: 'jumlahAngkaKemiskinan', label: 'Kemiskinan', align: 'center' },
+        { key: 'jumlahBalitaStunting', label: 'Stunting', align: 'center' },
+        { key: 'potensiDesa', label: 'Potensi Desa', align: 'left' },
+        { key: 'keterangan', label: 'Keterangan', align: 'left' },
+    ];
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(allColumns.map(c => c.key));
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+
     useEffect(() => {
         fetchData();
     }, []);
+
+    // Handle click outside to close filter dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+                setIsFilterOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const toggleColumn = (key: string) => {
+        setVisibleColumns(prev => 
+            prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+        );
+    };
+
+    const toggleAllColumns = (shouldShow: boolean) => {
+        setVisibleColumns(shouldShow ? allColumns.map(c => c.key) : []);
+    };
 
     const fetchData = async () => {
         try {
@@ -201,7 +244,43 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         <p className="text-slate-500 text-sm">Kelola 15 parameter utama pembangunan desa</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 relative" ref={filterRef}>
+                    <button 
+                        onClick={() => setIsFilterOpen(!isFilterOpen)} 
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-all shadow-sm font-medium"
+                    >
+                        <Filter size={18} /> Filter Kolom
+                    </button>
+
+                    {/* Column Filter Dropdown */}
+                    {isFilterOpen && (
+                        <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200 p-3 z-50 max-h-80 overflow-y-auto">
+                            <p className="text-xs font-bold text-slate-500 uppercase mb-2 border-b pb-1">Tampilkan Kolom</p>
+                            
+                            {/* Select All/Deselect All */}
+                            <div 
+                                onClick={() => toggleAllColumns(visibleColumns.length !== allColumns.length)}
+                                className="flex items-center justify-between p-2 text-sm text-lobar-blue font-bold cursor-pointer hover:bg-blue-50 rounded-lg transition-colors mb-1"
+                            >
+                                <span>{visibleColumns.length === allColumns.length ? 'Sembunyikan Semua' : 'Tampilkan Semua'}</span>
+                                {visibleColumns.length === allColumns.length && <Check size={16} />}
+                            </div>
+
+                            <div className="space-y-1">
+                                {allColumns.map((col) => (
+                                    <div 
+                                        key={col.key} 
+                                        onClick={() => toggleColumn(col.key)}
+                                        className="flex items-center justify-between p-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 rounded-lg transition-colors"
+                                    >
+                                        <span>{col.label}</span>
+                                        {visibleColumns.includes(col.key) && <Check size={16} className="text-lobar-blue" />}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium">
                         <FileSpreadsheet size={18} /> Impor Excel
                     </button>
@@ -262,21 +341,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         <thead className="bg-slate-50 text-slate-600 font-bold sticky top-0 z-20 border-b">
                             <tr>
                                 <th className="px-3 py-3 w-12 text-center">No</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Aksi Prioritas</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Perangkat Daerah</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Program</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Kegiatan</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Sub Kegiatan</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Pekerjaan</th>
-                                <th className="px-3 py-3 whitespace-nowrap text-right">Pagu Anggaran</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Desa</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Kecamatan</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Luas</th>
-                                <th className="px-3 py-3 whitespace-nowrap text-center">Penduduk</th>
-                                <th className="px-3 py-3 whitespace-nowrap text-center">Kemiskinan</th>
-                                <th className="px-3 py-3 whitespace-nowrap text-center">Stunting</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Potensi Desa</th>
-                                <th className="px-3 py-3 whitespace-nowrap">Keterangan</th>
+                                {allColumns.map(col => visibleColumns.includes(col.key) && (
+                                    <th key={col.key} className={`px-3 py-3 whitespace-nowrap text-${col.align}`}>{col.label}</th>
+                                ))}
                                 <th className="px-3 py-3 sticky right-0 bg-slate-50 shadow-[-2px_0_5px_rgba(0,0,0,0.05)] text-center w-24">Aksi</th>
                             </tr>
                         </thead>
@@ -288,25 +355,31 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                             ) : currentRows.map((item, index) => (
                                 <tr key={item.id} className="hover:bg-blue-50/50 transition-colors">
                                     <td className="px-3 py-2.5 text-center font-medium text-slate-400">{indexOfFirstRow + index + 1}</td>
-                                    <td className="px-3 py-2.5 font-medium text-slate-700">{item.aksiPrioritas || '-'}</td>
-                                    <td className="px-3 py-2.5 text-slate-600">{item.perangkatDaerah || '-'}</td>
-                                    <td className="px-3 py-2.5 text-slate-500">{item.program || '-'}</td>
-                                    <td className="px-3 py-2.5 text-slate-500">{item.kegiatan || '-'}</td>
-                                    <td className="px-3 py-2.5 text-slate-500">{item.subKegiatan || '-'}</td>
-                                    <td className="px-3 py-2.5 font-bold text-slate-900">{item.pekerjaan || '-'}</td>
-                                    <td className="px-3 py-2.5 text-right font-bold text-green-700">{formatRupiah(item.paguAnggaran)}</td>
-                                    <td className="px-3 py-2.5 font-semibold text-lobar-blue">{item.desa || '-'}</td>
-                                    <td className="px-3 py-2.5 text-slate-600">{item.kecamatan || '-'}</td>
-                                    <td className="px-3 py-2.5 text-slate-600">{item.luasWilayah || '-'}</td>
-                                    <td className="px-3 py-2.5 text-center text-slate-700">{item.jumlahPenduduk?.toLocaleString() || '0'}</td>
-                                    <td className="px-3 py-2.5 text-center">
-                                        <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-bold">{item.jumlahAngkaKemiskinan}</span>
-                                    </td>
-                                    <td className="px-3 py-2.5 text-center">
-                                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-bold">{item.jumlahBalitaStunting}</span>
-                                    </td>
-                                    <td className="px-3 py-2.5 text-slate-600">{item.potensiDesa || '-'}</td>
-                                    <td className="px-3 py-2.5 text-slate-500 max-w-xs truncate" title={item.keterangan}>{item.keterangan || '-'}</td>
+                                    
+                                    {visibleColumns.includes('aksiPrioritas') && <td className="px-3 py-2.5 font-medium text-slate-700">{item.aksiPrioritas || '-'}</td>}
+                                    {visibleColumns.includes('perangkatDaerah') && <td className="px-3 py-2.5 text-slate-600">{item.perangkatDaerah || '-'}</td>}
+                                    {visibleColumns.includes('program') && <td className="px-3 py-2.5 text-slate-500">{item.program || '-'}</td>}
+                                    {visibleColumns.includes('kegiatan') && <td className="px-3 py-2.5 text-slate-500">{item.kegiatan || '-'}</td>}
+                                    {visibleColumns.includes('subKegiatan') && <td className="px-3 py-2.5 text-slate-500">{item.subKegiatan || '-'}</td>}
+                                    {visibleColumns.includes('pekerjaan') && <td className="px-3 py-2.5 font-bold text-slate-900">{item.pekerjaan || '-'}</td>}
+                                    {visibleColumns.includes('paguAnggaran') && <td className="px-3 py-2.5 text-right font-bold text-green-700">{formatRupiah(item.paguAnggaran)}</td>}
+                                    {visibleColumns.includes('desa') && <td className="px-3 py-2.5 font-semibold text-lobar-blue">{item.desa || '-'}</td>}
+                                    {visibleColumns.includes('kecamatan') && <td className="px-3 py-2.5 text-slate-600">{item.kecamatan || '-'}</td>}
+                                    {visibleColumns.includes('luasWilayah') && <td className="px-3 py-2.5 text-slate-600">{item.luasWilayah || '-'}</td>}
+                                    {visibleColumns.includes('jumlahPenduduk') && <td className="px-3 py-2.5 text-center text-slate-700">{item.jumlahPenduduk?.toLocaleString() || '0'}</td>}
+                                    {visibleColumns.includes('jumlahAngkaKemiskinan') && (
+                                        <td className="px-3 py-2.5 text-center">
+                                            <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-bold">{item.jumlahAngkaKemiskinan}</span>
+                                        </td>
+                                    )}
+                                    {visibleColumns.includes('jumlahBalitaStunting') && (
+                                        <td className="px-3 py-2.5 text-center">
+                                            <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-bold">{item.jumlahBalitaStunting}</span>
+                                        </td>
+                                    )}
+                                    {visibleColumns.includes('potensiDesa') && <td className="px-3 py-2.5 text-slate-600">{item.potensiDesa || '-'}</td>}
+                                    {visibleColumns.includes('keterangan') && <td className="px-3 py-2.5 text-slate-500 max-w-xs truncate" title={item.keterangan}>{item.keterangan || '-'}</td>}
+
                                     <td className="px-3 py-2.5 sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
                                         <div className="flex justify-center gap-1">
                                             <button onClick={() => onViewMap && onViewMap(item)} title="Peta" className="p-1 text-lobar-blue hover:bg-blue-100 rounded transition-colors"><MapPin size={14} /></button>
