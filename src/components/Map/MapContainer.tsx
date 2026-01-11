@@ -33,15 +33,20 @@ const SearchSyncHandler = ({ onProjectFound }: { onProjectFound: (project: Proje
 
     useEffect(() => {
         const handleSearch = async (e: any) => {
+            const searchTerm = e.location.label;
+            
+            // 1. Cari data proyek di Supabase berdasarkan nama desa/kecamatan
             const { data, error } = await supabase
                 .from('projects')
                 .select('*')
-                .or(`desa.ilike.%${e.location.label}%,kecamatan.ilike.%${e.location.label}%`)
+                .or(`desa.ilike.%${searchTerm}%,kecamatan.ilike.%${searchTerm}%`)
                 .limit(1);
 
             if (!error && data && data.length > 0) {
                 const item = data[0];
-                onProjectFound({
+                
+                // 2. Petakan data Supabase ke ProjectData format
+                const foundProject: ProjectData = {
                     id: item.id,
                     aksiPrioritas: item.aksi_prioritas || '',
                     perangkatDaerah: item.perangkat_daerah || '',
@@ -58,10 +63,15 @@ const SearchSyncHandler = ({ onProjectFound }: { onProjectFound: (project: Proje
                     jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
                     potensiDesa: item.potensi_desa || '',
                     keterangan: item.keterangan || '',
+                    // Gunakan koordinat dari database jika tersedia, jika tidak gunakan koordinat hasil geosearch
                     lat: item.lat || e.location.y,
                     lng: item.lng || e.location.x
-                });
+                };
+                
+                // 3. Kirim data proyek yang ditemukan ke MapContainer
+                onProjectFound(foundProject);
             } else {
+                // Jika tidak ada data proyek terkait, hanya tampilkan marker geosearch biasa
                 onProjectFound(null);
             }
         };
@@ -141,8 +151,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 <TileLayer attribution={layers[activeLayer].attribution} url={layers[activeLayer].url} />
                 <ZoomControl position="bottomright" />
                 <SearchControl />
+                
+                {/* SearchSyncHandler akan mencari data proyek berdasarkan hasil geosearch */}
                 <SearchSyncHandler onProjectFound={setActiveProject} />
 
+                {/* ProjectMarkers akan menampilkan marker dan popup jika activeProject ada */}
                 {activeProject && <ProjectMarkers projects={[activeProject]} />}
 
                 {userLocation && (
