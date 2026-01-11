@@ -28,7 +28,7 @@ interface MapContainerProps {
     selectedProject?: ProjectData | null;
 }
 
-const SearchSyncHandler = ({ onProjectFound }: { onProjectFound: (project: ProjectData | null) => void }) => {
+const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: any, project: ProjectData | null) => void }) => {
     const map = useMap();
 
     const mapSupabaseToProjectData = useCallback((item: any, lat?: number, lng?: number): ProjectData => ({
@@ -75,16 +75,16 @@ const SearchSyncHandler = ({ onProjectFound }: { onProjectFound: (project: Proje
                 const foundProject = mapSupabaseToProjectData(item, e.location.y, e.location.x);
 
                 // 3. Kirim data proyek yang ditemukan ke MapContainer
-                onProjectFound(foundProject);
+                onSearchComplete(e.location, foundProject);
             } else {
-                // Jika tidak ada data proyek terkait, reset activeProject
-                onProjectFound(null);
+                // Jika tidak ada data proyek terkait, kirim lokasi saja
+                onSearchComplete(e.location, null);
             }
         };
 
         map.on('geosearch/showlocation', handleSearch);
         return () => { map.off('geosearch/showlocation', handleSearch); };
-    }, [map, onProjectFound, mapSupabaseToProjectData]);
+    }, [map, onSearchComplete, mapSupabaseToProjectData]);
 
     return null;
 };
@@ -94,6 +94,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [activeProject, setActiveProject] = useState<ProjectData | null>(null);
+    const [searchResult, setSearchResult] = useState<{ lat: number, lng: number, label: string } | null>(null);
 
     // State untuk mengelola proyek yang perlu difokuskan (dari tabel atau pencarian)
     const [projectToFocus, setProjectToFocus] = useState<ProjectData | null>(null);
@@ -104,13 +105,29 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
         if (selectedProject) {
             setProjectToFocus(selectedProject);
             setActiveProject(selectedProject); // Set active project untuk rendering marker
+            setSearchResult(null); // Clear search result kalau dipilih dari tabel
         }
     }, [selectedProject]);
 
-    // Sync activeProject (dari SearchSyncHandler) ke projectToFocus
-    const handleProjectFound = useCallback((project: ProjectData | null) => {
-        setActiveProject(project);
-        setProjectToFocus(project);
+    // Handle search complete event
+    const handleSearchComplete = useCallback((location: any, project: ProjectData | null) => {
+        if (project) {
+            setActiveProject(project);
+            setProjectToFocus(project);
+            setSearchResult(null); // Jika project ditemukan, tidak perlu marker search result
+        } else {
+            setActiveProject(null);
+            setProjectToFocus(null);
+            setSearchResult({
+                lat: location.y,
+                lng: location.x,
+                label: location.label
+            });
+            // Manual flyTo untuk hasil search yang tidak ada di DB
+            if (mapRef.current) {
+                mapRef.current.flyTo([location.y, location.x], 15);
+            }
+        }
     }, []);
 
     // Effect untuk menangani pergerakan peta ketika projectToFocus berubah
@@ -191,10 +208,17 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 <SearchControl />
 
                 {/* SearchSyncHandler akan mencari data proyek berdasarkan hasil geosearch */}
-                <SearchSyncHandler onProjectFound={handleProjectFound} />
+                <SearchSyncHandler onSearchComplete={handleSearchComplete} />
 
                 {/* ProjectMarkers akan menampilkan marker dan popup jika activeProject ada */}
                 {activeProject && <ProjectMarkers projects={[activeProject]} />}
+
+                {/* Jika tidak ada project match, tapi ada hasil search, tampilkan marker basic */}
+                {!activeProject && searchResult && (
+                    <Marker position={[searchResult.lat, searchResult.lng]} icon={DefaultIcon}>
+                        <Popup>{searchResult.label}</Popup>
+                    </Marker>
+                )}
 
                 {userLocation && (
                     <>

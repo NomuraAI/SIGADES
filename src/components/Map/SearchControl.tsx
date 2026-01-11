@@ -13,7 +13,7 @@ const SearchControl = () => {
         const searchControl = new GeoSearchControl({
             provider: provider,
             style: 'bar',
-            showMarker: true, // Diubah menjadi true agar marker tetap muncul walaupun data proyek tidak ditemukan
+            showMarker: false, // Marker akan ditangani manual oleh MapContainer agar bisa menampilkan custom popup
             showPopup: false,
             autoClose: true,
             retainZoomLevel: false,
