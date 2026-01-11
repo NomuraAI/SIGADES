@@ -61,7 +61,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     }, []);
 
     const toggleColumn = (key: string) => {
-        setVisibleColumns(prev => 
+        setVisibleColumns(prev =>
             prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
         );
     };
@@ -73,41 +73,66 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const { data: dbData, error } = await supabase
-                .from('projects')
-                .select('*')
-                .order('created_at', { ascending: false });
+            let allData: any[] = [];
+            let page = 0;
+            const pageSize = 1000;
+            let hasMore = true;
 
-            if (error) throw error;
+            // Loop sampai semua data terambil
+            while (hasMore) {
+                const { data: chunk, error } = await supabase
+                    .from('projects')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .range(page * pageSize, (page + 1) * pageSize - 1);
 
-            if (dbData) {
-                const mappedData: ProjectData[] = dbData.map(item => ({
-                    id: item.id,
-                    aksiPrioritas: item.aksi_prioritas || '',
-                    perangkatDaerah: item.perangkat_daerah || '',
-                    program: item.program || '',
-                    kegiatan: item.kegiatan || '',
-                    subKegiatan: item.sub_kegiatan || '',
-                    pekerjaan: item.pekerjaan || '',
-                    paguAnggaran: item.pagu_anggaran || 0,
-                    desa: item.desa || '',
-                    kecamatan: item.kecamatan || '',
-                    luasWilayah: item.luas_wilayah || '',
-                    jumlahPenduduk: item.jumlah_penduduk || 0,
-                    jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
-                    jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
-                    keterangan: item.keterangan || '',
-                    potensiDesa: item.potensi_desa || '',
-                    lat: item.lat,
-                    lng: item.lng
-                }));
-                setData(mappedData);
+                if (error) throw error;
+
+                if (chunk) {
+                    allData = [...allData, ...chunk];
+                    if (chunk.length < pageSize) hasMore = false;
+                    page++;
+                } else {
+                    hasMore = false;
+                }
             }
+
+            const mappedData: ProjectData[] = allData.map(item => ({
+                id: item.id,
+                aksiPrioritas: item.aksi_prioritas || '',
+                perangkatDaerah: item.perangkat_daerah || '',
+                program: item.program || '',
+                kegiatan: item.kegiatan || '',
+                subKegiatan: item.sub_kegiatan || '',
+                pekerjaan: item.pekerjaan || '',
+                paguAnggaran: item.pagu_anggaran || 0,
+                desa: item.desa || '',
+                kecamatan: item.kecamatan || '',
+                luasWilayah: item.luas_wilayah || '',
+                jumlahPenduduk: item.jumlah_penduduk || 0,
+                jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
+                jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
+                keterangan: item.keterangan || '',
+                potensiDesa: item.potensi_desa || '',
+                lat: item.lat,
+                lng: item.lng
+            }));
+            setData(mappedData);
+
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const cleanNumber = (val: any) => {
+        if (typeof val === 'number') return val;
+        if (!val) return 0;
+        // Hapus "Rp", titik, spasi, dll hanya sisakan angka
+        // Contoh: "1.500.000" -> "1500000"
+        const cleanStr = String(val).replace(/[^\d]/g, '');
+        return parseInt(cleanStr || '0');
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,13 +163,13 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         kegiatan: row.kegiatan || '',
                         sub_kegiatan: row.sub_kegiatan || '',
                         pekerjaan: row.pekerjaan || row.nama_paket || '',
-                        pagu_anggaran: parseInt(row.pagu_anggaran || row.pagu || '0'),
+                        pagu_anggaran: cleanNumber(row.pagu_anggaran || row.pagu),
                         desa: row.desa || '',
                         kecamatan: row.kecamatan || '',
                         luas_wilayah: row.luas || row.luas_wilayah || '',
-                        jumlah_penduduk: parseInt(row.penduduk || row.jumlah_penduduk || '0'),
-                        jumlah_angka_kemiskinan: parseInt(row.jumlah_angka_kemiskinan || row.kemiskinan || '0'),
-                        jumlah_balita_stunting: parseInt(row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting || '0'),
+                        jumlah_penduduk: cleanNumber(row.penduduk || row.jumlah_penduduk),
+                        jumlah_angka_kemiskinan: cleanNumber(row.jumlah_angka_kemiskinan || row.kemiskinan),
+                        jumlah_balita_stunting: cleanNumber(row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting),
                         potensi_desa: row.potensi_desa || row.potensi || '',
                         keterangan: row.keterangan || ''
                     };
@@ -152,7 +177,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
 
                 const { error } = await supabase.from('projects').insert(projectsToInsert);
                 if (error) throw error;
-                
+
                 alert('Berhasil mengimpor data!');
                 fetchData();
             } catch (error: any) {
@@ -214,7 +239,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         }
     };
 
-    const filteredData = data.filter(item => 
+    const filteredData = data.filter(item =>
         item.pekerjaan.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.desa.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.kecamatan.toLowerCase().includes(searchTerm.toLowerCase())
@@ -245,8 +270,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                     </div>
                 </div>
                 <div className="flex gap-2 relative" ref={filterRef}>
-                    <button 
-                        onClick={() => setIsFilterOpen(!isFilterOpen)} 
+                    <button
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
                         className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-all shadow-sm font-medium"
                     >
                         <Filter size={18} /> Filter Kolom
@@ -256,9 +281,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                     {isFilterOpen && (
                         <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-200 p-3 z-50 max-h-80 overflow-y-auto">
                             <p className="text-xs font-bold text-slate-500 uppercase mb-2 border-b pb-1">Tampilkan Kolom</p>
-                            
+
                             {/* Select All/Deselect All */}
-                            <div 
+                            <div
                                 onClick={() => toggleAllColumns(visibleColumns.length !== allColumns.length)}
                                 className="flex items-center justify-between p-2 text-sm text-lobar-blue font-bold cursor-pointer hover:bg-blue-50 rounded-lg transition-colors mb-1"
                             >
@@ -268,8 +293,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
 
                             <div className="space-y-1">
                                 {allColumns.map((col) => (
-                                    <div 
-                                        key={col.key} 
+                                    <div
+                                        key={col.key}
                                         onClick={() => toggleColumn(col.key)}
                                         className="flex items-center justify-between p-2 text-sm text-slate-700 cursor-pointer hover:bg-slate-50 rounded-lg transition-colors"
                                     >
@@ -317,9 +342,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
             <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 flex justify-between items-center">
                 <div className="relative w-full md:w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input 
-                        type="text" 
-                        placeholder="Cari pekerjaan, desa atau kecamatan..." 
+                    <input
+                        type="text"
+                        placeholder="Cari pekerjaan, desa atau kecamatan..."
                         className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
                         value={searchTerm}
                         onChange={(e) => {
@@ -355,7 +380,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                             ) : currentRows.map((item, index) => (
                                 <tr key={item.id} className="hover:bg-blue-50/50 transition-colors">
                                     <td className="px-3 py-2.5 text-center font-medium text-slate-400">{indexOfFirstRow + index + 1}</td>
-                                    
+
                                     {visibleColumns.includes('aksiPrioritas') && <td className="px-3 py-2.5 font-medium text-slate-700">{item.aksiPrioritas || '-'}</td>}
                                     {visibleColumns.includes('perangkatDaerah') && <td className="px-3 py-2.5 text-slate-600">{item.perangkatDaerah || '-'}</td>}
                                     {visibleColumns.includes('program') && <td className="px-3 py-2.5 text-slate-500">{item.program || '-'}</td>}
@@ -400,14 +425,14 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                             Menampilkan <span className="font-bold">{indexOfFirstRow + 1}</span> - <span className="font-bold">{Math.min(indexOfLastRow, filteredData.length)}</span> dari <span className="font-bold">{filteredData.length}</span> data
                         </div>
                         <div className="flex items-center gap-2">
-                            <button 
+                            <button
                                 onClick={() => handlePageChange(currentPage - 1)}
                                 disabled={currentPage === 1}
                                 className="p-1.5 bg-white border border-slate-200 rounded-md text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 <ChevronLeft size={16} />
                             </button>
-                            
+
                             <div className="flex items-center gap-1">
                                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                     let pageNum = currentPage;
@@ -430,7 +455,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                 })}
                             </div>
 
-                            <button 
+                            <button
                                 onClick={() => handlePageChange(currentPage + 1)}
                                 disabled={currentPage === totalPages}
                                 className="p-1.5 bg-white border border-slate-200 rounded-md text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -451,23 +476,23 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         </div>
                         <div className="flex-1 overflow-y-auto p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <FormField label="Aksi Prioritas" value={(isEditModalOpen ? editingItem?.aksiPrioritas : newItem.aksiPrioritas) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, aksiPrioritas: val}) : setNewItem({...newItem, aksiPrioritas: val})} />
-                                <FormField label="Perangkat Daerah" value={(isEditModalOpen ? editingItem?.perangkatDaerah : newItem.perangkatDaerah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, perangkatDaerah: val}) : setNewItem({...newItem, perangkatDaerah: val})} />
-                                <FormField label="Program" value={(isEditModalOpen ? editingItem?.program : newItem.program) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, program: val}) : setNewItem({...newItem, program: val})} />
-                                <FormField label="Kegiatan" value={(isEditModalOpen ? editingItem?.kegiatan : newItem.kegiatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, kegiatan: val}) : setNewItem({...newItem, kegiatan: val})} />
-                                <FormField label="Sub Kegiatan" value={(isEditModalOpen ? editingItem?.subKegiatan : newItem.subKegiatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, subKegiatan: val}) : setNewItem({...newItem, subKegiatan: val})} />
-                                <FormField label="Pekerjaan" value={(isEditModalOpen ? editingItem?.pekerjaan : newItem.pekerjaan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, pekerjaan: val}) : setNewItem({...newItem, pekerjaan: val})} />
-                                <FormField label="Pagu Anggaran" type="number" value={(isEditModalOpen ? editingItem?.paguAnggaran : newItem.paguAnggaran) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, paguAnggaran: Number(val)}) : setNewItem({...newItem, paguAnggaran: Number(val)})} />
-                                <FormField label="Desa" value={(isEditModalOpen ? editingItem?.desa : newItem.desa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, desa: val}) : setNewItem({...newItem, desa: val})} />
-                                <FormField label="Kecamatan" value={(isEditModalOpen ? editingItem?.kecamatan : newItem.kecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, kecamatan: val}) : setNewItem({...newItem, kecamatan: val})} />
-                                <FormField label="Luas" value={(isEditModalOpen ? editingItem?.luasWilayah : newItem.luasWilayah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, luasWilayah: val}) : setNewItem({...newItem, luasWilayah: val})} />
-                                <FormField label="Penduduk" type="number" value={(isEditModalOpen ? editingItem?.jumlahPenduduk : newItem.jumlahPenduduk) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, jumlahPenduduk: Number(val)}) : setNewItem({...newItem, jumlahPenduduk: Number(val)})} />
-                                <FormField label="Jml Angka Kemiskinan" type="number" value={(isEditModalOpen ? editingItem?.jumlahAngkaKemiskinan : newItem.jumlahAngkaKemiskinan) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, jumlahAngkaKemiskinan: Number(val)}) : setNewItem({...newItem, jumlahAngkaKemiskinan: Number(val)})} />
-                                <FormField label="Jml Angka Stunting" type="number" value={(isEditModalOpen ? editingItem?.jumlahBalitaStunting : newItem.jumlahBalitaStunting) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, jumlahBalitaStunting: Number(val)}) : setNewItem({...newItem, jumlahBalitaStunting: Number(val)})} />
-                                <FormField label="Potensi Desa" value={(isEditModalOpen ? editingItem?.potensiDesa : newItem.potensiDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, potensiDesa: val}) : setNewItem({...newItem, potensiDesa: val})} />
+                                <FormField label="Aksi Prioritas" value={(isEditModalOpen ? editingItem?.aksiPrioritas : newItem.aksiPrioritas) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, aksiPrioritas: val }) : setNewItem({ ...newItem, aksiPrioritas: val })} />
+                                <FormField label="Perangkat Daerah" value={(isEditModalOpen ? editingItem?.perangkatDaerah : newItem.perangkatDaerah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, perangkatDaerah: val }) : setNewItem({ ...newItem, perangkatDaerah: val })} />
+                                <FormField label="Program" value={(isEditModalOpen ? editingItem?.program : newItem.program) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, program: val }) : setNewItem({ ...newItem, program: val })} />
+                                <FormField label="Kegiatan" value={(isEditModalOpen ? editingItem?.kegiatan : newItem.kegiatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kegiatan: val }) : setNewItem({ ...newItem, kegiatan: val })} />
+                                <FormField label="Sub Kegiatan" value={(isEditModalOpen ? editingItem?.subKegiatan : newItem.subKegiatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, subKegiatan: val }) : setNewItem({ ...newItem, subKegiatan: val })} />
+                                <FormField label="Pekerjaan" value={(isEditModalOpen ? editingItem?.pekerjaan : newItem.pekerjaan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, pekerjaan: val }) : setNewItem({ ...newItem, pekerjaan: val })} />
+                                <FormField label="Pagu Anggaran" type="number" value={(isEditModalOpen ? editingItem?.paguAnggaran : newItem.paguAnggaran) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, paguAnggaran: Number(val) }) : setNewItem({ ...newItem, paguAnggaran: Number(val) })} />
+                                <FormField label="Desa" value={(isEditModalOpen ? editingItem?.desa : newItem.desa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, desa: val }) : setNewItem({ ...newItem, desa: val })} />
+                                <FormField label="Kecamatan" value={(isEditModalOpen ? editingItem?.kecamatan : newItem.kecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kecamatan: val }) : setNewItem({ ...newItem, kecamatan: val })} />
+                                <FormField label="Luas" value={(isEditModalOpen ? editingItem?.luasWilayah : newItem.luasWilayah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, luasWilayah: val }) : setNewItem({ ...newItem, luasWilayah: val })} />
+                                <FormField label="Penduduk" type="number" value={(isEditModalOpen ? editingItem?.jumlahPenduduk : newItem.jumlahPenduduk) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahPenduduk: Number(val) }) : setNewItem({ ...newItem, jumlahPenduduk: Number(val) })} />
+                                <FormField label="Jml Angka Kemiskinan" type="number" value={(isEditModalOpen ? editingItem?.jumlahAngkaKemiskinan : newItem.jumlahAngkaKemiskinan) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahAngkaKemiskinan: Number(val) }) : setNewItem({ ...newItem, jumlahAngkaKemiskinan: Number(val) })} />
+                                <FormField label="Jml Angka Stunting" type="number" value={(isEditModalOpen ? editingItem?.jumlahBalitaStunting : newItem.jumlahBalitaStunting) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahBalitaStunting: Number(val) }) : setNewItem({ ...newItem, jumlahBalitaStunting: Number(val) })} />
+                                <FormField label="Potensi Desa" value={(isEditModalOpen ? editingItem?.potensiDesa : newItem.potensiDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, potensiDesa: val }) : setNewItem({ ...newItem, potensiDesa: val })} />
                                 <div className="col-span-1 md:col-span-2 lg:col-span-3">
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Keterangan</label>
-                                    <textarea className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all" rows={2} value={(isEditModalOpen ? editingItem?.keterangan : newItem.keterangan) || ''} onChange={(e) => isEditModalOpen ? setEditingItem({...editingItem!, keterangan: e.target.value}) : setNewItem({...newItem, keterangan: e.target.value})} placeholder="Tambahkan catatan jika perlu..." />
+                                    <textarea className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all" rows={2} value={(isEditModalOpen ? editingItem?.keterangan : newItem.keterangan) || ''} onChange={(e) => isEditModalOpen ? setEditingItem({ ...editingItem!, keterangan: e.target.value }) : setNewItem({ ...newItem, keterangan: e.target.value })} placeholder="Tambahkan catatan jika perlu..." />
                                 </div>
                             </div>
                         </div>
@@ -485,10 +510,10 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
 const FormField = ({ label, value, onChange, type = "text" }: { label: string, value: string | number, onChange: (val: string) => void, type?: string }) => (
     <div>
         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{label}</label>
-        <input 
-            type={type} 
-            value={value} 
-            onChange={(e) => onChange(e.target.value)} 
+        <input
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
         />
     </div>
