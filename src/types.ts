@@ -13,8 +13,8 @@ export interface ProjectData {
     jumlahPenduduk: number;
     jumlahAngkaKemiskinan: number;
     jumlahBalitaStunting: number;
-    potensiDesa: string;
     keterangan: string;
+    potensiDesa?: string; // Menambahkan kembali properti ini
     lat?: number;
     lng?: number;
 }

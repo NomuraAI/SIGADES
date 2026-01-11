@@ -49,8 +49,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                     jumlahPenduduk: item.jumlah_penduduk || 0,
                     jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
                     jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
-                    potensiDesa: item.potensi_desa || '',
                     keterangan: item.keterangan || '',
+                    potensiDesa: item.potensi_desa || '', // Pemetaan potensi desa
                     lat: item.lat,
                     lng: item.lng
                 }));
@@ -86,18 +86,18 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
 
                     return {
                         aksi_prioritas: row.aksi_prioritas || row.prioritas || '',
-                        perangkat_daerah: row.perangkat_daerah || row.opd || row.dinas || '',
+                        perangkat_daerah: row.perangkat_daerah || row.opd || '',
                         program: row.program || '',
                         kegiatan: row.kegiatan || '',
                         sub_kegiatan: row.sub_kegiatan || '',
                         pekerjaan: row.pekerjaan || row.nama_paket || '',
-                        pagu_anggaran: parseInt(row.pagu_anggaran || row.pagu || row.anggaran || '0'),
+                        pagu_anggaran: parseInt(row.pagu_anggaran || row.pagu || '0'),
                         desa: row.desa || '',
                         kecamatan: row.kecamatan || '',
-                        luas_wilayah: row.luas_wilayah || row.luas || '',
-                        jumlah_penduduk: parseInt(row.jumlah_penduduk || row.penduduk || '0'),
+                        luas_wilayah: row.luas || row.luas_wilayah || '',
+                        jumlah_penduduk: parseInt(row.penduduk || row.jumlah_penduduk || '0'),
                         jumlah_angka_kemiskinan: parseInt(row.jumlah_angka_kemiskinan || row.kemiskinan || '0'),
-                        jumlah_balita_stunting: parseInt(row.jumlah_balita_stunting || row.stunting || '0'),
+                        jumlah_balita_stunting: parseInt(row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting || '0'),
                         potensi_desa: row.potensi_desa || row.potensi || '',
                         keterangan: row.keterangan || ''
                     };
@@ -170,33 +170,26 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     const filteredData = data.filter(item => 
         item.pekerjaan.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.desa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.kecamatan.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.perangkatDaerah.toLowerCase().includes(searchTerm.toLowerCase())
+        item.kecamatan.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const formatRupiah = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
-
-    // Calculate Stats
-    const totalPagu = data.reduce((sum, item) => sum + (item.paguAnggaran || 0), 0);
-    const totalDesa = new Set(data.map(item => item.desa)).size;
-    const totalPekerjaan = data.length;
 
     return (
         <div className="flex flex-col h-full bg-slate-50 p-6 overflow-hidden">
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".xlsx, .xls" />
 
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div className="flex items-center gap-4">
                     {onBack && <button onClick={onBack} className="p-2 bg-white border rounded-lg hover:bg-slate-100 transition-colors"><ArrowLeft size={20} /></button>}
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800">Manajemen Data Desa</h1>
-                        <p className="text-slate-500 text-sm italic">Kelola infrastruktur, kependudukan, kemiskinan & stunting</p>
+                        <p className="text-slate-500 text-sm">Kelola 15 parameter utama pembangunan desa</p>
                     </div>
                 </div>
                 <div className="flex gap-2">
                     <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium">
-                        <FileSpreadsheet size={18} /> Import Excel
+                        <FileSpreadsheet size={18} /> Impor Excel
                     </button>
                     <button onClick={() => { setNewItem({}); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-lobar-blue text-white rounded-lg hover:bg-lobar-blue-dark transition-all shadow-lg shadow-blue-500/20 font-bold">
                         <Plus size={18} /> Tambah Data
@@ -204,108 +197,97 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 </div>
             </div>
 
-            {/* Info Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center">
-                        <Wallet size={24} />
-                    </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center"><Wallet size={20} /></div>
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Pagu Anggaran</p>
-                        <h3 className="text-xl font-extrabold text-slate-800">{formatRupiah(totalPagu)}</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Total Pagu Anggaran</p>
+                        <h3 className="text-lg font-bold text-slate-800">{formatRupiah(data.reduce((s, i) => s + (i.paguAnggaran || 0), 0))}</h3>
                     </div>
                 </div>
-
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 bg-blue-100 text-lobar-blue rounded-xl flex items-center justify-center">
-                        <Landmark size={24} />
-                    </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 text-lobar-blue rounded-lg flex items-center justify-center"><Landmark size={20} /></div>
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Desa Terdata</p>
-                        <h3 className="text-xl font-extrabold text-slate-800">{totalDesa} <span className="text-sm font-medium text-slate-400 ml-1">Desa</span></h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Desa Terdata</p>
+                        <h3 className="text-lg font-bold text-slate-800">{new Set(data.map(i => i.desa)).size} Desa</h3>
                     </div>
                 </div>
-
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:shadow-md transition-shadow">
-                    <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
-                        <Briefcase size={24} />
-                    </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center"><Briefcase size={20} /></div>
                     <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Pekerjaan</p>
-                        <h3 className="text-xl font-extrabold text-slate-800">{totalPekerjaan} <span className="text-sm font-medium text-slate-400 ml-1">Paket</span></h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Total Pekerjaan</p>
+                        <h3 className="text-lg font-bold text-slate-800">{data.length} Paket</h3>
                     </div>
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-4 flex flex-col md:flex-row gap-4 items-center">
-                <div className="relative flex-1 w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4">
+                <div className="relative w-full md:w-96">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input 
                         type="text" 
-                        placeholder="Cari desa, kecamatan, pekerjaan atau OPD..." 
-                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue focus:border-lobar-blue outline-none transition-all"
+                        placeholder="Cari pekerjaan, desa atau kecamatan..." 
+                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    <div className="px-3 py-1 bg-slate-100 rounded-full border">Hasil: <span className="text-lobar-blue font-bold">{filteredData.length}</span></div>
-                </div>
             </div>
 
-            {/* Main Table Area */}
             <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                 <div className="overflow-x-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
-                    <table className="w-full text-[13px] text-left border-collapse min-w-[1600px]">
+                    <table className="w-full text-[12px] text-left border-collapse min-w-[2000px]">
                         <thead className="bg-slate-50 text-slate-600 font-bold sticky top-0 z-20 border-b">
                             <tr>
-                                <th className="px-4 py-4 whitespace-nowrap">Aksi Prioritas</th>
-                                <th className="px-4 py-4 whitespace-nowrap">Pekerjaan</th>
-                                <th className="px-4 py-4 whitespace-nowrap">Perangkat Daerah (OPD)</th>
-                                <th className="px-4 py-4 whitespace-nowrap">Program</th>
-                                <th className="px-4 py-4 whitespace-nowrap">Kegiatan / Sub Kegiatan</th>
-                                <th className="px-4 py-4 whitespace-nowrap">Desa</th>
-                                <th className="px-4 py-4 whitespace-nowrap">Kecamatan</th>
-                                <th className="px-4 py-4 whitespace-nowrap text-right">Pagu Anggaran</th>
-                                <th className="px-4 py-4 whitespace-nowrap text-center">Kemiskinan</th>
-                                <th className="px-4 py-4 whitespace-nowrap text-center">Stunting</th>
-                                <th className="px-4 py-4 whitespace-nowrap text-center">Penduduk</th>
-                                <th className="px-4 py-4 whitespace-nowrap">Luas</th>
-                                <th className="px-4 py-4 sticky right-0 bg-slate-50 shadow-[-4px_0_10px_rgba(0,0,0,0.05)] text-center">Aksi</th>
+                                <th className="px-3 py-3 w-12 text-center">No</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Aksi Prioritas</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Perangkat Daerah</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Program</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Kegiatan</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Sub Kegiatan</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Pekerjaan</th>
+                                <th className="px-3 py-3 whitespace-nowrap text-right">Pagu Anggaran</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Desa</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Kecamatan</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Luas</th>
+                                <th className="px-3 py-3 whitespace-nowrap text-center">Penduduk</th>
+                                <th className="px-3 py-3 whitespace-nowrap text-center">Kemiskinan</th>
+                                <th className="px-3 py-3 whitespace-nowrap text-center">Stunting</th>
+                                <th className="px-3 py-3 whitespace-nowrap">Keterangan</th>
+                                <th className="px-3 py-3 sticky right-0 bg-slate-50 shadow-[-2px_0_5px_rgba(0,0,0,0.05)] text-center w-24">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
-                                <tr><td colSpan={13} className="text-center py-20 text-slate-400"><Loader2 className="animate-spin mx-auto mb-2" /> Memproses data...</td></tr>
+                                <tr><td colSpan={16} className="text-center py-20 text-slate-400"><Loader2 className="animate-spin mx-auto mb-2" /> Memuat data...</td></tr>
                             ) : filteredData.length === 0 ? (
-                                <tr><td colSpan={13} className="text-center py-20 text-slate-400">Data tidak ditemukan.</td></tr>
-                            ) : filteredData.map((item) => (
-                                <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
-                                    <td className="px-4 py-3 font-medium text-slate-700">{item.aksiPrioritas || '-'}</td>
-                                    <td className="px-4 py-3 font-bold text-slate-900">{item.pekerjaan || '-'}</td>
-                                    <td className="px-4 py-3 text-slate-600">{item.perangkatDaerah || '-'}</td>
-                                    <td className="px-4 py-3 text-slate-500 italic">{item.program || '-'}</td>
-                                    <td className="px-4 py-3">
-                                        <div className="text-slate-700">{item.kegiatan || '-'}</div>
-                                        <div className="text-[10px] text-slate-400">{item.subKegiatan || '-'}</div>
+                                <tr><td colSpan={16} className="text-center py-20 text-slate-400">Data tidak ditemukan.</td></tr>
+                            ) : filteredData.map((item, index) => (
+                                <tr key={item.id} className="hover:bg-blue-50/50 transition-colors">
+                                    <td className="px-3 py-2.5 text-center font-medium text-slate-400">{index + 1}</td>
+                                    <td className="px-3 py-2.5 font-medium text-slate-700">{item.aksiPrioritas || '-'}</td>
+                                    <td className="px-3 py-2.5 text-slate-600">{item.perangkatDaerah || '-'}</td>
+                                    <td className="px-3 py-2.5 text-slate-500">{item.program || '-'}</td>
+                                    <td className="px-3 py-2.5 text-slate-500">{item.kegiatan || '-'}</td>
+                                    <td className="px-3 py-2.5 text-slate-500">{item.subKegiatan || '-'}</td>
+                                    <td className="px-3 py-2.5 font-bold text-slate-900">{item.pekerjaan || '-'}</td>
+                                    <td className="px-3 py-2.5 text-right font-bold text-green-700">{formatRupiah(item.paguAnggaran)}</td>
+                                    <td className="px-3 py-2.5 font-semibold text-lobar-blue">{item.desa || '-'}</td>
+                                    <td className="px-3 py-2.5 text-slate-600">{item.kecamatan || '-'}</td>
+                                    <td className="px-3 py-2.5 text-slate-600">{item.luasWilayah || '-'}</td>
+                                    <td className="px-3 py-2.5 text-center text-slate-700">{item.jumlahPenduduk?.toLocaleString() || '0'}</td>
+                                    <td className="px-3 py-2.5 text-center">
+                                        <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full font-bold">{item.jumlahAngkaKemiskinan}</span>
                                     </td>
-                                    <td className="px-4 py-3 font-semibold text-lobar-blue">{item.desa || '-'}</td>
-                                    <td className="px-4 py-3 text-slate-600 font-medium">{item.kecamatan || '-'}</td>
-                                    <td className="px-4 py-3 text-right font-bold text-green-700">{formatRupiah(item.paguAnggaran)}</td>
-                                    <td className="px-4 py-3 text-center">
-                                        <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[11px] font-bold">{item.jumlahAngkaKemiskinan} Jiwa</span>
+                                    <td className="px-3 py-2.5 text-center">
+                                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-bold">{item.jumlahBalitaStunting}</span>
                                     </td>
-                                    <td className="px-4 py-3 text-center">
-                                        <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[11px] font-bold">{item.jumlahBalitaStunting} Balita</span>
-                                    </td>
-                                    <td className="px-4 py-3 text-center text-slate-700 font-medium">{item.jumlahPenduduk?.toLocaleString() || '0'}</td>
-                                    <td className="px-4 py-3 text-slate-600">{item.luasWilayah || '-'}</td>
-                                    <td className="px-4 py-3 sticky right-0 bg-white group-hover:bg-blue-50/30 shadow-[-4px_0_10px_rgba(0,0,0,0.05)]">
+                                    <td className="px-3 py-2.5 text-slate-500 max-w-xs truncate" title={item.keterangan}>{item.keterangan || '-'}</td>
+                                    <td className="px-3 py-2.5 sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
                                         <div className="flex justify-center gap-1">
-                                            <button onClick={() => onViewMap && onViewMap(item)} title="Lihat di Peta" className="p-1.5 text-lobar-blue hover:bg-blue-100 rounded-lg transition-colors"><MapPin size={16} /></button>
-                                            <button onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} title="Edit Data" className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"><Edit2 size={16} /></button>
-                                            <button onClick={() => handleDelete(item.id)} title="Hapus Data" className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                                            <button onClick={() => onViewMap && onViewMap(item)} title="Peta" className="p-1 text-lobar-blue hover:bg-blue-100 rounded transition-colors"><MapPin size={14} /></button>
+                                            <button onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} title="Edit" className="p-1 text-amber-600 hover:bg-amber-100 rounded transition-colors"><Edit2 size={14} /></button>
+                                            <button onClick={() => handleDelete(item.id)} title="Hapus" className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"><Trash2 size={14} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -315,41 +297,38 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 </div>
             </div>
 
-            {/* Modal Form */}
             {(isAddModalOpen || isEditModalOpen) && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col scale-in-center">
-                        <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-                            <div>
-                                <h2 className="text-xl font-extrabold text-slate-800">{isEditModalOpen ? 'Perbarui Data Proyek' : 'Entri Data Baru'}</h2>
-                                <p className="text-sm text-slate-500">Lengkapi detail parameter pembangunan dan sosial desa</p>
-                            </div>
-                            <button onClick={() => { setIsEditModalOpen(false); setIsAddModalOpen(false); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"><X size={24} /></button>
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                        <div className="p-5 border-b flex justify-between items-center bg-slate-50">
+                            <h2 className="text-xl font-bold text-slate-800">{isEditModalOpen ? 'Edit Data Desa' : 'Tambah Data Desa'}</h2>
+                            <button onClick={() => { setIsEditModalOpen(false); setIsAddModalOpen(false); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"><X size={20} /></button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <FormField label="Aksi Prioritas" value={(isEditModalOpen ? editingItem?.aksiPrioritas : newItem.aksiPrioritas) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, aksiPrioritas: val}) : setNewItem({...newItem, aksiPrioritas: val})} placeholder="Contoh: Peningkatan Jalan" />
-                                <FormField label="Nama Pekerjaan / Paket" value={(isEditModalOpen ? editingItem?.pekerjaan : newItem.pekerjaan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, pekerjaan: val}) : setNewItem({...newItem, pekerjaan: val})} placeholder="Nama proyek spesifik" />
-                                <FormField label="Perangkat Daerah (OPD)" value={(isEditModalOpen ? editingItem?.perangkatDaerah : newItem.perangkatDaerah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, perangkatDaerah: val}) : setNewItem({...newItem, perangkatDaerah: val})} placeholder="Dinas Terkait" />
-                                <FormField label="Desa" value={(isEditModalOpen ? editingItem?.desa : newItem.desa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, desa: val}) : setNewItem({...newItem, desa: val})} />
-                                <FormField label="Kecamatan" value={(isEditModalOpen ? editingItem?.kecamatan : newItem.kecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, kecamatan: val}) : setNewItem({...newItem, kecamatan: val})} />
-                                <FormField label="Pagu Anggaran" type="number" value={(isEditModalOpen ? editingItem?.paguAnggaran : newItem.paguAnggaran) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, paguAnggaran: Number(val)}) : setNewItem({...newItem, paguAnggaran: Number(val)})} />
-                                <FormField label="Jml Angka Kemiskinan" type="number" value={(isEditModalOpen ? editingItem?.jumlahAngkaKemiskinan : newItem.jumlahAngkaKemiskinan) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, jumlahAngkaKemiskinan: Number(val)}) : setNewItem({...newItem, jumlahAngkaKemiskinan: Number(val)})} />
-                                <FormField label="Jml Balita Stunting" type="number" value={(isEditModalOpen ? editingItem?.jumlahBalitaStunting : newItem.jumlahBalitaStunting) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, jumlahBalitaStunting: Number(val)}) : setNewItem({...newItem, jumlahBalitaStunting: Number(val)})} />
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <FormField label="Aksi Prioritas" value={(isEditModalOpen ? editingItem?.aksiPrioritas : newItem.aksiPrioritas) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, aksiPrioritas: val}) : setNewItem({...newItem, aksiPrioritas: val})} />
+                                <FormField label="Perangkat Daerah" value={(isEditModalOpen ? editingItem?.perangkatDaerah : newItem.perangkatDaerah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, perangkatDaerah: val}) : setNewItem({...newItem, perangkatDaerah: val})} />
                                 <FormField label="Program" value={(isEditModalOpen ? editingItem?.program : newItem.program) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, program: val}) : setNewItem({...newItem, program: val})} />
                                 <FormField label="Kegiatan" value={(isEditModalOpen ? editingItem?.kegiatan : newItem.kegiatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, kegiatan: val}) : setNewItem({...newItem, kegiatan: val})} />
                                 <FormField label="Sub Kegiatan" value={(isEditModalOpen ? editingItem?.subKegiatan : newItem.subKegiatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, subKegiatan: val}) : setNewItem({...newItem, subKegiatan: val})} />
-                                <FormField label="Luas Wilayah" value={(isEditModalOpen ? editingItem?.luasWilayah : newItem.luasWilayah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, luasWilayah: val}) : setNewItem({...newItem, luasWilayah: val})} />
-                                <FormField label="Jumlah Penduduk" type="number" value={(isEditModalOpen ? editingItem?.jumlahPenduduk : newItem.jumlahPenduduk) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, jumlahPenduduk: Number(val)}) : setNewItem({...newItem, jumlahPenduduk: Number(val)})} />
+                                <FormField label="Pekerjaan" value={(isEditModalOpen ? editingItem?.pekerjaan : newItem.pekerjaan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, pekerjaan: val}) : setNewItem({...newItem, pekerjaan: val})} />
+                                <FormField label="Pagu Anggaran" type="number" value={(isEditModalOpen ? editingItem?.paguAnggaran : newItem.paguAnggaran) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, paguAnggaran: Number(val)}) : setNewItem({...newItem, paguAnggaran: Number(val)})} />
+                                <FormField label="Desa" value={(isEditModalOpen ? editingItem?.desa : newItem.desa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, desa: val}) : setNewItem({...newItem, desa: val})} />
+                                <FormField label="Kecamatan" value={(isEditModalOpen ? editingItem?.kecamatan : newItem.kecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, kecamatan: val}) : setNewItem({...newItem, kecamatan: val})} />
+                                <FormField label="Luas" value={(isEditModalOpen ? editingItem?.luasWilayah : newItem.luasWilayah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, luasWilayah: val}) : setNewItem({...newItem, luasWilayah: val})} />
+                                <FormField label="Penduduk" type="number" value={(isEditModalOpen ? editingItem?.jumlahPenduduk : newItem.jumlahPenduduk) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, jumlahPenduduk: Number(val)}) : setNewItem({...newItem, jumlahPenduduk: Number(val)})} />
+                                <FormField label="Jml Angka Kemiskinan" type="number" value={(isEditModalOpen ? editingItem?.jumlahAngkaKemiskinan : newItem.jumlahAngkaKemiskinan) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, jumlahAngkaKemiskinan: Number(val)}) : setNewItem({...newItem, jumlahAngkaKemiskinan: Number(val)})} />
+                                <FormField label="Jml Angka Stunting" type="number" value={(isEditModalOpen ? editingItem?.jumlahBalitaStunting : newItem.jumlahBalitaStunting) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, jumlahBalitaStunting: Number(val)}) : setNewItem({...newItem, jumlahBalitaStunting: Number(val)})} />
+                                <FormField label="Potensi Desa" value={(isEditModalOpen ? editingItem?.potensiDesa : newItem.potensiDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({...editingItem!, potensiDesa: val}) : setNewItem({...newItem, potensiDesa: val})} />
                                 <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                                    <label className="block text-xs font-extrabold text-slate-500 mb-2 uppercase tracking-widest">Potensi Desa</label>
-                                    <textarea className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-lobar-blue focus:border-lobar-blue outline-none text-sm transition-all" rows={3} value={(isEditModalOpen ? editingItem?.potensiDesa : newItem.potensiDesa) || ''} onChange={(e) => isEditModalOpen ? setEditingItem({...editingItem!, potensiDesa: e.target.value}) : setNewItem({...newItem, potensiDesa: e.target.value})} placeholder="Deskripsikan potensi unggulan desa..." />
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Keterangan</label>
+                                    <textarea className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all" rows={2} value={(isEditModalOpen ? editingItem?.keterangan : newItem.keterangan) || ''} onChange={(e) => isEditModalOpen ? setEditingItem({...editingItem!, keterangan: e.target.value}) : setNewItem({...newItem, keterangan: e.target.value})} placeholder="Tambahkan catatan jika perlu..." />
                                 </div>
                             </div>
                         </div>
-                        <div className="p-6 border-t bg-slate-50 flex justify-end gap-3">
-                            <button onClick={() => { setIsEditModalOpen(false); setIsAddModalOpen(false); }} className="px-8 py-2.5 border border-slate-200 rounded-xl hover:bg-white text-slate-600 font-bold transition-all">Batal</button>
-                            <button onClick={() => handleSave(isEditModalOpen)} className="px-10 py-2.5 bg-lobar-blue text-white rounded-xl hover:bg-lobar-blue-dark font-extrabold shadow-lg shadow-blue-500/30 active:scale-95 transition-all">Simpan Perubahan</button>
+                        <div className="p-5 border-t bg-slate-50 flex justify-end gap-3">
+                            <button onClick={() => { setIsEditModalOpen(false); setIsAddModalOpen(false); }} className="px-6 py-2 border border-slate-200 rounded-lg hover:bg-white text-slate-600 text-sm font-bold transition-all">Batal</button>
+                            <button onClick={() => handleSave(isEditModalOpen)} className="px-8 py-2 bg-lobar-blue text-white rounded-lg hover:bg-lobar-blue-dark text-sm font-bold shadow-lg shadow-blue-500/20 transition-all">Simpan</button>
                         </div>
                     </div>
                 </div>
@@ -358,15 +337,14 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     );
 };
 
-const FormField = ({ label, value, onChange, type = "text", placeholder = "" }: { label: string, value: string | number, onChange: (val: string) => void, type?: string, placeholder?: string }) => (
-    <div className="space-y-1.5">
-        <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-widest">{label}</label>
+const FormField = ({ label, value, onChange, type = "text" }: { label: string, value: string | number, onChange: (val: string) => void, type?: string }) => (
+    <div>
+        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">{label}</label>
         <input 
             type={type} 
             value={value} 
             onChange={(e) => onChange(e.target.value)} 
-            placeholder={placeholder}
-            className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-lobar-blue focus:border-lobar-blue outline-none text-sm transition-all bg-slate-50/50 focus:bg-white"
+            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
         />
     </div>
 );
