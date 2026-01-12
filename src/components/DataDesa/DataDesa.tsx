@@ -184,7 +184,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         jumlah_balita_stunting: cleanNumber(row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting),
                         potensi_desa: row.potensi_desa || row.potensi || '',
                         keterangan: row.keterangan || '',
-                        keterangan: row.keterangan || '',
+
                         // Coba baca kolom koordinat juga jika ada di Excel. Prioritas nama standar.
                         latitude: cleanFloat(row.latitude || row.lat || row.llatitude),
                         longitude: cleanFloat(row.longitude || row.long || row.lng)
