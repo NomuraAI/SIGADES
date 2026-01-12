@@ -41,6 +41,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         { key: 'jumlahBalitaStunting', label: 'Stunting', align: 'center' },
         { key: 'potensiDesa', label: 'Potensi Desa', align: 'left' },
         { key: 'keterangan', label: 'Keterangan', align: 'left' },
+        { key: 'lat', label: 'Latitude', align: 'center' },
+        { key: 'lng', label: 'Longitude', align: 'center' },
     ];
     const [visibleColumns, setVisibleColumns] = useState<string[]>(allColumns.map(c => c.key));
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -114,8 +116,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
                 keterangan: item.keterangan || '',
                 potensiDesa: item.potensi_desa || '',
-                lat: item.lat,
-                lng: item.lng
+                // Prioritize specific village coordinates if available
+                lat: item.latitude || item.lat,
+                lng: item.longitude || item.lng
             }));
             setData(mappedData);
 
@@ -133,6 +136,15 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         // Contoh: "1.500.000" -> "1500000"
         const cleanStr = String(val).replace(/[^\d]/g, '');
         return parseInt(cleanStr || '0');
+    };
+
+    const cleanFloat = (val: any) => {
+        if (typeof val === 'number') return val;
+        if (!val) return null;
+        // Ganti koma dengan titik jika ada, dan hapus karakter aneh selain . - dan angka
+        const cleanStr = String(val).replace(',', '.').replace(/[^\d.-]/g, '');
+        const num = parseFloat(cleanStr);
+        return isNaN(num) ? null : num;
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,28 +169,51 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                     });
 
                     return {
-                        aksi_prioritas: row.aksi_prioritas || row.prioritas || '',
-                        perangkat_daerah: row.perangkat_daerah || row.opd || '',
-                        program: row.program || '',
-                        kegiatan: row.kegiatan || '',
-                        sub_kegiatan: row.sub_kegiatan || '',
-                        pekerjaan: row.pekerjaan || row.nama_paket || '',
+                        aksi_prioritas: row.aksi_prioritas || row.prioritas || null,
+                        perangkat_daerah: row.perangkat_daerah || row.opd || null,
+                        program: row.program || null,
+                        kegiatan: row.kegiatan || null,
+                        sub_kegiatan: row.sub_kegiatan || null,
+                        pekerjaan: row.pekerjaan || row.nama_paket || null,
                         pagu_anggaran: cleanNumber(row.pagu_anggaran || row.pagu),
-                        desa: row.desa || '',
-                        kecamatan: row.kecamatan || '',
-                        luas_wilayah: row.luas || row.luas_wilayah || '',
+                        desa: row.desa || null,
+                        kecamatan: row.kecamatan || null,
+                        luas_wilayah: row.luas || row.luas_wilayah || null,
                         jumlah_penduduk: cleanNumber(row.penduduk || row.jumlah_penduduk),
                         jumlah_angka_kemiskinan: cleanNumber(row.jumlah_angka_kemiskinan || row.kemiskinan),
                         jumlah_balita_stunting: cleanNumber(row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting),
                         potensi_desa: row.potensi_desa || row.potensi || '',
-                        keterangan: row.keterangan || ''
+                        keterangan: row.keterangan || '',
+                        keterangan: row.keterangan || '',
+                        // Coba baca kolom koordinat juga jika ada di Excel. Prioritas nama standar.
+                        latitude: cleanFloat(row.latitude || row.lat || row.llatitude),
+                        longitude: cleanFloat(row.longitude || row.long || row.lng)
                     };
                 });
 
-                const { error } = await supabase.from('projects').insert(projectsToInsert);
-                if (error) throw error;
+                // Batch insert logic
+                const BATCH_SIZE = 50;
+                let successCount = 0;
+                let failCount = 0;
 
-                alert('Berhasil mengimpor data!');
+                for (let i = 0; i < projectsToInsert.length; i += BATCH_SIZE) {
+                    const batch = projectsToInsert.slice(i, i + BATCH_SIZE);
+                    const { error } = await supabase.from('projects').insert(batch).select();
+
+                    if (error) {
+                        console.error(`Error inserting batch ${i} - ${i + BATCH_SIZE}:`, error);
+                        failCount += batch.length;
+                    } else {
+                        successCount += batch.length;
+                    }
+                }
+
+                if (failCount > 0) {
+                    alert(`Impor selesai dengan catatan: ${successCount} berhasil, ${failCount} gagal. Cek console untuk detail.`);
+                } else {
+                    alert(`Berhasil mengimpor ${successCount} data!`);
+                }
+
                 fetchData();
             } catch (error: any) {
                 alert('Gagal impor: ' + error.message);
@@ -208,15 +243,17 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
             jumlah_angka_kemiskinan: item.jumlahAngkaKemiskinan,
             jumlah_balita_stunting: item.jumlahBalitaStunting,
             potensi_desa: item.potensiDesa,
-            keterangan: item.keterangan
+            keterangan: item.keterangan,
+            latitude: item.lat,
+            longitude: item.lng
         };
 
         try {
             if (isEdit && editingItem) {
-                const { error } = await supabase.from('projects').update(payload).eq('id', editingItem.id);
+                const { error } = await supabase.from('projects').update(payload).eq('id', editingItem.id).select();
                 if (error) throw error;
             } else {
-                const { error } = await supabase.from('projects').insert([payload]);
+                const { error } = await supabase.from('projects').insert([payload]).select();
                 if (error) throw error;
             }
             setIsEditModalOpen(false);
@@ -404,6 +441,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                     )}
                                     {visibleColumns.includes('potensiDesa') && <td className="px-3 py-2.5 text-slate-600">{item.potensiDesa || '-'}</td>}
                                     {visibleColumns.includes('keterangan') && <td className="px-3 py-2.5 text-slate-500 max-w-xs truncate" title={item.keterangan}>{item.keterangan || '-'}</td>}
+                                    {visibleColumns.includes('lat') && <td className="px-3 py-2.5 text-slate-500">{item.lat || '-'}</td>}
+                                    {visibleColumns.includes('lng') && <td className="px-3 py-2.5 text-slate-500">{item.lng || '-'}</td>}
 
                                     <td className="px-3 py-2.5 sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
                                         <div className="flex justify-center gap-1">
@@ -490,6 +529,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                 <FormField label="Jml Angka Kemiskinan" type="number" value={(isEditModalOpen ? editingItem?.jumlahAngkaKemiskinan : newItem.jumlahAngkaKemiskinan) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahAngkaKemiskinan: Number(val) }) : setNewItem({ ...newItem, jumlahAngkaKemiskinan: Number(val) })} />
                                 <FormField label="Jml Angka Stunting" type="number" value={(isEditModalOpen ? editingItem?.jumlahBalitaStunting : newItem.jumlahBalitaStunting) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahBalitaStunting: Number(val) }) : setNewItem({ ...newItem, jumlahBalitaStunting: Number(val) })} />
                                 <FormField label="Potensi Desa" value={(isEditModalOpen ? editingItem?.potensiDesa : newItem.potensiDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, potensiDesa: val }) : setNewItem({ ...newItem, potensiDesa: val })} />
+                                <FormField label="Latitude" type="string" value={(isEditModalOpen ? editingItem?.lat : newItem.lat) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, lat: Number(val) }) : setNewItem({ ...newItem, lat: Number(val) })} />
+                                <FormField label="Longitude" type="string" value={(isEditModalOpen ? editingItem?.lng : newItem.lng) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, lng: Number(val) }) : setNewItem({ ...newItem, lng: Number(val) })} />
                                 <div className="col-span-1 md:col-span-2 lg:col-span-3">
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Keterangan</label>
                                     <textarea className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all" rows={2} value={(isEditModalOpen ? editingItem?.keterangan : newItem.keterangan) || ''} onChange={(e) => isEditModalOpen ? setEditingItem({ ...editingItem!, keterangan: e.target.value }) : setNewItem({ ...newItem, keterangan: e.target.value })} placeholder="Tambahkan catatan jika perlu..." />

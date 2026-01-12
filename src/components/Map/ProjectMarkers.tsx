@@ -1,5 +1,5 @@
 import React from 'react';
-import { Marker, Popup } from 'react-leaflet';
+import { CircleMarker, Popup } from 'react-leaflet';
 import { ProjectData } from '../../types';
 
 interface ProjectMarkersProps {
@@ -7,10 +7,15 @@ interface ProjectMarkersProps {
 }
 
 const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
-    // Group projects by location (lat,lng)
+    // Deduplicate projects based on ID and Group by location
     const groupedProjects = React.useMemo(() => {
+        const uniqueProjects = new Map<string, ProjectData>();
+        projects.forEach(p => {
+            if (p.id) uniqueProjects.set(p.id, p);
+        });
+
         const groups: { [key: string]: ProjectData[] } = {};
-        projects.forEach(project => {
+        Array.from(uniqueProjects.values()).forEach(project => {
             if (project.lat && project.lng) {
                 const key = `${project.lat},${project.lng}`;
                 if (!groups[key]) {
@@ -137,18 +142,24 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
                 if (!position.lat || !position.lng) return null;
 
                 return (
-                    <Marker
+                    <CircleMarker
                         key={key}
-                        position={[position.lat, position.lng]}
+                        center={[position.lat, position.lng]}
+                        radius={8}
+                        pathOptions={{
+                            fillColor: '#009FE3',
+                            fillOpacity: 0.8,
+                            color: 'white',
+                            weight: 2
+                        }}
                         eventHandlers={{
-                            add: (e) => {
-                                // Otomatis buka popup saat marker muncul
+                            click: (e) => {
                                 e.target.openPopup();
                             }
                         }}
                     >
                         <PaginatedPopup items={groupItems} />
-                    </Marker>
+                    </CircleMarker>
                 );
             })}
         </>

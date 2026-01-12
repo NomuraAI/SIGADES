@@ -46,8 +46,9 @@ const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectDat
     potensiDesa: item.potensi_desa || '',
     keterangan: item.keterangan || '',
     // Prioritaskan koordinat DB, fallback ke koordinat geosearch
-    lat: item.lat || lat,
-    lng: item.lng || lng
+    // Prioritaskan koordinat DB latitude/longitude, fallback ke lat/lng, lalu ke argument function
+    lat: item.latitude || item.lat || lat,
+    lng: item.longitude || item.lng || lng
 });
 
 const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: any, projects: ProjectData[]) => void }) => {
@@ -91,6 +92,26 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     const [searchResult, setSearchResult] = useState<{ lat: number, lng: number, label: string } | null>(null);
     const [projectToFocus, setProjectToFocus] = useState<ProjectData | null>(null);
     const mapRef = useRef<L.Map>(null);
+
+    const [permanentProjects, setPermanentProjects] = useState<ProjectData[]>([]);
+
+    // Fetch ALL projects with coordinates on load
+    useEffect(() => {
+        const fetchAllMarkers = async () => {
+            const { data, error } = await supabase
+                .from('projects')
+                .select('*')
+                .not('latitude', 'is', null)
+                .not('longitude', 'is', null);
+
+            if (!error && data) {
+                const mapped = data.map(item => mapItemToProjectData(item));
+                setPermanentProjects(mapped);
+            }
+        };
+
+        fetchAllMarkers();
+    }, []);
 
     // Sync selectedProject (dari DataDesa table) ke projectToFocus dan fetch related
     useEffect(() => {
@@ -232,11 +253,13 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 {/* SearchSyncHandler akan mencari data proyek berdasarkan hasil geosearch */}
                 <SearchSyncHandler onSearchComplete={handleSearchComplete} />
 
-                {/* ProjectMarkers akan menampilkan marker dan popup jika activeProjects ada */}
-                {activeProjects.length > 0 && <ProjectMarkers projects={activeProjects} />}
+                {/* ProjectMarkers akan menampilkan marker dan popup jika activeProjects ada ATAU permanentProjects ada */}
+                {(activeProjects.length > 0 || permanentProjects.length > 0) && (
+                    <ProjectMarkers projects={[...permanentProjects, ...activeProjects]} />
+                )}
 
                 {/* Jika tidak ada project match, tapi ada hasil search, tampilkan marker basic */}
-                {activeProjects.length === 0 && searchResult && (
+                {activeProjects.length === 0 && permanentProjects.length === 0 && searchResult && (
                     <Marker position={[searchResult.lat, searchResult.lng]} icon={DefaultIcon}>
                         <Popup>{searchResult.label}</Popup>
                     </Marker>
