@@ -17,6 +17,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<ProjectData | null>(null);
     const [newItem, setNewItem] = useState<Partial<ProjectData>>({});
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const filterRef = useRef<HTMLDivElement>(null);
 
@@ -265,14 +267,25 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+    const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // Stop event from bubbling
+        console.log("Delete clicked for ID:", id); // Debug log
+        setItemToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!itemToDelete) return;
+
         try {
-            const { error } = await supabase.from('projects').delete().eq('id', id);
+            const { error } = await supabase.from('projects').delete().eq('id', itemToDelete);
             if (error) throw error;
             fetchData();
-        } catch (error) {
+            setIsDeleteModalOpen(false);
+            setItemToDelete(null);
+        } catch (error: any) {
             console.error('Error deleting:', error);
+            alert('Gagal menghapus data: ' + error.message);
         }
     };
 
@@ -446,9 +459,10 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
 
                                     <td className="px-3 py-2.5 sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
                                         <div className="flex justify-center gap-1">
-                                            <button onClick={() => onViewMap && onViewMap(item)} title="Lihat Peta" className="p-1 text-lobar-blue hover:bg-blue-100 rounded transition-colors"><MapPin size={14} /></button>
-                                            <button onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} title="Edit" className="p-1 text-amber-600 hover:bg-amber-100 rounded transition-colors"><Edit2 size={14} /></button>
-                                            <button onClick={() => handleDelete(item.id)} title="Hapus" className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"><Trash2 size={14} /></button>
+                                            {/* Pindahkan tombol hapus ke kiri untuk menghindari masalah klik border kanan sticky */}
+                                            <button type="button" onClick={(e) => handleDeleteClick(item.id, e)} title="Hapus" className="relative z-10 p-1 text-red-600 hover:bg-red-100 rounded transition-colors"><Trash2 size={14} /></button>
+                                            <button type="button" onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} title="Edit" className="p-1 text-amber-600 hover:bg-amber-100 rounded transition-colors"><Edit2 size={14} /></button>
+                                            <button type="button" onClick={() => onViewMap && onViewMap(item)} title="Lihat Peta" className="p-1 text-lobar-blue hover:bg-blue-100 rounded transition-colors"><MapPin size={14} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -540,6 +554,35 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         <div className="p-5 border-t bg-slate-50 flex justify-end gap-3">
                             <button onClick={() => { setIsEditModalOpen(false); setIsAddModalOpen(false); }} className="px-6 py-2 border border-slate-200 rounded-lg hover:bg-white text-slate-600 text-sm font-bold transition-all">Batal</button>
                             <button onClick={() => handleSave(isEditModalOpen)} className="px-8 py-2 bg-lobar-blue text-white rounded-lg hover:bg-lobar-blue-dark text-sm font-bold shadow-lg shadow-blue-500/20 transition-all">Simpan</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                        <div className="p-6 text-center">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Trash2 size={32} className="text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800 mb-2">Hapus Data Ini?</h3>
+                            <p className="text-slate-500 text-sm">Data yang dihapus tidak dapat dikembalikan lagi.</p>
+                        </div>
+                        <div className="p-5 border-t bg-slate-50 flex gap-3">
+                            <button
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                className="flex-1 py-2.5 border border-slate-200 rounded-xl hover:bg-white text-slate-600 font-bold transition-all"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 font-bold shadow-lg shadow-red-500/20 transition-all"
+                            >
+                                Ya, Hapus
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -134,41 +134,42 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                     relatedProjects = [selectedProject];
                 }
 
-                // 2. Cari koordinat desa jika perlu (geocoding) untuk fallback
-                const provider = new OpenStreetMapProvider();
-                const query = `Desa ${selectedProject.desa}, ${selectedProject.kecamatan}, Lombok Barat`;
-
-                try {
-                    const results = await provider.search({ query });
-
-                    if (results.length > 0) {
-                        const { x: lng, y: lat } = results[0];
-
-                        // 3. Update activeProjects dengan koordinat fallback
-                        const updatedProjects = relatedProjects.map(p => ({
-                            ...p,
-                            lat: p.lat || lat,
-                            lng: p.lng || lng
-                        }));
-
-                        setActiveProjects(updatedProjects);
-
-                        // Focus ke lokasi hasil geocode
-                        if (mapRef.current) {
-                            mapRef.current.flyTo([lat, lng], 15);
-                        }
-                    } else {
-                        // Jika geocode gagal, pakai data apa adanya
-                        setActiveProjects(relatedProjects);
-
-                        // Coba flyto jika selectedProject punya coord
-                        if (selectedProject.lat && selectedProject.lng && mapRef.current) {
-                            mapRef.current.flyTo([selectedProject.lat, selectedProject.lng], 15);
-                        }
-                    }
-                } catch (error) {
-                    console.error("Geocoding error:", error);
+                // 2. Jika project sudah punya koordinat (permanen), langsung zoom max
+                if (selectedProject.lat && selectedProject.lng) {
                     setActiveProjects(relatedProjects);
+                    if (mapRef.current) {
+                        mapRef.current.flyTo([selectedProject.lat, selectedProject.lng], 18); // Zoom max
+                    }
+                }
+                // 3. Jika tidak punya koordinat, cari via Geocoding (fallback)
+                else {
+                    const provider = new OpenStreetMapProvider();
+                    const query = `Desa ${selectedProject.desa}, ${selectedProject.kecamatan}, Lombok Barat`;
+
+                    try {
+                        const results = await provider.search({ query });
+
+                        if (results.length > 0) {
+                            const { x: lng, y: lat } = results[0];
+
+                            const updatedProjects = relatedProjects.map(p => ({
+                                ...p,
+                                lat: p.lat || lat,
+                                lng: p.lng || lng
+                            }));
+
+                            setActiveProjects(updatedProjects);
+
+                            if (mapRef.current) {
+                                mapRef.current.flyTo([lat, lng], 15); // Zoom standar untuk area desa
+                            }
+                        } else {
+                            setActiveProjects(relatedProjects);
+                        }
+                    } catch (error) {
+                        console.error("Geocoding error:", error);
+                        setActiveProjects(relatedProjects);
+                    }
                 }
 
                 setSearchResult(null);
