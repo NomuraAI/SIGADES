@@ -10,8 +10,8 @@ interface DataDesaProps {
 }
 
 const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
-    const [searchDesa, setSearchDesa] = useState('');
-    const [searchKecamatan, setSearchKecamatan] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchMode, setSearchMode] = useState<'desa' | 'kecamatan'>('desa');
     const [filterOPD, setFilterOPD] = useState('');
     const [data, setData] = useState<ProjectData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -313,11 +313,14 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         }
     };
 
-    const filteredData = data.filter(item =>
-        item.desa.toLowerCase().includes(searchDesa.toLowerCase()) &&
-        item.kecamatan.toLowerCase().includes(searchKecamatan.toLowerCase()) &&
-        (filterOPD === '' || item.perangkatDaerah === filterOPD)
-    );
+    const filteredData = data.filter(item => {
+        const query = searchQuery.toLowerCase();
+        const isMatch = searchMode === 'desa'
+            ? item.desa.toLowerCase().includes(query)
+            : item.kecamatan.toLowerCase().includes(query);
+
+        return isMatch && (filterOPD === '' || item.perangkatDaerah === filterOPD);
+    });
 
     // Get unique Perangkat Daerah for dropdown
     const uniqueOPD = React.useMemo(() => {
@@ -442,31 +445,29 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                             <ChevronLeft size={12} className="-rotate-90" />
                         </div>
                     </div>
-                    <div className="relative w-full md:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input
-                            type="text"
-                            placeholder="Cari desa..."
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
-                            value={searchDesa}
-                            onChange={(e) => {
-                                setSearchDesa(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                        />
-                    </div>
-                    <div className="relative w-full md:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input
-                            type="text"
-                            placeholder="Cari kecamatan..."
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
-                            value={searchKecamatan}
-                            onChange={(e) => {
-                                setSearchKecamatan(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                        />
+                    {/* Unified Search Bar */}
+                    <div className="flex w-full md:w-auto">
+                        <select
+                            className="pl-3 pr-8 py-2 bg-slate-100 border border-r-0 border-slate-200 rounded-l-lg focus:ring-2 focus:ring-lobar-blue focus:z-10 outline-none text-sm font-medium text-slate-700 cursor-pointer transition-all appearance-none"
+                            value={searchMode}
+                            onChange={(e) => setSearchMode(e.target.value as 'desa' | 'kecamatan')}
+                        >
+                            <option value="desa">Desa</option>
+                            <option value="kecamatan">Kecamatan</option>
+                        </select>
+                        <div className="relative w-full md:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input
+                                type="text"
+                                placeholder={`Cari nama ${searchMode}...`}
+                                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-r-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
                 {totalPages > 1 && (
