@@ -137,7 +137,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     };
 
     const cleanNumber = (val: any) => {
-        if (typeof val === 'number') return val;
+        if (typeof val === 'number') return Math.round(val); // Force integer
         if (!val) return 0;
         // Hapus "Rp", titik, spasi, dll hanya sisakan angka
         // Contoh: "1.500.000" -> "1500000"
@@ -146,12 +146,17 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     };
 
     const cleanFloat = (val: any) => {
+        if (val === 0 || val === '0') return null; // Treat 0 as invalid coordinate
         if (typeof val === 'number') return val;
         if (!val) return null;
+
+        const str = String(val).trim().toUpperCase();
+        if (['#N/A', '-', 'NAN', 'NULL'].includes(str)) return null;
+
         // Ganti koma dengan titik jika ada, dan hapus karakter aneh selain . - dan angka
         const cleanStr = String(val).replace(',', '.').replace(/[^\d.-]/g, '');
         const num = parseFloat(cleanStr);
-        return isNaN(num) ? null : num;
+        return (isNaN(num) || num === 0) ? null : num;
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,9 +188,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         sub_kegiatan: row.sub_kegiatan || null,
                         pekerjaan: row.pekerjaan || row.nama_paket || null,
                         pagu_anggaran: cleanNumber(row.pagu_anggaran || row.pagu),
-                        kode_desa: row.kode_desa || row.kode || null, // Import support
+                        kode_desa: String(row.kode_desa || row.kode || '').trim() || null, // Ensure String
                         desa: row.desa || null,
-                        kode_kecamatan: row.kode_kecamatan || row.kode_kec || null,
+                        kode_kecamatan: String(row.kode_kecamatan || row.kode_kec || '').trim() || null, // Ensure String
                         kecamatan: row.kecamatan || null,
                         luas_wilayah: row.luas || row.luas_wilayah || null,
                         jumlah_penduduk: cleanNumber(row.penduduk || row.jumlah_penduduk),
