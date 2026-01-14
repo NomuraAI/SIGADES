@@ -378,7 +378,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                     <div className="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center"><Wallet size={20} /></div>
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Total Pagu Anggaran</p>
-                        <h3 className="text-lg font-bold text-slate-800">{formatRupiah(data.reduce((s, i) => s + (i.paguAnggaran || 0), 0))}</h3>
+                        <h3 className="text-lg font-bold text-slate-800">{formatRupiah(filteredData.reduce((s, i) => s + (i.paguAnggaran || 0), 0))}</h3>
                     </div>
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
