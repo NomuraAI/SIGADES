@@ -385,7 +385,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                     <div className="w-10 h-10 bg-blue-100 text-lobar-blue rounded-lg flex items-center justify-center"><Landmark size={20} /></div>
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Desa Terdata</p>
-                        <h3 className="text-lg font-bold text-slate-800">{new Set(data.map(i => i.desa)).size} Desa</h3>
+                        <h3 className="text-lg font-bold text-slate-800">122 DESA/KELURAHAN</h3>
                     </div>
                 </div>
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
