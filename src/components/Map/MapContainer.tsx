@@ -45,6 +45,7 @@ const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectDat
     jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
     potensiDesa: item.potensi_desa || '',
     keterangan: item.keterangan || '',
+    kodeDesa: item.kode_desa || '', // Mapping field baru
     // Prioritaskan koordinat DB, fallback ke koordinat geosearch
     // Prioritaskan koordinat DB latitude/longitude, fallback ke lat/lng, lalu ke argument function
     lat: item.latitude || item.lat || lat,

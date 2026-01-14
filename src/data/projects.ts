@@ -11,6 +11,7 @@ export const projectsData: ProjectData[] = [
         pekerjaan: 'Hotmix Jalan Dusun A',
         paguAnggaran: 150000000,
         desa: 'Gerung Utara',
+        kodeKecamatan: '52.01.01',
         kecamatan: 'Gerung',
         luasWilayah: '4.5 km²',
         jumlahPenduduk: 4500,

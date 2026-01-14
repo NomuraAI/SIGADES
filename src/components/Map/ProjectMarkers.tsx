@@ -56,7 +56,10 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
                     <div className="flex justify-between items-start mb-2 border-b pb-2">
                         <div className="flex-1">
                             <h3 className="font-bold text-lg text-lobar-blue">Desa {item.desa}</h3>
-                            <p className="text-[10px] text-slate-400 uppercase">{item.kecamatan}</p>
+                            <div className="flex flex-col">
+                                <p className="text-[10px] text-slate-400 uppercase tracking-widest">{item.kecamatan}</p>
+                                {item.kodeKecamatan && <p className="text-[9px] text-slate-300 font-mono mt-0.5">Kode Kec: {item.kodeKecamatan}</p>}
+                            </div>
                         </div>
                         {totalItems > 1 && (
                             <div className="flex items-center gap-2 pl-2">

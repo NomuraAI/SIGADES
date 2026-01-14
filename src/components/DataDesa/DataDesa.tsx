@@ -10,7 +10,8 @@ interface DataDesaProps {
 }
 
 const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchDesa, setSearchDesa] = useState('');
+    const [searchKecamatan, setSearchKecamatan] = useState('');
     const [data, setData] = useState<ProjectData[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -35,7 +36,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         { key: 'subKegiatan', label: 'Sub Kegiatan', align: 'left' },
         { key: 'pekerjaan', label: 'Pekerjaan', align: 'left' },
         { key: 'paguAnggaran', label: 'Pagu Anggaran', align: 'right' },
+        { key: 'kodeDesa', label: 'Kode Desa', align: 'left' }, // Added Kode Desa
         { key: 'desa', label: 'Desa', align: 'left' },
+        { key: 'kodeKecamatan', label: 'Kode Kecamatan', align: 'left' },
         { key: 'kecamatan', label: 'Kecamatan', align: 'left' },
         { key: 'luasWilayah', label: 'Luas', align: 'left' },
         { key: 'jumlahPenduduk', label: 'Penduduk', align: 'center' },
@@ -110,7 +113,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 subKegiatan: item.sub_kegiatan || '',
                 pekerjaan: item.pekerjaan || '',
                 paguAnggaran: item.pagu_anggaran || 0,
+                kodeDesa: item.kode_desa || '', // Map from DB
                 desa: item.desa || '',
+                kodeKecamatan: item.kode_kecamatan || '',
                 kecamatan: item.kecamatan || '',
                 luasWilayah: item.luas_wilayah || '',
                 jumlahPenduduk: item.jumlah_penduduk || 0,
@@ -178,7 +183,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         sub_kegiatan: row.sub_kegiatan || null,
                         pekerjaan: row.pekerjaan || row.nama_paket || null,
                         pagu_anggaran: cleanNumber(row.pagu_anggaran || row.pagu),
+                        kode_desa: row.kode_desa || row.kode || null, // Import support
                         desa: row.desa || null,
+                        kode_kecamatan: row.kode_kecamatan || row.kode_kec || null,
                         kecamatan: row.kecamatan || null,
                         luas_wilayah: row.luas || row.luas_wilayah || null,
                         jumlah_penduduk: cleanNumber(row.penduduk || row.jumlah_penduduk),
@@ -238,7 +245,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
             sub_kegiatan: item.subKegiatan,
             pekerjaan: item.pekerjaan,
             pagu_anggaran: item.paguAnggaran,
+            kode_desa: item.kodeDesa,
             desa: item.desa,
+            kode_kecamatan: item.kodeKecamatan,
             kecamatan: item.kecamatan,
             luas_wilayah: item.luasWilayah,
             jumlah_penduduk: item.jumlahPenduduk,
@@ -290,9 +299,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     };
 
     const filteredData = data.filter(item =>
-        item.pekerjaan.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.desa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.kecamatan.toLowerCase().includes(searchTerm.toLowerCase())
+        item.desa.toLowerCase().includes(searchDesa.toLowerCase()) &&
+        item.kecamatan.toLowerCase().includes(searchKecamatan.toLowerCase())
     );
 
     // Pagination Logic
@@ -390,18 +398,33 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
             </div>
 
             <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 flex justify-between items-center">
-                <div className="relative w-full md:w-96">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Cari pekerjaan, desa atau kecamatan..."
-                        className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
-                        value={searchTerm}
-                        onChange={(e) => {
-                            setSearchTerm(e.target.value);
-                            setCurrentPage(1); // Reset to page 1 on search
-                        }}
-                    />
+                <div className="relative w-full md:w-auto flex gap-2">
+                    <div className="relative w-full md:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Cari desa..."
+                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
+                            value={searchDesa}
+                            onChange={(e) => {
+                                setSearchDesa(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        />
+                    </div>
+                    <div className="relative w-full md:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Cari kecamatan..."
+                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all"
+                            value={searchKecamatan}
+                            onChange={(e) => {
+                                setSearchKecamatan(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        />
+                    </div>
                 </div>
                 {totalPages > 1 && (
                     <div className="text-xs text-slate-500 font-medium">
@@ -438,7 +461,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                     {visibleColumns.includes('subKegiatan') && <td className="px-3 py-2.5 text-slate-500">{item.subKegiatan || '-'}</td>}
                                     {visibleColumns.includes('pekerjaan') && <td className="px-3 py-2.5 font-bold text-slate-900">{item.pekerjaan || '-'}</td>}
                                     {visibleColumns.includes('paguAnggaran') && <td className="px-3 py-2.5 text-right font-bold text-green-700">{formatRupiah(item.paguAnggaran)}</td>}
+                                    {visibleColumns.includes('kodeDesa') && <td className="px-3 py-2.5 font-medium text-slate-600">{item.kodeDesa || '-'}</td>}
                                     {visibleColumns.includes('desa') && <td className="px-3 py-2.5 font-semibold text-lobar-blue">{item.desa || '-'}</td>}
+                                    {visibleColumns.includes('kodeKecamatan') && <td className="px-3 py-2.5 text-slate-600">{item.kodeKecamatan || '-'}</td>}
                                     {visibleColumns.includes('kecamatan') && <td className="px-3 py-2.5 text-slate-600">{item.kecamatan || '-'}</td>}
                                     {visibleColumns.includes('luasWilayah') && <td className="px-3 py-2.5 text-slate-600">{item.luasWilayah || '-'}</td>}
                                     {visibleColumns.includes('jumlahPenduduk') && <td className="px-3 py-2.5 text-center text-slate-700">{item.jumlahPenduduk?.toLocaleString() || '0'}</td>}
@@ -536,7 +561,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                 <FormField label="Sub Kegiatan" value={(isEditModalOpen ? editingItem?.subKegiatan : newItem.subKegiatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, subKegiatan: val }) : setNewItem({ ...newItem, subKegiatan: val })} />
                                 <FormField label="Pekerjaan" value={(isEditModalOpen ? editingItem?.pekerjaan : newItem.pekerjaan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, pekerjaan: val }) : setNewItem({ ...newItem, pekerjaan: val })} />
                                 <FormField label="Pagu Anggaran" type="number" value={(isEditModalOpen ? editingItem?.paguAnggaran : newItem.paguAnggaran) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, paguAnggaran: Number(val) }) : setNewItem({ ...newItem, paguAnggaran: Number(val) })} />
+                                <FormField label="Kode Desa" value={(isEditModalOpen ? editingItem?.kodeDesa : newItem.kodeDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kodeDesa: val }) : setNewItem({ ...newItem, kodeDesa: val })} />
                                 <FormField label="Desa" value={(isEditModalOpen ? editingItem?.desa : newItem.desa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, desa: val }) : setNewItem({ ...newItem, desa: val })} />
+                                <FormField label="Kode Kecamatan" value={(isEditModalOpen ? editingItem?.kodeKecamatan : newItem.kodeKecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kodeKecamatan: val }) : setNewItem({ ...newItem, kodeKecamatan: val })} />
                                 <FormField label="Kecamatan" value={(isEditModalOpen ? editingItem?.kecamatan : newItem.kecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kecamatan: val }) : setNewItem({ ...newItem, kecamatan: val })} />
                                 <FormField label="Luas" value={(isEditModalOpen ? editingItem?.luasWilayah : newItem.luasWilayah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, luasWilayah: val }) : setNewItem({ ...newItem, luasWilayah: val })} />
                                 <FormField label="Penduduk" type="number" value={(isEditModalOpen ? editingItem?.jumlahPenduduk : newItem.jumlahPenduduk) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahPenduduk: Number(val) }) : setNewItem({ ...newItem, jumlahPenduduk: Number(val) })} />
