@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Building2, Activity, MessageSquareWarning, Settings, X, Edit2, Check, Search } from 'lucide-react';
+import { MapPin, Building2, Activity, MessageSquareWarning, Settings, X, Edit2, Check, Search, PieChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface SidebarProps {
@@ -142,6 +142,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeItem, setActiv
     const menuItems = [
         { icon: <MapPin size={22} strokeWidth={1.5} />, label: 'Peta Interaktif' },
         { icon: <Building2 size={22} strokeWidth={1.5} />, label: 'Data Desa' },
+        { icon: <PieChart size={22} strokeWidth={1.5} />, label: 'Breakdown Anggaran Desa' },
         { icon: <Activity size={22} strokeWidth={1.5} />, label: 'Monitoring Proyek' },
         { icon: <MessageSquareWarning size={22} strokeWidth={1.5} />, label: 'Pengaduan Warga' },
         { icon: <Settings size={22} strokeWidth={1.5} />, label: 'Pengaturan' },
