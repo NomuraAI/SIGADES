@@ -12,6 +12,7 @@ interface DataDesaProps {
 const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     const [searchDesa, setSearchDesa] = useState('');
     const [searchKecamatan, setSearchKecamatan] = useState('');
+    const [filterOPD, setFilterOPD] = useState('');
     const [data, setData] = useState<ProjectData[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -305,8 +306,14 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
 
     const filteredData = data.filter(item =>
         item.desa.toLowerCase().includes(searchDesa.toLowerCase()) &&
-        item.kecamatan.toLowerCase().includes(searchKecamatan.toLowerCase())
+        item.kecamatan.toLowerCase().includes(searchKecamatan.toLowerCase()) &&
+        (filterOPD === '' || item.perangkatDaerah === filterOPD)
     );
+
+    // Get unique Perangkat Daerah for dropdown
+    const uniqueOPD = React.useMemo(() => {
+        return [...new Set(data.map(item => item.perangkatDaerah).filter(Boolean))].sort();
+    }, [data]);
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
@@ -402,8 +409,30 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 </div>
             </div>
 
-            <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 flex justify-between items-center">
-                <div className="relative w-full md:w-auto flex gap-2">
+            <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="relative w-full md:w-auto flex flex-col md:flex-row gap-2">
+                    {/* OPD Dropdown */}
+                    <div className="relative w-full md:w-64">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <Briefcase size={16} />
+                        </div>
+                        <select
+                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all appearance-none bg-white truncate"
+                            value={filterOPD}
+                            onChange={(e) => {
+                                setFilterOPD(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <option value="">Semua Perangkat Daerah</option>
+                            {uniqueOPD.map(opd => (
+                                <option key={opd} value={opd}>{opd}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <ChevronLeft size={12} className="-rotate-90" />
+                        </div>
+                    </div>
                     <div className="relative w-full md:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                         <input
