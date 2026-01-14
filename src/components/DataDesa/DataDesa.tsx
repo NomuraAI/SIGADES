@@ -178,7 +178,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 const projectsToInsert = jsonData.map((rawRow: any) => {
                     const row: { [key: string]: any } = {};
                     Object.keys(rawRow).forEach(key => {
-                        row[key.trim().toLowerCase().replace(/\s+/g, '_')] = rawRow[key];
+                        // Normalize keys: lower case, replace spaces and slashes with underscore
+                        // "DESA/KELURAHAN" -> "desa_kelurahan"
+                        row[key.trim().toLowerCase().replace(/[\s\/]+/g, '_')] = rawRow[key];
                     });
 
                     return {
