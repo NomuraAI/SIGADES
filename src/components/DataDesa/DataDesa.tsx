@@ -190,7 +190,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         pekerjaan: row.pekerjaan || row.nama_paket || null,
                         pagu_anggaran: cleanNumber(row.pagu_anggaran || row.pagu),
                         kode_desa: String(row.kode_desa || row.kode || '').trim() || null, // Ensure String
-                        desa: row.desa || null,
+                        desa: row.desa || row.desa_kelurahan || null, // Support for "DESA/KELURAHAN" header
                         kode_kecamatan: String(row.kode_kecamatan || row.kode_kec || '').trim() || null, // Ensure String
                         kecamatan: row.kecamatan || null,
                         luas_wilayah: row.luas || row.luas_wilayah || null,
