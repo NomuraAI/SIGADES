@@ -10,7 +10,8 @@ export const projectsData: ProjectData[] = [
         subKegiatan: 'Pembangunan Jalan Lingkungan',
         pekerjaan: 'Hotmix Jalan Dusun A',
         paguAnggaran: 150000000,
-        desa: 'Gerung Utara',
+        desaKelurahan: 'Gerung Utara',
+        kodeDesa: '52.01.01.2001',
         kodeKecamatan: '52.01.01',
         kecamatan: 'Gerung',
         luasWilayah: '4.5 km²',
@@ -19,7 +20,7 @@ export const projectsData: ProjectData[] = [
         jumlahBalitaStunting: 15,
         potensiDesa: 'Pertanian & UMKM',
         keterangan: 'Realisasi Fisik 80%',
-        lat: -8.6756,
-        lng: 116.1157
+        latitude: -8.6756,
+        longitude: 116.1157
     }
 ];

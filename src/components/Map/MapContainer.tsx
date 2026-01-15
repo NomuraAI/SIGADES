@@ -38,6 +38,7 @@ const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectDat
     pekerjaan: item.pekerjaan || '',
     paguAnggaran: item.pagu_anggaran || 0,
     kodeDesa: item.kode_desa || '',
+    kodeKecamatan: item.kode_kecamatan || '',
     desaKelurahan: item.desa_kelurahan || item.desa || '',
     kecamatan: item.kecamatan || '',
     luasWilayah: item.luas_wilayah || '',
@@ -119,6 +120,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
         const fetchRelatedProjects = async () => {
             if (selectedProject) {
                 // 1. Fetch projects with same Desa
+                let relatedProjects: ProjectData[] = [];
                 if (selectedProject.desaKelurahan) {
                     const { data, error } = await supabase
                         .from('projects')
