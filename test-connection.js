@@ -43,6 +43,7 @@ async function checkConnection() {
             }
         } else {
             console.log('Connection Successful! (Query executed)');
+            if (data) console.log('Data received:', data);
         }
     } catch (err) {
         console.error('Unexpected error:', err);
