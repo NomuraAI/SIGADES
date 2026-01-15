@@ -313,19 +313,39 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         }
     };
 
+    const [filterKecamatan, setFilterKecamatan] = useState('');
+    const [filterDesa, setFilterDesa] = useState('');
+
     const filteredData = data.filter(item => {
         const query = searchQuery.toLowerCase();
         const isMatch = searchMode === 'desa'
             ? item.desa.toLowerCase().includes(query)
             : item.kecamatan.toLowerCase().includes(query);
 
-        return isMatch && (filterOPD === '' || item.perangkatDaerah === filterOPD);
+        return isMatch &&
+            (filterOPD === '' || item.perangkatDaerah === filterOPD) &&
+            (filterKecamatan === '' || item.kecamatan === filterKecamatan) &&
+            (filterDesa === '' || item.desa === filterDesa);
     });
 
     // Get unique Perangkat Daerah for dropdown
     const uniqueOPD = React.useMemo(() => {
         return [...new Set(data.map(item => item.perangkatDaerah).filter(Boolean))].sort();
     }, [data]);
+
+    // Get unique Kecamatans
+    const uniqueKecamatan = React.useMemo(() => {
+        return [...new Set(data.map(item => item.kecamatan).filter(Boolean))].sort();
+    }, [data]);
+
+    // Get dependent Desas
+    const availableDesa = React.useMemo(() => {
+        let source = data;
+        if (filterKecamatan) {
+            source = source.filter(item => item.kecamatan === filterKecamatan);
+        }
+        return [...new Set(source.map(item => item.desa).filter(Boolean))].sort();
+    }, [data, filterKecamatan]);
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
@@ -343,6 +363,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         <div className="flex flex-col h-full bg-slate-50 p-6 overflow-hidden">
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".xlsx, .xls" />
 
+            {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div className="flex items-center gap-4">
                     {onBack && <button onClick={onBack} className="p-2 bg-white border rounded-lg hover:bg-slate-100 transition-colors"><ArrowLeft size={20} /></button>}
@@ -397,6 +418,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 </div>
             </div>
 
+            {/* Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center"><Wallet size={20} /></div>
@@ -421,15 +443,65 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 </div>
             </div>
 
-            <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="relative w-full md:w-auto flex flex-col md:flex-row gap-2">
+            {/* Filters Row */}
+            <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 flex flex-col xl:flex-row justify-between items-center gap-4">
+                <div className="relative w-full flex flex-col md:flex-row gap-2 flex-wrap">
+
+                    {/* Kecamatan Dropdown */}
+                    <div className="relative w-full md:w-56">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <MapPin size={16} />
+                        </div>
+                        <select
+                            className="w-full pl-10 pr-8 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all appearance-none bg-white truncate"
+                            value={filterKecamatan}
+                            onChange={(e) => {
+                                setFilterKecamatan(e.target.value);
+                                setFilterDesa(''); // Reset desa when kecamatan changes
+                                setCurrentPage(1);
+                            }}
+                        >
+                            <option value="">Semua Kecamatan</option>
+                            {uniqueKecamatan.map(kec => (
+                                <option key={kec} value={kec}>{kec}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <ChevronLeft size={12} className="-rotate-90" />
+                        </div>
+                    </div>
+
+                    {/* Desa Dropdown */}
+                    <div className="relative w-full md:w-56">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <MapPin size={16} />
+                        </div>
+                        <select
+                            className="w-full pl-10 pr-8 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all appearance-none bg-white truncate disabled:bg-slate-50 disabled:text-slate-400"
+                            value={filterDesa}
+                            onChange={(e) => {
+                                setFilterDesa(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            disabled={availableDesa.length === 0}
+                        >
+                            <option value="">{filterKecamatan ? 'Semua Desa di ' + filterKecamatan : 'Semua Desa'}</option>
+                            {availableDesa.map(desa => (
+                                <option key={desa} value={desa}>{desa}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <ChevronLeft size={12} className="-rotate-90" />
+                        </div>
+                    </div>
+
                     {/* OPD Dropdown */}
                     <div className="relative w-full md:w-64">
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                             <Briefcase size={16} />
                         </div>
                         <select
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all appearance-none bg-white truncate"
+                            className="w-full pl-10 pr-8 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all appearance-none bg-white truncate"
                             value={filterOPD}
                             onChange={(e) => {
                                 setFilterOPD(e.target.value);
@@ -445,6 +517,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                             <ChevronLeft size={12} className="-rotate-90" />
                         </div>
                     </div>
+
                     {/* Unified Search Bar */}
                     <div className="flex w-full md:w-auto">
                         <select
