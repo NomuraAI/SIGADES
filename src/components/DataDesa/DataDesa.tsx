@@ -37,8 +37,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         { key: 'subKegiatan', label: 'Sub Kegiatan', align: 'left' },
         { key: 'pekerjaan', label: 'Pekerjaan', align: 'left' },
         { key: 'paguAnggaran', label: 'Pagu Anggaran', align: 'right' },
-        { key: 'kodeDesa', label: 'Kode Desa', align: 'left' }, // Added Kode Desa
-        { key: 'desa', label: 'Desa', align: 'left' },
+        { key: 'kodeDesa', label: 'Kode Desa', align: 'left' },
+        { key: 'desaKelurahan', label: 'Desa/Kelurahan', align: 'left' },
         { key: 'kodeKecamatan', label: 'Kode Kecamatan', align: 'left' },
         { key: 'kecamatan', label: 'Kecamatan', align: 'left' },
         { key: 'luasWilayah', label: 'Luas', align: 'left' },
@@ -47,8 +47,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         { key: 'jumlahBalitaStunting', label: 'Stunting', align: 'center' },
         { key: 'potensiDesa', label: 'Potensi Desa', align: 'left' },
         { key: 'keterangan', label: 'Keterangan', align: 'left' },
-        { key: 'lat', label: 'Latitude', align: 'center' },
-        { key: 'lng', label: 'Longitude', align: 'center' },
+        { key: 'latitude', label: 'Latitude', align: 'center' },
+        { key: 'longitude', label: 'Longitude', align: 'center' },
     ];
     const [visibleColumns, setVisibleColumns] = useState<string[]>(allColumns.map(c => c.key));
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -114,8 +114,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 subKegiatan: item.sub_kegiatan || '',
                 pekerjaan: item.pekerjaan || '',
                 paguAnggaran: item.pagu_anggaran || 0,
-                kodeDesa: item.kode_desa || '', // Map from DB
-                desa: item.desa || '',
+                kodeDesa: item.kode_desa || '',
+                desaKelurahan: item.desa_kelurahan || item.desa || '',
                 kodeKecamatan: item.kode_kecamatan || '',
                 kecamatan: item.kecamatan || '',
                 luasWilayah: item.luas_wilayah || '',
@@ -124,9 +124,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
                 keterangan: item.keterangan || '',
                 potensiDesa: item.potensi_desa || '',
-                // Prioritize specific village coordinates if available
-                lat: item.latitude || item.lat,
-                lng: item.longitude || item.lng
+                latitude: item.latitude || item.lat || null,
+                longitude: item.longitude || item.lng || null
             }));
             setData(mappedData);
 
@@ -198,8 +197,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         pekerjaan: row.pekerjaan || row.nama_paket || null,
                         pagu_anggaran: cleanNumber(row.pagu_anggaran || row.pagu),
                         kode_desa: String(row.kode_desa || row.kode || '').trim() || null,
-                        // Robust Desa mapping: check multiple variations
-                        desa: row.desa || row.desa_kelurahan || row.nama_desa || row.desa_kel || row.nama_desa_kelurahan || null,
+                        desa_kelurahan: row.desa_kelurahan || row.desa || row.nama_desa || row.desa_kel || row.nama_desa_kelurahan || null,
                         kode_kecamatan: String(row.kode_kecamatan || row.kode_kec || '').trim() || null,
                         kecamatan: row.kecamatan || null,
                         luas_wilayah: row.luas || row.luas_wilayah || null,
@@ -209,7 +207,6 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                         potensi_desa: row.potensi_desa || row.potensi || '',
                         keterangan: row.keterangan || '',
 
-                        // Coba baca kolom koordinat juga jika ada di Excel. Prioritas nama standar.
                         latitude: cleanFloat(row.latitude || row.lat || row.llatitude),
                         longitude: cleanFloat(row.longitude || row.long || row.lng)
                     };
@@ -261,7 +258,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
             pekerjaan: item.pekerjaan,
             pagu_anggaran: item.paguAnggaran,
             kode_desa: item.kodeDesa,
-            desa: item.desa,
+            desa_kelurahan: item.desaKelurahan,
             kode_kecamatan: item.kodeKecamatan,
             kecamatan: item.kecamatan,
             luas_wilayah: item.luasWilayah,
@@ -270,8 +267,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
             jumlah_balita_stunting: item.jumlahBalitaStunting,
             potensi_desa: item.potensiDesa,
             keterangan: item.keterangan,
-            latitude: item.lat,
-            longitude: item.lng
+            latitude: item.latitude,
+            longitude: item.longitude
         };
 
         try {
@@ -319,13 +316,13 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     const filteredData = data.filter(item => {
         const query = searchQuery.toLowerCase();
         const isMatch = searchMode === 'desa'
-            ? item.desa.toLowerCase().includes(query)
+            ? item.desaKelurahan.toLowerCase().includes(query)
             : item.kecamatan.toLowerCase().includes(query);
 
         return isMatch &&
             (filterOPD === '' || item.perangkatDaerah === filterOPD) &&
             (filterKecamatan === '' || item.kecamatan === filterKecamatan) &&
-            (filterDesa === '' || item.desa === filterDesa);
+            (filterDesa === '' || item.desaKelurahan === filterDesa);
     });
 
     // Get unique Perangkat Daerah for dropdown
@@ -344,7 +341,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
         if (filterKecamatan) {
             source = source.filter(item => item.kecamatan === filterKecamatan);
         }
-        return [...new Set(source.map(item => item.desa).filter(Boolean))].sort();
+        return [...new Set(source.map(item => item.desaKelurahan).filter(Boolean))].sort();
     }, [data, filterKecamatan]);
 
     // Pagination Logic
@@ -579,7 +576,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                     {visibleColumns.includes('pekerjaan') && <td className="px-3 py-2.5 font-bold text-slate-900">{item.pekerjaan || '-'}</td>}
                                     {visibleColumns.includes('paguAnggaran') && <td className="px-3 py-2.5 text-right font-bold text-green-700">{formatRupiah(item.paguAnggaran)}</td>}
                                     {visibleColumns.includes('kodeDesa') && <td className="px-3 py-2.5 font-medium text-slate-600">{item.kodeDesa || '-'}</td>}
-                                    {visibleColumns.includes('desa') && <td className="px-3 py-2.5 font-semibold text-lobar-blue">{item.desa || '-'}</td>}
+                                    {visibleColumns.includes('desaKelurahan') && <td className="px-3 py-2.5 font-semibold text-lobar-blue">{item.desaKelurahan || '-'}</td>}
                                     {visibleColumns.includes('kodeKecamatan') && <td className="px-3 py-2.5 text-slate-600">{item.kodeKecamatan || '-'}</td>}
                                     {visibleColumns.includes('kecamatan') && <td className="px-3 py-2.5 text-slate-600">{item.kecamatan || '-'}</td>}
                                     {visibleColumns.includes('luasWilayah') && <td className="px-3 py-2.5 text-slate-600">{item.luasWilayah || '-'}</td>}
@@ -596,8 +593,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                     )}
                                     {visibleColumns.includes('potensiDesa') && <td className="px-3 py-2.5 text-slate-600">{item.potensiDesa || '-'}</td>}
                                     {visibleColumns.includes('keterangan') && <td className="px-3 py-2.5 text-slate-500 max-w-xs truncate" title={item.keterangan}>{item.keterangan || '-'}</td>}
-                                    {visibleColumns.includes('lat') && <td className="px-3 py-2.5 text-slate-500">{item.lat || '-'}</td>}
-                                    {visibleColumns.includes('lng') && <td className="px-3 py-2.5 text-slate-500">{item.lng || '-'}</td>}
+                                    {visibleColumns.includes('latitude') && <td className="px-3 py-2.5 text-slate-500">{item.latitude || '-'}</td>}
+                                    {visibleColumns.includes('longitude') && <td className="px-3 py-2.5 text-slate-500">{item.longitude || '-'}</td>}
 
                                     <td className="px-3 py-2.5 sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
                                         <div className="flex justify-center gap-1">
@@ -679,7 +676,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                 <FormField label="Pekerjaan" value={(isEditModalOpen ? editingItem?.pekerjaan : newItem.pekerjaan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, pekerjaan: val }) : setNewItem({ ...newItem, pekerjaan: val })} />
                                 <FormField label="Pagu Anggaran" type="number" value={(isEditModalOpen ? editingItem?.paguAnggaran : newItem.paguAnggaran) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, paguAnggaran: Number(val) }) : setNewItem({ ...newItem, paguAnggaran: Number(val) })} />
                                 <FormField label="Kode Desa" value={(isEditModalOpen ? editingItem?.kodeDesa : newItem.kodeDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kodeDesa: val }) : setNewItem({ ...newItem, kodeDesa: val })} />
-                                <FormField label="Desa" value={(isEditModalOpen ? editingItem?.desa : newItem.desa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, desa: val }) : setNewItem({ ...newItem, desa: val })} />
+                                <FormField label="Desa/Kelurahan" value={(isEditModalOpen ? editingItem?.desaKelurahan : newItem.desaKelurahan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, desaKelurahan: val }) : setNewItem({ ...newItem, desaKelurahan: val })} />
                                 <FormField label="Kode Kecamatan" value={(isEditModalOpen ? editingItem?.kodeKecamatan : newItem.kodeKecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kodeKecamatan: val }) : setNewItem({ ...newItem, kodeKecamatan: val })} />
                                 <FormField label="Kecamatan" value={(isEditModalOpen ? editingItem?.kecamatan : newItem.kecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kecamatan: val }) : setNewItem({ ...newItem, kecamatan: val })} />
                                 <FormField label="Luas" value={(isEditModalOpen ? editingItem?.luasWilayah : newItem.luasWilayah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, luasWilayah: val }) : setNewItem({ ...newItem, luasWilayah: val })} />
@@ -687,8 +684,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                                 <FormField label="Jml Angka Kemiskinan" type="number" value={(isEditModalOpen ? editingItem?.jumlahAngkaKemiskinan : newItem.jumlahAngkaKemiskinan) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahAngkaKemiskinan: Number(val) }) : setNewItem({ ...newItem, jumlahAngkaKemiskinan: Number(val) })} />
                                 <FormField label="Jml Angka Stunting" type="number" value={(isEditModalOpen ? editingItem?.jumlahBalitaStunting : newItem.jumlahBalitaStunting) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahBalitaStunting: Number(val) }) : setNewItem({ ...newItem, jumlahBalitaStunting: Number(val) })} />
                                 <FormField label="Potensi Desa" value={(isEditModalOpen ? editingItem?.potensiDesa : newItem.potensiDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, potensiDesa: val }) : setNewItem({ ...newItem, potensiDesa: val })} />
-                                <FormField label="Latitude" type="string" value={(isEditModalOpen ? editingItem?.lat : newItem.lat) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, lat: Number(val) }) : setNewItem({ ...newItem, lat: Number(val) })} />
-                                <FormField label="Longitude" type="string" value={(isEditModalOpen ? editingItem?.lng : newItem.lng) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, lng: Number(val) }) : setNewItem({ ...newItem, lng: Number(val) })} />
+                                <FormField label="Latitude" type="number" value={(isEditModalOpen ? editingItem?.latitude : newItem.latitude) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, latitude: Number(val) }) : setNewItem({ ...newItem, latitude: Number(val) })} />
+                                <FormField label="Longitude" type="number" value={(isEditModalOpen ? editingItem?.longitude : newItem.longitude) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, longitude: Number(val) }) : setNewItem({ ...newItem, longitude: Number(val) })} />
                                 <div className="col-span-1 md:col-span-2 lg:col-span-3">
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Keterangan</label>
                                     <textarea className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all" rows={2} value={(isEditModalOpen ? editingItem?.keterangan : newItem.keterangan) || ''} onChange={(e) => isEditModalOpen ? setEditingItem({ ...editingItem!, keterangan: e.target.value }) : setNewItem({ ...newItem, keterangan: e.target.value })} placeholder="Tambahkan catatan jika perlu..." />

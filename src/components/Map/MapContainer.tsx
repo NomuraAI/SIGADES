@@ -37,7 +37,8 @@ const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectDat
     subKegiatan: item.sub_kegiatan || '',
     pekerjaan: item.pekerjaan || '',
     paguAnggaran: item.pagu_anggaran || 0,
-    desa: item.desa || '',
+    kodeDesa: item.kode_desa || '',
+    desaKelurahan: item.desa_kelurahan || item.desa || '',
     kecamatan: item.kecamatan || '',
     luasWilayah: item.luas_wilayah || '',
     jumlahPenduduk: item.jumlah_penduduk || 0,
@@ -45,11 +46,9 @@ const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectDat
     jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
     potensiDesa: item.potensi_desa || '',
     keterangan: item.keterangan || '',
-    kodeDesa: item.kode_desa || '', // Mapping field baru
-    // Prioritaskan koordinat DB, fallback ke koordinat geosearch
-    // Prioritaskan koordinat DB latitude/longitude, fallback ke lat/lng, lalu ke argument function
-    lat: item.latitude || item.lat || lat,
-    lng: item.longitude || item.lng || lng
+
+    latitude: item.latitude || item.lat || lat,
+    longitude: item.longitude || item.lng || lng
 });
 
 const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: any, projects: ProjectData[]) => void }) => {
@@ -64,7 +63,8 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
             const { data, error } = await supabase
                 .from('projects')
                 .select('*')
-                .or(`desa.ilike.%${searchKeyword}%,kecamatan.ilike.%${searchKeyword}%`);
+                .select('*')
+                .or(`desa_kelurahan.ilike.%${searchKeyword}%,kecamatan.ilike.%${searchKeyword}%`);
 
             if (!error && data && data.length > 0) {
                 // 2. Petakan data Supabase ke ProjectData format
@@ -119,12 +119,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
         const fetchRelatedProjects = async () => {
             if (selectedProject) {
                 // 1. Fetch projects with same Desa
-                let relatedProjects: ProjectData[] = [];
-                if (selectedProject.desa) {
+                if (selectedProject.desaKelurahan) {
                     const { data, error } = await supabase
                         .from('projects')
                         .select('*')
-                        .eq('desa', selectedProject.desa);
+                        .eq('desa_kelurahan', selectedProject.desaKelurahan);
 
                     if (!error && data) {
                         relatedProjects = data.map(item => mapItemToProjectData(item));
@@ -136,16 +135,16 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
                 }
 
                 // 2. Jika project sudah punya koordinat (permanen), langsung zoom max
-                if (selectedProject.lat && selectedProject.lng) {
+                if (selectedProject.latitude && selectedProject.longitude) {
                     setActiveProjects(relatedProjects);
                     if (mapRef.current) {
-                        mapRef.current.flyTo([selectedProject.lat, selectedProject.lng], 18); // Zoom max
+                        mapRef.current.flyTo([selectedProject.latitude, selectedProject.longitude], 18); // Zoom max
                     }
                 }
                 // 3. Jika tidak punya koordinat, cari via Geocoding (fallback)
                 else {
                     const provider = new OpenStreetMapProvider();
-                    const query = `Desa ${selectedProject.desa}, ${selectedProject.kecamatan}, Lombok Barat`;
+                    const query = `Desa ${selectedProject.desaKelurahan}, ${selectedProject.kecamatan}, Lombok Barat`;
 
                     try {
                         const results = await provider.search({ query });
@@ -155,8 +154,8 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
 
                             const updatedProjects = relatedProjects.map(p => ({
                                 ...p,
-                                lat: p.lat || lat,
-                                lng: p.lng || lng
+                                latitude: p.latitude || lat,
+                                longitude: p.longitude || lng
                             }));
 
                             setActiveProjects(updatedProjects);

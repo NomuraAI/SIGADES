@@ -51,7 +51,7 @@ const BreakdownAnggaranPage: React.FC = () => {
                 pekerjaan: item.pekerjaan || '',
                 paguAnggaran: item.pagu_anggaran || 0,
                 kodeDesa: item.kode_desa || '',
-                desa: item.desa || '',
+                desaKelurahan: item.desa_kelurahan || item.desa || '',
                 kodeKecamatan: item.kode_kecamatan || '',
                 kecamatan: item.kecamatan || '',
                 luasWilayah: item.luas_wilayah || '',
@@ -60,8 +60,8 @@ const BreakdownAnggaranPage: React.FC = () => {
                 jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
                 keterangan: item.keterangan || '',
                 potensiDesa: item.potensi_desa || '',
-                lat: item.latitude || item.lat,
-                lng: item.longitude || item.lng
+                latitude: item.latitude || item.lat || null,
+                longitude: item.longitude || item.lng || null
             }));
             setData(mappedData);
         } catch (error) {
@@ -85,20 +85,25 @@ const BreakdownAnggaranPage: React.FC = () => {
             filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
         }
 
-        // 2. Group by Desa
-        const desaGroups: { [key: string]: number } = {};
+        // 2. Group by Desa (Normalized to prevent duplicates)
+        const desaGroups: { [key: string]: { total: number, originalName: string } } = {};
 
         filtered.forEach(item => {
-            const desaName = item.desa || 'Lainnya';
-            if (!desaGroups[desaName]) desaGroups[desaName] = 0;
-            desaGroups[desaName] += (item.paguAnggaran || 0);
+            const rawName = item.desaKelurahan || 'Lainnya';
+            // Normalize: trim whitespace and uppercase to ensure "Desa A" equals "Desa A "
+            const normalizedKey = rawName.replace(/\s+/g, ' ').trim().toUpperCase();
+
+            if (!desaGroups[normalizedKey]) {
+                desaGroups[normalizedKey] = { total: 0, originalName: rawName.trim() };
+            }
+            desaGroups[normalizedKey].total += (item.paguAnggaran || 0);
         });
 
         // 3. Convert to Array and Apply Budget Filter
-        let result = Object.entries(desaGroups).map(([name, total]) => ({
-            name,
-            total,
-            status: total >= 1000000000 ? 'Sudah Tercapai' : 'Belum Tercapai'
+        let result = Object.values(desaGroups).map((group) => ({
+            name: group.originalName,
+            total: group.total,
+            status: group.total >= 1000000000 ? 'Sudah Tercapai' : 'Belum Tercapai'
         }));
 
         if (filterBudget === 'above1M') {

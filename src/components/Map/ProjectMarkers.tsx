@@ -16,8 +16,8 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
 
         const groups: { [key: string]: ProjectData[] } = {};
         Array.from(uniqueProjects.values()).forEach(project => {
-            if (project.lat && project.lng) {
-                const key = `${project.lat},${project.lng}`;
+            if (project.latitude && project.longitude) {
+                const key = `${project.latitude},${project.longitude}`;
                 if (!groups[key]) {
                     groups[key] = [];
                 }
@@ -55,7 +55,7 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
                     {/* Header dengan Navigasi jika items > 1 */}
                     <div className="flex justify-between items-start mb-2 border-b pb-2">
                         <div className="flex-1">
-                            <h3 className="font-bold text-lg text-lobar-blue">Desa {item.desa}</h3>
+                            <h3 className="font-bold text-lg text-lobar-blue">Desa {item.desaKelurahan}</h3>
                             <div className="flex flex-col">
                                 <p className="text-[10px] text-slate-400 uppercase tracking-widest">{item.kecamatan}</p>
                                 {item.kodeKecamatan && <p className="text-[9px] text-slate-300 font-mono mt-0.5">Kode Kec: {item.kodeKecamatan}</p>}
@@ -142,12 +142,12 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
         <>
             {Object.entries(groupedProjects).map(([key, groupItems]) => {
                 const position = groupItems[0]; // Ambil koordinat dari item pertama
-                if (!position.lat || !position.lng) return null;
+                if (!position.latitude || !position.longitude) return null;
 
                 return (
                     <CircleMarker
                         key={key}
-                        center={[position.lat, position.lng]}
+                        center={[position.latitude, position.longitude]}
                         radius={8}
                         pathOptions={{
                             fillColor: '#009FE3',

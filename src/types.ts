@@ -7,16 +7,16 @@ export interface ProjectData {
     subKegiatan: string;
     pekerjaan: string;
     paguAnggaran: number;
-    desa: string;
-    kodeKecamatan?: string;
+    kodeDesa: string;
+    desaKelurahan: string;
+    kodeKecamatan: string;
     kecamatan: string;
+    latitude: number | null;
+    longitude: number | null;
     luasWilayah: string;
     jumlahPenduduk: number;
     jumlahAngkaKemiskinan: number;
     jumlahBalitaStunting: number;
+    potensiDesa: string;
     keterangan: string;
-    kodeDesa?: string;
-    potensiDesa?: string; // Menambahkan kembali properti ini
-    lat?: number;
-    lng?: number;
 }
