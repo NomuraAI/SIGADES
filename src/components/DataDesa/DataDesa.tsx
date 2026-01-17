@@ -9,8 +9,6 @@ interface DataDesaProps {
     onBack?: () => void;
     onViewMap?: (data: ProjectData) => void;
     selectedVersion: string;
-    onViewMap?: (data: ProjectData) => void;
-    selectedVersion: string;
     onVersionChange?: (newVersion?: string) => void;
     dataSourceMode: 'supabase' | 'local';
     setDataSourceMode: (mode: 'supabase' | 'local') => void;
@@ -70,7 +68,22 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         fetchData();
     }, [selectedVersion, dataSourceMode]); // Refetch when version or mode changes
 
-    // ... (column toggles)
+    // Column Toggles
+    const toggleColumn = (key: string) => {
+        if (visibleColumns.includes(key)) {
+            setVisibleColumns(visibleColumns.filter(c => c !== key));
+        } else {
+            setVisibleColumns([...visibleColumns, key]);
+        }
+    };
+
+    const toggleAllColumns = (showAll: boolean) => {
+        if (showAll) {
+            setVisibleColumns(allColumns.map(c => c.key));
+        } else {
+            setVisibleColumns([]);
+        }
+    };
 
     const fetchData = async () => {
         try {

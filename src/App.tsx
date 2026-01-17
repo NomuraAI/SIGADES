@@ -61,14 +61,7 @@ const App = () => {
             selectedVersion={selectedVersion}
             availableVersions={availableVersions}
             setSelectedVersion={setSelectedVersion}
-            headerRightContent={
-                activePage === 'Data Desa' ? null : ( // Only show global toggle if not in Data Desa (Data Desa has its own or we move it here?)
-                    // Actually, let's Put the toggle in Data Desa only, BUT let's pass the state down.
-                    // Wait, the user wants the ability to have dataset choices. The choice is GLOBAL.
-                    // Let's pass the state down to DataDesa so it can control it there.
-                    null
-                )
-            }
+
         >
             {activePage === 'Peta Interaktif' && <MapContainer selectedProject={selectedProject} selectedVersion={selectedVersion} />}
             {activePage === 'Data Desa' && (
