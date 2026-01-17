@@ -82,16 +82,45 @@ export class SupabaseProjectService implements ProjectService {
     }
 
     async getUniqueVersions() {
-        const { data, error } = await supabase
-            .from('projects')
-            .select('data_version')
-            .not('data_version', 'is', null);
+        // Fetch all unique versions by paging (client-side distinct)
+        // Note: For very large datasets, this should be replaced by a Postgres RPC function: 
+        // CREATE FUNCTION get_distinct_versions() RETURNS TABLE(v text) AS $$ SELECT DISTINCT data_version FROM projects $$ LANGUAGE sql;
 
-        if (error) throw error;
+        const versions = new Set<string>();
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
 
-        // Extract unique versions
-        const versions = [...new Set((data || []).map(item => item.data_version || 'Default'))].sort();
-        return versions;
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from('projects')
+                .select('data_version')
+                .not('data_version', 'is', null)
+                .range(page * pageSize, (page + 1) * pageSize - 1);
+
+            if (error) {
+                console.warn("Error fetching versions page " + page, error);
+                break;
+            }
+
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    if (item.data_version) versions.add(item.data_version);
+                });
+
+                if (data.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    page++;
+                    // Safety break to prevent infinite loops on massive tables if RPC not used
+                    if (page > 20) hasMore = false; // Limit to scanning top 20,000 rows for now
+                }
+            } else {
+                hasMore = false;
+            }
+        }
+
+        return [...versions].sort();
     }
 
     async createProject(data: Partial<ProjectData>) {
