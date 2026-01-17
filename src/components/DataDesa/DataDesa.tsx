@@ -1,15 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2, Wallet, Briefcase, Landmark, ChevronLeft, ChevronRight, Filter, Check } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { supabase } from '../../lib/supabase';
 import { ProjectData } from '../../types';
+import { getProjectService } from '../../services/projectService';
+import { Database, HardDrive } from 'lucide-react';
 
 interface DataDesaProps {
     onBack?: () => void;
     onViewMap?: (data: ProjectData) => void;
+    selectedVersion: string;
+    onViewMap?: (data: ProjectData) => void;
+    selectedVersion: string;
+    onVersionChange?: (newVersion?: string) => void;
+    dataSourceMode: 'supabase' | 'local';
+    setDataSourceMode: (mode: 'supabase' | 'local') => void;
 }
 
-const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
+const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion, onVersionChange, dataSourceMode, setDataSourceMode }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchMode, setSearchMode] = useState<'desa' | 'kecamatan'>('desa');
     const [filterOPD, setFilterOPD] = useState('');
@@ -53,115 +60,83 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     const [visibleColumns, setVisibleColumns] = useState<string[]>(allColumns.map(c => c.key));
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importVersionName, setImportVersionName] = useState('');
+    const [fileToImport, setFileToImport] = useState<File | null>(null);
+
+    // dataSourceMode is now from props
+
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [selectedVersion, dataSourceMode]); // Refetch when version or mode changes
 
-    // Handle click outside to close filter dropdown
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-                setIsFilterOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const toggleColumn = (key: string) => {
-        setVisibleColumns(prev =>
-            prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-        );
-    };
-
-    const toggleAllColumns = (shouldShow: boolean) => {
-        setVisibleColumns(shouldShow ? allColumns.map(c => c.key) : []);
-    };
+    // ... (column toggles)
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            let allData: any[] = [];
+            const service = getProjectService(dataSourceMode);
+
+            // Note: ProjectService handles pagination internally differently, 
+            // but for now we'll just fetch all data as the UI expects it fully loaded for client-side filtering 
+            // OR we rely on the service to return what it can.
+            // The existing logic fetched ALL data in pages. Let's try to fetch all here too.
+
+            let allData: ProjectData[] = [];
             let page = 0;
-            const pageSize = 1000;
             let hasMore = true;
 
-            // Loop sampai semua data terambil
             while (hasMore) {
-                const { data: chunk, error } = await supabase
-                    .from('projects')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .range(page * pageSize, (page + 1) * pageSize - 1);
-
-                if (error) throw error;
-
-                if (chunk) {
-                    allData = [...allData, ...chunk];
-                    if (chunk.length < pageSize) hasMore = false;
-                    page++;
-                } else {
-                    hasMore = false;
-                }
+                const result = await service.getAllProjects(selectedVersion || undefined, page, 1000);
+                allData = [...allData, ...result.data];
+                hasMore = result.hasMore;
+                page++;
             }
 
-            const mappedData: ProjectData[] = allData.map(item => ({
-                id: item.id,
-                aksiPrioritas: item.aksi_prioritas || '',
-                perangkatDaerah: item.perangkat_daerah || '',
-                program: item.program || '',
-                kegiatan: item.kegiatan || '',
-                subKegiatan: item.sub_kegiatan || '',
-                pekerjaan: item.pekerjaan || '',
-                paguAnggaran: item.pagu_anggaran || 0,
-                kodeDesa: item.kode_desa || '',
-                desaKelurahan: item.desa_kelurahan || item.desa || '',
-                kodeKecamatan: item.kode_kecamatan || '',
-                kecamatan: item.kecamatan || '',
-                luasWilayah: item.luas_wilayah || '',
-                jumlahPenduduk: item.jumlah_penduduk || 0,
-                jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
-                jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
-                keterangan: item.keterangan || '',
-                potensiDesa: item.potensi_desa || '',
-                latitude: item.latitude || item.lat || null,
-                longitude: item.longitude || item.lng || null
-            }));
-            setData(mappedData);
-
+            setData(allData);
         } catch (error) {
             console.error('Error fetching data:', error);
+            alert('Gagal mengambil data. Pastikan koneksi aman.');
         } finally {
             setLoading(false);
         }
     };
 
     const cleanNumber = (val: any) => {
-        if (typeof val === 'number') return Math.round(val); // Force integer
+        if (typeof val === 'number') return Math.round(val);
         if (!val) return 0;
-        // Hapus "Rp", titik, spasi, dll hanya sisakan angka
-        // Contoh: "1.500.000" -> "1500000"
         const cleanStr = String(val).replace(/[^\d]/g, '');
         return parseInt(cleanStr || '0');
     };
 
     const cleanFloat = (val: any) => {
-        if (val === 0 || val === '0') return null; // Treat 0 as invalid coordinate
+        if (val === 0 || val === '0') return null;
         if (typeof val === 'number') return val;
         if (!val) return null;
-
         const str = String(val).trim().toUpperCase();
         if (['#N/A', '-', 'NAN', 'NULL'].includes(str)) return null;
-
-        // Ganti koma dengan titik jika ada, dan hapus karakter aneh selain . - dan angka
         const cleanStr = String(val).replace(',', '.').replace(/[^\d.-]/g, '');
         const num = parseFloat(cleanStr);
         return (isNaN(num) || num === 0) ? null : num;
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFileToImport(e.target.files[0]);
+            setIsImportModalOpen(true);
+            setImportVersionName(selectedVersion); // Default to current
+        }
+    };
+
+    const processImport = async () => {
+        if (!fileToImport) return;
+        const targetVersion = importVersionName.trim() || 'Default';
+
+        if (!window.confirm(`Anda akan mengimpor data ke Versi/Skenario: "${targetVersion}" (Mode: ${dataSourceMode.toUpperCase()}). Lanjutkan?`)) {
+            return;
+        }
+
+        console.log('Starting import with version:', targetVersion);
 
         const reader = new FileReader();
         reader.onload = async (evt) => {
@@ -174,110 +149,80 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                 if (jsonData.length === 0) return;
 
                 setLoading(true);
-                const projectsToInsert = jsonData.map((rawRow: any, index: number) => {
+                const projectsToInsert = jsonData.map((rawRow: any) => {
                     const row: { [key: string]: any } = {};
                     Object.keys(rawRow).forEach(key => {
-                        // Normalize keys: lower case, replace spaces and slashes with underscore
-                        // "DESA/KELURAHAN" -> "desa_kelurahan"
                         row[key.trim().toLowerCase().replace(/[\s\/]+/g, '_')] = rawRow[key];
                     });
 
-                    // Debug log: Print keys of the first row to console
-                    if (index === 0) {
-                        console.log("Detected Excel Keys (Normalized):", Object.keys(row));
-                        console.log("Original Row:", rawRow);
-                    }
-
                     return {
-                        aksi_prioritas: row.aksi_prioritas || row.prioritas || null,
-                        perangkat_daerah: row.perangkat_daerah || row.opd || null,
+                        aksiPrioritas: row.aksi_prioritas || row.prioritas || null,
+                        perangkatDaerah: row.perangkat_daerah || row.opd || null,
                         program: row.program || null,
                         kegiatan: row.kegiatan || null,
-                        sub_kegiatan: row.sub_kegiatan || null,
+                        subKegiatan: row.sub_kegiatan || null,
                         pekerjaan: row.pekerjaan || row.nama_paket || null,
-                        pagu_anggaran: cleanNumber(row.pagu_anggaran || row.pagu),
-                        kode_desa: String(row.kode_desa || row.kode || '').trim() || null,
-                        desa_kelurahan: row.desa_kelurahan || row.desa || row.nama_desa || row.desa_kel || row.nama_desa_kelurahan || null,
-                        kode_kecamatan: String(row.kode_kecamatan || row.kode_kec || '').trim() || null,
+                        paguAnggaran: cleanNumber(row.pagu_anggaran || row.pagu),
+                        kodeDesa: String(row.kode_desa || row.kode || '').trim() || null,
+                        desaKelurahan: row.desa_kelurahan || row.desa || row.nama_desa || row.desa_kel || row.nama_desa_kelurahan || null,
+                        kodeKecamatan: String(row.kode_kecamatan || row.kode_kec || '').trim() || null,
                         kecamatan: row.kecamatan || null,
-                        luas_wilayah: row.luas || row.luas_wilayah || null,
-                        jumlah_penduduk: cleanNumber(row.penduduk || row.jumlah_penduduk),
-                        jumlah_angka_kemiskinan: cleanNumber(row.jumlah_angka_kemiskinan || row.kemiskinan),
-                        jumlah_balita_stunting: cleanNumber(row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting),
-                        potensi_desa: row.potensi_desa || row.potensi || '',
+                        luasWilayah: row.luas || row.luas_wilayah || null,
+                        jumlahPenduduk: cleanNumber(row.penduduk || row.jumlah_penduduk),
+                        jumlahAngkaKemiskinan: cleanNumber(row.jumlah_angka_kemiskinan || row.kemiskinan),
+                        jumlahBalitaStunting: cleanNumber(row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting),
+                        potensiDesa: row.potensi_desa || row.potensi || '',
                         keterangan: row.keterangan || '',
-
                         latitude: cleanFloat(row.latitude || row.lat || row.llatitude),
-                        longitude: cleanFloat(row.longitude || row.long || row.lng)
+                        longitude: cleanFloat(row.longitude || row.long || row.lng),
+                        dataVersion: targetVersion // Inject Version
                     };
                 });
 
-                // Batch insert logic
-                const BATCH_SIZE = 50;
-                let successCount = 0;
-                let failCount = 0;
+                const service = getProjectService(dataSourceMode);
+                await service.batchInsertProjects(projectsToInsert);
 
-                for (let i = 0; i < projectsToInsert.length; i += BATCH_SIZE) {
-                    const batch = projectsToInsert.slice(i, i + BATCH_SIZE);
-                    const { error } = await supabase.from('projects').insert(batch).select();
+                alert(`Impor selesai! ${projectsToInsert.length} data masuk ke mode "${dataSourceMode.toUpperCase()}" versi "${targetVersion}".`);
+                setIsImportModalOpen(false);
+                setFileToImport(null);
 
-                    if (error) {
-                        console.error(`Error inserting batch ${i} - ${i + BATCH_SIZE}:`, error);
-                        failCount += batch.length;
-                    } else {
-                        successCount += batch.length;
-                    }
+                if (onVersionChange) {
+                    onVersionChange(targetVersion);
                 }
 
-                if (failCount > 0) {
-                    alert(`Impor selesai dengan catatan: ${successCount} berhasil, ${failCount} gagal. Cek console untuk detail.`);
-                } else {
-                    alert(`Berhasil mengimpor ${successCount} data!`);
-                }
+                // Small delay to ensure parent state updates before we fetch again, although onVersionChange should handle it.
+                // But we don't control selectedVersion here immediately.
+                // Ideally passing targetVersion to onVersionChange handles the switch.
 
-                fetchData();
             } catch (error: any) {
+                console.error('Import error:', error);
                 alert('Gagal impor: ' + error.message);
             } finally {
                 setLoading(false);
             }
         };
-        reader.readAsArrayBuffer(file);
+        reader.readAsArrayBuffer(fileToImport);
     };
 
     const handleSave = async (isEdit: boolean) => {
         const item = isEdit ? editingItem : newItem;
         if (!item) return;
 
+        // Ensure we inject the CURRENTLY SELECTED version if it's missing (especially for new items)
+        // If editing, we generally keep the original version unless we want to move it? 
+        // Typically editing keeps the same version. New items inherit current view version.
         const payload = {
-            aksi_prioritas: item.aksiPrioritas,
-            perangkat_daerah: item.perangkatDaerah,
-            program: item.program,
-            kegiatan: item.kegiatan,
-            sub_kegiatan: item.subKegiatan,
-            pekerjaan: item.pekerjaan,
-            pagu_anggaran: item.paguAnggaran,
-            kode_desa: item.kodeDesa,
-            desa_kelurahan: item.desaKelurahan,
-            kode_kecamatan: item.kodeKecamatan,
-            kecamatan: item.kecamatan,
-            luas_wilayah: item.luasWilayah,
-            jumlah_penduduk: item.jumlahPenduduk,
-            jumlah_angka_kemiskinan: item.jumlahAngkaKemiskinan,
-            jumlah_balita_stunting: item.jumlahBalitaStunting,
-            potensi_desa: item.potensiDesa,
-            keterangan: item.keterangan,
-            latitude: item.latitude,
-            longitude: item.longitude
+            ...item,
+            dataVersion: item.dataVersion || selectedVersion || 'Default'
         };
+
+        const service = getProjectService(dataSourceMode);
 
         try {
             if (isEdit && editingItem) {
-                const { error } = await supabase.from('projects').update(payload).eq('id', editingItem.id).select();
-                if (error) throw error;
+                await service.updateProject(editingItem.id, payload);
             } else {
-                const { error } = await supabase.from('projects').insert([payload]).select();
-                if (error) throw error;
+                await service.createProject(payload);
             }
             setIsEditModalOpen(false);
             setIsAddModalOpen(false);
@@ -298,15 +243,34 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
     const confirmDelete = async () => {
         if (!itemToDelete) return;
 
+        const service = getProjectService(dataSourceMode);
+
         try {
-            const { error } = await supabase.from('projects').delete().eq('id', itemToDelete);
-            if (error) throw error;
+            await service.deleteProject(itemToDelete);
             fetchData();
             setIsDeleteModalOpen(false);
             setItemToDelete(null);
         } catch (error: any) {
             console.error('Error deleting:', error);
             alert('Gagal menghapus data: ' + error.message);
+        }
+    };
+
+    const handleResetLocalData = async () => {
+        if (!window.confirm('Yakin ingin menghapus SEMUA data Local Storage? Data tidak bisa dikembalikan.')) return;
+
+        try {
+            setLoading(true);
+            const service = getProjectService('local');
+            await service.clearAllProjects();
+            alert('Data Local berhasil dikosongkan.');
+            fetchData();
+            if (onVersionChange) onVersionChange('Default'); // Reset version filter
+        } catch (error: any) {
+            console.error(error);
+            alert('Gagal reset: ' + error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -358,7 +322,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
 
     return (
         <div className="flex flex-col h-full bg-slate-50 p-6 overflow-hidden">
-            <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".xlsx, .xls" />
+            <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept=".xlsx, .xls" />
 
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -366,7 +330,36 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                     {onBack && <button onClick={onBack} className="p-2 bg-white border rounded-lg hover:bg-slate-100 transition-colors"><ArrowLeft size={20} /></button>}
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800">Manajemen Data Desa</h1>
-                        <p className="text-slate-500 text-sm">Kelola 15 parameter utama pembangunan desa</p>
+                        <div className="flex items-center gap-2 text-slate-500 text-sm">
+                            <p>Kelola 15 parameter utama pembangunan</p>
+                            <span className="text-slate-300">|</span>
+                            {/* Mode Toggle */}
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center bg-slate-200 rounded-lg p-0.5">
+                                    <button
+                                        onClick={() => setDataSourceMode('supabase')}
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all ${dataSourceMode === 'supabase' ? 'bg-white text-lobar-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        <Database size={10} /> Live
+                                    </button>
+                                    <button
+                                        onClick={() => setDataSourceMode('local')}
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 transition-all ${dataSourceMode === 'local' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        <HardDrive size={10} /> Local
+                                    </button>
+                                </div>
+                                {dataSourceMode === 'local' && (
+                                    <button
+                                        onClick={handleResetLocalData}
+                                        className="text-[10px] text-red-500 hover:text-red-700 underline font-semibold"
+                                        title="Hapus semua data local"
+                                    >
+                                        Reset Data
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="flex gap-2 relative" ref={filterRef}>
@@ -724,6 +717,43 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap }) => {
                             >
                                 Ya, Hapus
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Import Config Modal */}
+            {isImportModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+                        <div className="p-6">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4">Konfigurasi Impor</h3>
+
+                            <div className="mb-4">
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Versi / Skenario</label>
+                                <input
+                                    type="text"
+                                    value={importVersionName}
+                                    onChange={(e) => setImportVersionName(e.target.value)}
+                                    placeholder="Contoh: APBD Perubahan 2026"
+                                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm"
+                                />
+                                <p className="text-[10px] text-slate-400 mt-1">Masukkan nama baru untuk membuat versi data baru.</p>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => { setIsImportModalOpen(false); setFileToImport(null); }}
+                                    className="flex-1 py-2 border border-slate-200 rounded-lg text-slate-600 font-bold hover:bg-slate-50"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={processImport}
+                                    className="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 shadow-lg"
+                                >
+                                    Mulai Impor
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -26,6 +26,7 @@ const ZOOM = 11;
 
 interface MapContainerProps {
     selectedProject?: ProjectData | null;
+    selectedVersion: string;
 }
 
 const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectData => ({
@@ -60,21 +61,15 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
             const searchTerm = e.location.label;
             const searchKeyword = searchTerm.split(',')[0].trim();
 
-            // 1. Cari data proyek di Supabase berdasarkan nama desa/kecamatan
             const { data, error } = await supabase
                 .from('projects')
-                .select('*')
                 .select('*')
                 .or(`desa_kelurahan.ilike.%${searchKeyword}%,kecamatan.ilike.%${searchKeyword}%`);
 
             if (!error && data && data.length > 0) {
-                // 2. Petakan data Supabase ke ProjectData format
                 const foundProjects = data.map(item => mapItemToProjectData(item, e.location.y, e.location.x));
-
-                // 3. Kirim data proyek yang ditemukan ke MapContainer
                 onSearchComplete(e.location, foundProjects);
             } else {
-                // Jika tidak ada data proyek terkait, kirim lokasi saja
                 onSearchComplete(e.location, []);
             }
         };
@@ -86,7 +81,8 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
     return null;
 };
 
-const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
+const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion }) => {
+    // ... (state defs same)
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
@@ -100,11 +96,17 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
     // Fetch ALL projects with coordinates on load
     useEffect(() => {
         const fetchAllMarkers = async () => {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('projects')
                 .select('*')
                 .not('latitude', 'is', null)
                 .not('longitude', 'is', null);
+
+            if (selectedVersion) {
+                query = query.eq('data_version', selectedVersion);
+            }
+
+            const { data, error } = await query;
 
             if (!error && data) {
                 const mapped = data.map(item => mapItemToProjectData(item));
@@ -113,7 +115,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject }) => {
         };
 
         fetchAllMarkers();
-    }, []);
+    }, [selectedVersion]);
 
     // Sync selectedProject (dari DataDesa table) ke projectToFocus dan fetch related
     useEffect(() => {

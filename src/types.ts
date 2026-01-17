@@ -19,4 +19,5 @@ export interface ProjectData {
     jumlahBalitaStunting: number;
     potensiDesa: string;
     keterangan: string;
+    dataVersion?: string;
 }

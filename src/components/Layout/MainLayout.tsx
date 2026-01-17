@@ -6,9 +6,12 @@ interface MainLayoutProps {
     children: React.ReactNode;
     activePage: string;
     setActivePage: (page: string) => void;
+    selectedVersion: string;
+    availableVersions: string[];
+    setSelectedVersion: (version: string) => void;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children, activePage, setActivePage }) => {
+const MainLayout: React.FC<MainLayoutProps> = ({ children, activePage, setActivePage, selectedVersion, availableVersions, setSelectedVersion }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const toggleSidebar = () => {
@@ -22,6 +25,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, activePage, setActive
                 onClose={() => setIsSidebarOpen(false)}
                 activeItem={activePage}
                 setActiveItem={setActivePage}
+                selectedVersion={selectedVersion}
+                availableVersions={availableVersions}
+                setSelectedVersion={setSelectedVersion}
             />
 
             <div className="flex-1 flex flex-col h-full w-full relative">
