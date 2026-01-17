@@ -20,22 +20,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeItem, setActiv
 
     useEffect(() => {
         // ... (Weather logic remains same)
-        const fetchCityName = async (lat: number, lng: number): Promise<string> => {
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                const data = await response.json();
-                return data.address.city || data.address.town || data.address.village || data.address.county || 'Lokasi Terkini';
-            } catch (error) {
-                console.error("Error fetching city name:", error);
-                return 'Lokasi Anda';
-            }
-        };
+
 
         const fetchWeather = async (lat: number, lng: number, cityName?: string) => {
             try {
                 let displayCity = cityName || 'Lokasi Anda';
                 if (!cityName && lat !== -8.6756) {
-                    displayCity = await fetchCityName(lat, lng);
+                    displayCity = 'Lokasi Terkini';
                 }
 
                 const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`);
