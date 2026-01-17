@@ -26,7 +26,7 @@ const App = () => {
         fetchVersions();
     }, [dataSourceMode]); // Refetch when mode changes
 
-    const fetchVersions = async () => {
+    const fetchVersions = async (newSelectedVersion?: string) => {
         try {
             console.log('Fetching versions... Mode:', dataSourceMode);
             const service = getProjectService(dataSourceMode);
@@ -36,10 +36,14 @@ const App = () => {
 
             if (versions.length > 0) {
                 setAvailableVersions(versions);
+
+                // If a specific version was requested (e.g. after import), select it
+                if (newSelectedVersion && versions.includes(newSelectedVersion)) {
+                    setSelectedVersion(newSelectedVersion);
+                }
                 // If current selected version doesn't exist in new mode, reset to Default or first available
-                if (!versions.includes(selectedVersion) && selectedVersion !== 'Default') {
-                    // Optionally reset, but for now keeping it might be okay or safer to reset
-                    // setSelectedVersion('Default'); 
+                else if (!versions.includes(selectedVersion) && selectedVersion !== 'Default') {
+                    // Keep current or reset? For now let's be safe
                 }
             } else {
                 setAvailableVersions(['Default']);
