@@ -14,7 +14,7 @@ function getEnv(key) {
             }
         }
     } catch (e) {
-        console.error('Error reading .env:', e.message);
+        return null;
     }
     return null;
 }
@@ -24,33 +24,29 @@ const supabaseKey = getEnv('VITE_SUPABASE_ANON_KEY');
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function testInsert() {
-    console.log('Testing insert with custom data_version: "TEST_VERSION"...');
+async function checkSpecific() {
+    console.log('Checking for other versions...');
 
-    const payload = {
-        desa_kelurahan: 'Test Desa',
-        kecamatan: 'Test Kecamatan',
-        data_version: 'TEST_VERSION',
-        keterangan: 'Debugging Insert'
-    };
-
+    // Try to find ANY row that is NOT 'APBD LOBAR'
     const { data, error } = await supabase
         .from('projects')
-        .insert([payload])
-        .select();
+        .select('data_version')
+        .neq('data_version', 'APBD LOBAR')
+        .limit(10);
 
     if (error) {
-        console.error('Insert Error:', error);
+        console.error('Error:', error);
     } else {
-        console.log('Insert Success:', data);
-
-        // Check if it saved correctly
-        if (data[0].data_version === 'TEST_VERSION') {
-            console.log('VERIFICATION PASSED: data_version was saved correctly.');
-        } else {
-            console.error('VERIFICATION FAILED: data_version mismatch. Got:', data[0].data_version);
-        }
+        console.log('Found non-APBD LOBAR rows:', data);
     }
+
+    // Check specifically for MUSRENBANG
+    const { count, error: countError } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .eq('data_version', 'MUSRENBANG');
+
+    console.log('Count of MUSRENBANG:', count);
 }
 
-testInsert();
+checkSpecific();
