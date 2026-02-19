@@ -4,9 +4,10 @@ import { ProjectData } from '../../types';
 
 interface ProjectMarkersProps {
     projects: ProjectData[];
+    vizMode?: 'default' | 'strata' | 'stunting' | 'poverty' | 'priority';
 }
 
-const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
+const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'default' }) => {
     // Deduplicate projects based on ID and Group by location
     const groupedProjects = React.useMemo(() => {
         const uniqueProjects = new Map<string, ProjectData>();
@@ -144,13 +145,72 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects }) => {
                 const position = groupItems[0]; // Ambil koordinat dari item pertama
                 if (!position.latitude || !position.longitude) return null;
 
+                // Hitung Max Values untuk normalisasi (sekali saja atau memoize jika perlu, tapi disini ringan)
+                // Note: Idealnya ini dihitung di parent atau useMemo globally, tapi untuk simplicitas kita hitung dr projects prop
+                // Kita gunakan local max dari 'projects' yang ada di map
+                const maxStunting = Math.max(...projects.map(p => p.jumlahBalitaStunting || 0), 1);
+                const maxPoverty = Math.max(...projects.map(p => p.jumlahAngkaKemiskinan || 0), 1);
+
+                // Determine Color
+                let fillColor = '#009FE3'; // Default
+                let radius = 8;
+
+                if (vizMode === 'strata') {
+                    const s = groupItems[0].strataDesa;
+                    fillColor = s === 4 ? '#22c55e' :
+                        s === 3 ? '#3b82f6' :
+                            s === 2 ? '#eab308' :
+                                s === 1 ? '#f97316' :
+                                    s === 0 ? '#ef4444' : '#94a3b8';
+                } else if (vizMode === 'stunting') {
+                    const val = groupItems[0].jumlahBalitaStunting || 0;
+                    const ratio = Math.min(val / maxStunting, 1);
+                    // Green to Red
+                    const r = Math.round(255 * ratio);
+                    const g = Math.round(255 * (1 - ratio));
+                    fillColor = `rgb(${r},${g},0)`;
+                    radius = 6 + (ratio * 8); // Scale size with severity
+                } else if (vizMode === 'poverty') {
+                    const val = groupItems[0].jumlahAngkaKemiskinan || 0;
+                    const ratio = Math.min(val / maxPoverty, 1);
+                    // Blue to Orange
+                    // Simple approach: Low=Blue(0,0,255), High=Orange(255,165,0)
+                    // Interpolasi manual:
+                    const r = Math.round(0 + (255 - 0) * ratio);
+                    const g = Math.round(0 + (165 - 0) * ratio);
+                    const b = Math.round(255 + (0 - 255) * ratio);
+                    fillColor = `rgb(${r},${g},${b})`;
+                    radius = 6 + (ratio * 8);
+                } else if (vizMode === 'priority') {
+                    const valStunt = groupItems[0].jumlahBalitaStunting || 0;
+                    const valPov = groupItems[0].jumlahAngkaKemiskinan || 0;
+
+                    const scoreStunt = valStunt / maxStunting;
+                    const scorePov = valPov / maxPoverty;
+                    const avgScore = (scoreStunt + scorePov) / 2;
+
+                    // Low=Gray, High=Purple/DarkIndigo
+                    const r = Math.round(200 + (75 - 200) * avgScore); // Gray 200 -> Indigo 75
+                    const g = Math.round(200 + (0 - 200) * avgScore);   // Gray 200 -> 0
+                    const b = Math.round(200 + (130 - 200) * avgScore); // Gray 200 -> 130
+
+                    fillColor = `rgb(${r},${g},${b})`;
+                    // Jika priority tinggi, buat lebih besar mencolok
+                    if (avgScore > 0.7) {
+                        fillColor = '#4c1d95'; // Dark Violet solid for very high
+                        radius = 16;
+                    } else {
+                        radius = 6 + (avgScore * 8);
+                    }
+                }
+
                 return (
                     <CircleMarker
                         key={key}
                         center={[position.latitude, position.longitude]}
-                        radius={8}
+                        radius={radius}
                         pathOptions={{
-                            fillColor: '#009FE3',
+                            fillColor: fillColor,
                             fillOpacity: 0.8,
                             color: 'white',
                             weight: 2

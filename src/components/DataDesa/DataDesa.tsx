@@ -54,6 +54,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         { key: 'keterangan', label: 'Keterangan', align: 'left' },
         { key: 'latitude', label: 'Latitude', align: 'center' },
         { key: 'longitude', label: 'Longitude', align: 'center' },
+        { key: 'latitude', label: 'Latitude', align: 'center' },
+        { key: 'longitude', label: 'Longitude', align: 'center' },
+        { key: 'strataDesa', label: 'Strata IDM', align: 'center' },
     ];
     const [visibleColumns, setVisibleColumns] = useState<string[]>(allColumns.map(c => c.key));
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -173,6 +176,12 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         row[key.trim().toLowerCase().replace(/[\s\/]+/g, '_')] = rawRow[key];
                     });
 
+                    // Helper map Strata
+                    let strataVal = null;
+                    if (row.strata_desa !== undefined) strataVal = row.strata_desa;
+                    else if (row.idm !== undefined) strataVal = row.idm;
+                    else if (row.status_desa !== undefined) strataVal = row.status_desa;
+
                     return {
                         aksiPrioritas: row.aksi_prioritas || row.prioritas || null,
                         perangkatDaerah: row.perangkat_daerah || row.opd || null,
@@ -193,6 +202,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         keterangan: row.keterangan || '',
                         latitude: cleanFloat(row.latitude || row.lat || row.llatitude),
                         longitude: cleanFloat(row.longitude || row.long || row.lng),
+                        strataDesa: strataVal !== null ? Number(strataVal) : undefined,
                         dataVersion: targetVersion
                     };
                 });
@@ -664,6 +674,20 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                     {visibleColumns.includes('keterangan') && <td className="px-3 py-2.5 text-slate-500 max-w-xs truncate" title={item.keterangan}>{item.keterangan || '-'}</td>}
                                     {visibleColumns.includes('latitude') && <td className="px-3 py-2.5 text-slate-500">{item.latitude || '-'}</td>}
                                     {visibleColumns.includes('longitude') && <td className="px-3 py-2.5 text-slate-500">{item.longitude || '-'}</td>}
+                                    {visibleColumns.includes('strataDesa') && (
+                                        <td className="px-3 py-2.5 text-center">
+                                            {item.strataDesa !== undefined ? (
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${item.strataDesa === 4 ? 'bg-green-100 text-green-700' :
+                                                        item.strataDesa === 3 ? 'bg-blue-100 text-blue-700' :
+                                                            item.strataDesa === 2 ? 'bg-yellow-100 text-yellow-700' :
+                                                                item.strataDesa === 1 ? 'bg-orange-100 text-orange-700' :
+                                                                    'bg-red-100 text-red-700'
+                                                    }`}>
+                                                    {['Sangat Tertinggal', 'Tertinggal', 'Berkembang', 'Maju', 'Mandiri'][item.strataDesa] || item.strataDesa}
+                                                </span>
+                                            ) : '-'}
+                                        </td>
+                                    )}
 
                                     <td className="px-3 py-2.5 sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
                                         <div className="flex justify-center gap-1">
@@ -755,6 +779,24 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                 <FormField label="Potensi Desa" value={(isEditModalOpen ? editingItem?.potensiDesa : newItem.potensiDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, potensiDesa: val }) : setNewItem({ ...newItem, potensiDesa: val })} />
                                 <FormField label="Latitude" type="number" value={(isEditModalOpen ? editingItem?.latitude : newItem.latitude) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, latitude: Number(val) }) : setNewItem({ ...newItem, latitude: Number(val) })} />
                                 <FormField label="Longitude" type="number" value={(isEditModalOpen ? editingItem?.longitude : newItem.longitude) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, longitude: Number(val) }) : setNewItem({ ...newItem, longitude: Number(val) })} />
+                                <div className="col-span-1">
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Strata IDM</label>
+                                    <select
+                                        value={(isEditModalOpen ? editingItem?.strataDesa : newItem.strataDesa) ?? ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value ? Number(e.target.value) : undefined;
+                                            isEditModalOpen ? setEditingItem({ ...editingItem!, strataDesa: val }) : setNewItem({ ...newItem, strataDesa: val });
+                                        }}
+                                        className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all bg-white"
+                                    >
+                                        <option value="">- Pilih Strata -</option>
+                                        <option value="0">0 - Sangat Tertinggal</option>
+                                        <option value="1">1 - Tertinggal</option>
+                                        <option value="2">2 - Berkembang</option>
+                                        <option value="3">3 - Maju</option>
+                                        <option value="4">4 - Mandiri</option>
+                                    </select>
+                                </div>
                                 <div className="col-span-1 md:col-span-2 lg:col-span-3">
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Keterangan</label>
                                     <textarea className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all" rows={2} value={(isEditModalOpen ? editingItem?.keterangan : newItem.keterangan) || ''} onChange={(e) => isEditModalOpen ? setEditingItem({ ...editingItem!, keterangan: e.target.value }) : setNewItem({ ...newItem, keterangan: e.target.value })} placeholder="Tambahkan catatan jika perlu..." />

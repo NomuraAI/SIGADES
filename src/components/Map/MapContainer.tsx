@@ -84,6 +84,7 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
 const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion }) => {
     // ... (state defs same)
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
+    const [vizMode, setVizMode] = useState<'default' | 'strata' | 'stunting' | 'poverty' | 'priority'>('default');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [activeProjects, setActiveProjects] = useState<ProjectData[]>([]);
@@ -261,7 +262,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
 
                 {/* ProjectMarkers akan menampilkan marker dan popup jika activeProjects ada ATAU permanentProjects ada */}
                 {(activeProjects.length > 0 || permanentProjects.length > 0) && (
-                    <ProjectMarkers projects={[...permanentProjects, ...activeProjects]} />
+                    <ProjectMarkers projects={[...permanentProjects, ...activeProjects]} vizMode={vizMode} />
                 )}
 
                 {/* Jika tidak ada project match, tapi ada hasil search, tampilkan marker basic */}
@@ -315,7 +316,75 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                     ))}
                 </div>
             </div>
-        </div>
+
+            {/* Visualization Mode Switcher (Bottom Left) */}
+            <div className="absolute bottom-20 left-4 z-[400] bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-2 max-w-[200px]">
+                <span className="text-[10px] font-bold text-slate-500 uppercase px-1">Mode Visualisasi</span>
+                <div className="flex flex-wrap gap-1">
+                    <button
+                        onClick={() => setVizMode('default')}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'default' ? 'bg-lobar-blue text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
+                    >
+                        Proyek
+                    </button>
+                    <button
+                        onClick={() => setVizMode('strata')}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'strata' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
+                    >
+                        Strata
+                    </button>
+                    <button
+                        onClick={() => setVizMode('stunting')}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'stunting' ? 'bg-red-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
+                    >
+                        Stunting
+                    </button>
+                    <button
+                        onClick={() => setVizMode('poverty')}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'poverty' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
+                    >
+                        Kemiskinan
+                    </button>
+                    <button
+                        onClick={() => setVizMode('priority')}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'priority' ? 'bg-indigo-900 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
+                    >
+                        Prioritas
+                    </button>
+                </div>
+
+                {vizMode === 'strata' && (
+                    <div className="grid grid-cols-1 gap-1 mt-1 pt-2 border-t border-slate-200">
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500"></div><span className="text-[9px]">Mandiri</span></div>
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-500"></div><span className="text-[9px]">Maju</span></div>
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-yellow-500"></div><span className="text-[9px]">Berkembang</span></div>
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500"></div><span className="text-[9px]">Tertinggal</span></div>
+                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="text-[9px]">Sangat Tertinggal</span></div>
+                    </div>
+                )}
+
+                {vizMode === 'stunting' && (
+                    <div className="mt-1 pt-2 border-t border-slate-200">
+                        <div className="flex justify-between text-[9px] mb-1"><span>Rendah</span><span>Tinggi</span></div>
+                        <div className="h-2 w-full rounded-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-600"></div>
+                    </div>
+                )}
+
+                {vizMode === 'poverty' && (
+                    <div className="mt-1 pt-2 border-t border-slate-200">
+                        <div className="flex justify-between text-[9px] mb-1"><span>Rendah</span><span>Tinggi</span></div>
+                        <div className="h-2 w-full rounded-full bg-gradient-to-r from-blue-400 via-yellow-400 to-orange-600"></div>
+                    </div>
+                )}
+
+                {vizMode === 'priority' && (
+                    <div className="mt-1 pt-2 border-t border-slate-200">
+                        <div className="flex justify-between text-[9px] mb-1"><span>Aman</span><span>Kritis</span></div>
+                        <div className="h-2 w-full rounded-full bg-gradient-to-r from-gray-300 via-purple-500 to-indigo-900"></div>
+                    </div>
+                )}
+            </div>
+        </div >
     );
 };
 
