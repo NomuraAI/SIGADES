@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2, Wallet, Briefcase, Landmark, ChevronLeft, ChevronRight, Filter, Check } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2, Wallet, Briefcase, Landmark, ChevronLeft, ChevronRight, Filter, Check, RefreshCw, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ProjectData } from '../../types';
 import { getProjectService } from '../../services/projectService';
@@ -61,6 +61,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importVersionName, setImportVersionName] = useState('');
     const [fileToImport, setFileToImport] = useState<File | null>(null);
+    const [importMode, setImportMode] = useState<'replace' | 'update'>('replace');
 
     // dataSourceMode is now from props
 
@@ -145,11 +146,13 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         if (!fileToImport) return;
         const targetVersion = importVersionName.trim() || 'Default';
 
-        if (!window.confirm(`Anda akan mengimpor data ke Versi/Skenario: "${targetVersion}" (Mode: ${dataSourceMode.toUpperCase()}). Lanjutkan?`)) {
+        // Confirmation (Adjusted for mode)
+        const actionText = importMode === 'update' ? 'MEMPERBARUI (Smart Update)' : 'MENAMBAHKAN/MENIMPA';
+        if (!window.confirm(`Anda akan ${actionText} data ke Versi: "${targetVersion}" (Mode: ${dataSourceMode.toUpperCase()}). Lanjutkan?`)) {
             return;
         }
 
-        console.log('Starting import with version:', targetVersion);
+        console.log(`Starting import... Mode: ${importMode}, Version: ${targetVersion}`);
 
         const reader = new FileReader();
         reader.onload = async (evt) => {
@@ -162,7 +165,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                 if (jsonData.length === 0) return;
 
                 setLoading(true);
-                const projectsToInsert = jsonData.map((rawRow: any) => {
+
+                // Parse Excel Rows
+                const parsedRows = jsonData.map((rawRow: any) => {
                     const row: { [key: string]: any } = {};
                     Object.keys(rawRow).forEach(key => {
                         row[key.trim().toLowerCase().replace(/[\s\/]+/g, '_')] = rawRow[key];
@@ -188,24 +193,82 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         keterangan: row.keterangan || '',
                         latitude: cleanFloat(row.latitude || row.lat || row.llatitude),
                         longitude: cleanFloat(row.longitude || row.long || row.lng),
-                        dataVersion: targetVersion // Inject Version
+                        dataVersion: targetVersion
                     };
                 });
 
                 const service = getProjectService(dataSourceMode);
-                await service.batchInsertProjects(projectsToInsert);
 
-                alert(`Impor selesai! ${projectsToInsert.length} data masuk ke mode "${dataSourceMode.toUpperCase()}" versi "${targetVersion}".`);
+                if (importMode === 'update') {
+                    // --- SMART UPDATE LOGIC ---
+
+                    // 1. Fetch ALL existing data for this version to compare
+                    let existingData: ProjectData[] = [];
+                    let page = 0;
+                    let hasMore = true;
+                    while (hasMore) {
+                        const res = await service.getAllProjects(targetVersion, page, 1000);
+                        existingData = [...existingData, ...res.data];
+                        hasMore = res.hasMore;
+                        page++;
+                    }
+
+                    // 2. Build Map for fast lookup
+                    // Key: KodeDesa + Pekerjaan (Normalized) + SubKegiatan (Normalized)
+                    // We normalize strings to avoid case/space mismatches
+                    const makeKey = (p: Partial<ProjectData>) => {
+                        const k1 = (p.kodeDesa || 'NODESA').trim().toUpperCase();
+                        const k2 = (p.pekerjaan || 'NOJOB').trim().toUpperCase().replace(/\s+/g, ' ');
+                        const k3 = (p.subKegiatan || 'NOSUB').trim().toUpperCase().replace(/\s+/g, ' ');
+                        return `${k1}|${k2}|${k3}`;
+                    };
+
+                    const existingMap = new Map<string, ProjectData>();
+                    existingData.forEach(item => existingMap.set(makeKey(item), item));
+
+                    // 3. Compare
+                    const upsertList: Partial<ProjectData>[] = [];
+                    let updateCount = 0;
+                    let insertCount = 0;
+
+                    parsedRows.forEach(newRow => {
+                        const key = makeKey(newRow);
+                        const existing = existingMap.get(key);
+
+                        if (existing) {
+                            // UPDATE: Use existing ID
+                            upsertList.push({ ...newRow, id: existing.id });
+                            updateCount++;
+                        } else {
+                            // INSERT: No ID (or let DB gen)
+                            upsertList.push(newRow);
+                            insertCount++;
+                        }
+                    });
+
+                    // 4. Execute
+                    if (upsertList.length > 0) {
+                        await service.batchUpsertProjects(upsertList);
+                        alert(`Smart Update Selesai!\n\nTotal Diproses: ${upsertList.length}\n- Diperbarui: ${updateCount}\n- Data Baru: ${insertCount}`);
+                    } else {
+                        alert("Tidak ada data valid untuk diproses.");
+                    }
+
+                } else {
+                    // --- NORMAL INSERT (Original Logic) ---
+                    await service.batchInsertProjects(parsedRows);
+                    alert(`Impor selesai! ${parsedRows.length} data ditambahkan ke mode "${dataSourceMode.toUpperCase()}" versi "${targetVersion}".`);
+                }
+
                 setIsImportModalOpen(false);
                 setFileToImport(null);
 
                 if (onVersionChange) {
                     onVersionChange(targetVersion);
+                } else {
+                    // Manual trigger fetch if version didn't change but data did
+                    fetchData();
                 }
-
-                // Small delay to ensure parent state updates before we fetch again, although onVersionChange should handle it.
-                // But we don't control selectedVersion here immediately.
-                // Ideally passing targetVersion to onVersionChange handles the switch.
 
             } catch (error: any) {
                 console.error('Import error:', error);
@@ -751,6 +814,32 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                     className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm"
                                 />
                                 <p className="text-[10px] text-slate-400 mt-1">Masukkan nama baru untuk membuat versi data baru.</p>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Metode Impor</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => setImportMode('replace')}
+                                        className={`p-3 rounded-lg border text-xs font-bold transition-all flex flex-col items-center gap-2 ${importMode === 'replace' ? 'bg-blue-50 border-lobar-blue text-lobar-blue' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                                    >
+                                        <Plus size={16} />
+                                        <span>Tambah Baru</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setImportMode('update')}
+                                        className={`p-3 rounded-lg border text-xs font-bold transition-all flex flex-col items-center gap-2 ${importMode === 'update' ? 'bg-green-50 border-green-500 text-green-600' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                                    >
+                                        <RefreshCw size={16} />
+                                        <span>Smart Update</span>
+                                    </button>
+                                </div>
+                                <div className="mt-2 text-[10px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100 flex gap-2 items-start">
+                                    <AlertCircle size={12} className="mt-0.5 shrink-0" />
+                                    {importMode === 'replace'
+                                        ? "Data Excel akan ditambahkan sebagai entri baru. Risiko duplikasi jika data sudah ada."
+                                        : "Sistem akan mencocokkan 'Kode Desa' + 'Pekerjaan' + 'Sub Keg'. Jika cocok, data akan diperbarui. Jika tidak, akan ditambahkan."}
+                                </div>
                             </div>
 
                             <div className="flex gap-2">
