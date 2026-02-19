@@ -243,6 +243,22 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                     }
 
                     // 2. Build Map for fast lookup
+                    // Key: KodeDesa + Pekerjaan (Normalized) + SubKegiatan (Normalized)
+                    // We normalize strings to avoid case/space mismatches
+                    const makeKey = (p: Partial<ProjectData>) => {
+                        const k1 = (p.kodeDesa || 'NODESA').trim().toUpperCase();
+                        const k2 = (p.pekerjaan || 'NOJOB').trim().toUpperCase().replace(/\s+/g, ' ');
+                        const k3 = (p.subKegiatan || 'NOSUB').trim().toUpperCase().replace(/\s+/g, ' ');
+                        return `${k1}|${k2}|${k3}`;
+                    };
+
+                    const existingMap = new Map<string, ProjectData>();
+                    existingData.forEach(item => existingMap.set(makeKey(item), item));
+
+                    // 3. Compare
+                    const upsertList: Partial<ProjectData>[] = [];
+                    let updateCount = 0;
+                    let insertCount = 0;
 
                     parsedRows.forEach(newRow => {
                         const key = makeKey(newRow);
