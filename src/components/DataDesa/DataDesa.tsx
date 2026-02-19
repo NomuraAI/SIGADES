@@ -182,6 +182,25 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                     else if (row.idm !== undefined) strataVal = row.idm;
                     else if (row.status_desa !== undefined) strataVal = row.status_desa;
 
+                    // Helper for fuzzy finding keys
+                    const findKey = (keywords: string[]) => {
+                        return Object.keys(row).find(key => keywords.some(kw => key.includes(kw)));
+                    };
+
+                    // Kemiskinan Fuzzy Match
+                    let kemiskinanVal = row.jumlah_angka_kemiskinan || row.kemiskinan;
+                    if (kemiskinanVal === undefined) {
+                        const key = findKey(['kemiskinan', 'miskin']);
+                        if (key) kemiskinanVal = row[key];
+                    }
+
+                    // Stunting Fuzzy Match
+                    let stuntingVal = row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting;
+                    if (stuntingVal === undefined) {
+                        const key = findKey(['stunting', 'balita']);
+                        if (key) stuntingVal = row[key];
+                    }
+
                     return {
                         aksiPrioritas: row.aksi_prioritas || row.prioritas || null,
                         perangkatDaerah: row.perangkat_daerah || row.opd || null,
@@ -196,8 +215,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         kecamatan: row.kecamatan || null,
                         luasWilayah: row.luas || row.luas_wilayah || null,
                         jumlahPenduduk: cleanNumber(row.penduduk || row.jumlah_penduduk),
-                        jumlahAngkaKemiskinan: cleanNumber(row.jumlah_angka_kemiskinan || row.kemiskinan),
-                        jumlahBalitaStunting: cleanNumber(row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting),
+                        jumlahAngkaKemiskinan: cleanNumber(kemiskinanVal),
+                        jumlahBalitaStunting: cleanNumber(stuntingVal),
                         potensiDesa: row.potensi_desa || row.potensi || '',
                         keterangan: row.keterangan || '',
                         latitude: cleanFloat(row.latitude || row.lat || row.llatitude),
@@ -224,22 +243,6 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                     }
 
                     // 2. Build Map for fast lookup
-                    // Key: KodeDesa + Pekerjaan (Normalized) + SubKegiatan (Normalized)
-                    // We normalize strings to avoid case/space mismatches
-                    const makeKey = (p: Partial<ProjectData>) => {
-                        const k1 = (p.kodeDesa || 'NODESA').trim().toUpperCase();
-                        const k2 = (p.pekerjaan || 'NOJOB').trim().toUpperCase().replace(/\s+/g, ' ');
-                        const k3 = (p.subKegiatan || 'NOSUB').trim().toUpperCase().replace(/\s+/g, ' ');
-                        return `${k1}|${k2}|${k3}`;
-                    };
-
-                    const existingMap = new Map<string, ProjectData>();
-                    existingData.forEach(item => existingMap.set(makeKey(item), item));
-
-                    // 3. Compare
-                    const upsertList: Partial<ProjectData>[] = [];
-                    let updateCount = 0;
-                    let insertCount = 0;
 
                     parsedRows.forEach(newRow => {
                         const key = makeKey(newRow);
@@ -678,10 +681,10 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                         <td className="px-3 py-2.5 text-center">
                                             {item.strataDesa !== undefined ? (
                                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${item.strataDesa === 4 ? 'bg-green-100 text-green-700' :
-                                                        item.strataDesa === 3 ? 'bg-blue-100 text-blue-700' :
-                                                            item.strataDesa === 2 ? 'bg-yellow-100 text-yellow-700' :
-                                                                item.strataDesa === 1 ? 'bg-orange-100 text-orange-700' :
-                                                                    'bg-red-100 text-red-700'
+                                                    item.strataDesa === 3 ? 'bg-blue-100 text-blue-700' :
+                                                        item.strataDesa === 2 ? 'bg-yellow-100 text-yellow-700' :
+                                                            item.strataDesa === 1 ? 'bg-orange-100 text-orange-700' :
+                                                                'bg-red-100 text-red-700'
                                                     }`}>
                                                     {['Sangat Tertinggal', 'Tertinggal', 'Berkembang', 'Maju', 'Mandiri'][item.strataDesa] || item.strataDesa}
                                                 </span>
