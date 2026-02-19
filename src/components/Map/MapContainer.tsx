@@ -127,7 +127,8 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                     const { data, error } = await supabase
                         .from('projects')
                         .select('*')
-                        .eq('desa_kelurahan', selectedProject.desaKelurahan);
+                        .eq('desa_kelurahan', selectedProject.desaKelurahan)
+                        .eq('data_version', selectedVersion);
 
                     if (!error && data) {
                         relatedProjects = data.map(item => mapItemToProjectData(item));

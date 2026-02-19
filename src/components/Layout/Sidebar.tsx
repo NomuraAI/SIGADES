@@ -159,8 +159,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeItem, setActiv
 
                         {/* Spacing for Desktop */}
                         <div className="hidden md:block pt-8 px-5 pb-2">
+
                             <h2 className="text-sm font-bold text-white leading-tight tracking-wider border-b border-white/10 pb-4">
-                                SISTEM INFRASTRUKTUR <br />
+                                SISTEM INFORMASI <br />
                                 GEO-SPASIAL <br />
                                 BERBASIS DESA
                             </h2>
