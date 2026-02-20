@@ -54,8 +54,6 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         { key: 'keterangan', label: 'Keterangan', align: 'left' },
         { key: 'latitude', label: 'Latitude', align: 'center' },
         { key: 'longitude', label: 'Longitude', align: 'center' },
-        { key: 'latitude', label: 'Latitude', align: 'center' },
-        { key: 'longitude', label: 'Longitude', align: 'center' },
         { key: 'strataDesa', label: 'Strata IDM', align: 'center' },
     ];
     const [visibleColumns, setVisibleColumns] = useState<string[]>(allColumns.map(c => c.key));
