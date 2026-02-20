@@ -217,6 +217,13 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         if (key) stuntingVal = row[key];
                     }
 
+                    // Kepadatan Penduduk Fuzzy Match
+                    let kepadatanVal = row.kepadatan_penduduk || row.kepadatan || row.density;
+                    if (kepadatanVal === undefined) {
+                        const key = findKey(['kepadatan', 'density']);
+                        if (key) kepadatanVal = row[key];
+                    }
+
                     return {
                         aksiPrioritas: row.aksi_prioritas || row.prioritas || null,
                         perangkatDaerah: row.perangkat_daerah || row.opd || null,
@@ -233,6 +240,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         jumlahPenduduk: cleanNumber(row.penduduk || row.jumlah_penduduk),
                         jumlahAngkaKemiskinan: cleanNumber(kemiskinanVal),
                         jumlahBalitaStunting: cleanNumber(stuntingVal),
+                        kepadatanPenduduk: cleanNumber(kepadatanVal),
                         potensiDesa: row.potensi_desa || row.potensi || '',
                         keterangan: row.keterangan || '',
                         latitude: cleanFloat(row.latitude || row.lat || row.llatitude),

@@ -22,6 +22,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
     const sectionStuntingChartRef = useRef<HTMLDivElement>(null);
     const sectionPovertyLowestChartRef = useRef<HTMLDivElement>(null);
     const sectionStuntingLowestChartRef = useRef<HTMLDivElement>(null);
+    const sectionDensityChartRef = useRef<HTMLDivElement>(null);
     const sectionPotentialChartRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -211,6 +212,25 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
             .slice(0, 20);
     }, [data, filterKecamatan]);
 
+    // 3.d Population Density Data (Top 20)
+    const densityData = useMemo(() => {
+        let filtered = data;
+        if (filterKecamatan) filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
+
+        const desaGroups: { [key: string]: { val: number, name: string } } = {};
+
+        filtered.forEach(item => {
+            const key = (item.desaKelurahan || 'Lainnya').trim().toUpperCase();
+            if (!desaGroups[key]) desaGroups[key] = { val: 0, name: item.desaKelurahan || 'Lainnya' };
+            // Use padded 0 if undefined
+            desaGroups[key].val = Math.max(desaGroups[key].val, item.kepadatanPenduduk || 0);
+        });
+
+        return Object.values(desaGroups)
+            .sort((a, b) => b.val - a.val)
+            .slice(0, 20);
+    }, [data, filterKecamatan]);
+
     // 4. Potential Data (Pie Chart)
     const potentialData = useMemo(() => {
         let filtered = data;
@@ -334,6 +354,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         </button>
                         <button onClick={() => scrollToSection(sectionStuntingLowestChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all">
                             <Baby size={14} /> Stunting (Terendah)
+                        </button>
+                        <button onClick={() => scrollToSection(sectionDensityChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all">
+                            <Users size={14} /> Kepadatan Penduduk
                         </button>
                         <button onClick={() => scrollToSection(sectionPotentialChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all">
                             <PieChartIcon size={14} /> Potensi
@@ -523,6 +546,24 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                     <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
                                     <Tooltip content={<CustomTooltip />} cursor={{ fill: '#ecfeff' }} />
                                     <Bar dataKey="val" fill="#06b6d4" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Section 5.d: Density Analysis */}
+                    <div ref={sectionDensityChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Users className="text-purple-500" /> Analisis Kepadatan Penduduk (20 Tertinggi)</h3>
+                        </div>
+                        <div className="h-[400px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={densityData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3e8ff' }} />
+                                    <Bar dataKey="val" fill="#9333ea" radius={[4, 4, 0, 0]} maxBarSize={50} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>

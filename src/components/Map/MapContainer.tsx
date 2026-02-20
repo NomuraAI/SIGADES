@@ -46,6 +46,7 @@ const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectDat
     jumlahPenduduk: item.jumlah_penduduk || 0,
     jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
     jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
+    kepadatanPenduduk: item.kepadatan_penduduk || 0,
     potensiDesa: item.potensi_desa || '',
     keterangan: item.keterangan || '',
     strataDesa: item.strata_desa !== undefined ? item.strata_desa : undefined,
