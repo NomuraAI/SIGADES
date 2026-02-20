@@ -48,6 +48,7 @@ const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectDat
     jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
     potensiDesa: item.potensi_desa || '',
     keterangan: item.keterangan || '',
+    strataDesa: item.strata_desa !== undefined ? item.strata_desa : undefined,
 
     latitude: item.latitude || item.lat || lat,
     longitude: item.longitude || item.lng || lng

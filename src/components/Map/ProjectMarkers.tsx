@@ -133,6 +133,24 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                                 <span className="text-xs text-slate-600 italic leading-relaxed">"{item.potensiDesa}"</span>
                             </div>
                         )}
+
+                        {/* Display Strata Desa if available */}
+                        {item.strataDesa !== undefined && item.strataDesa !== null && (
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dashed">
+                                <span className="text-[10px] font-bold text-slate-500 uppercase">Status IDM:</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.strataDesa === 4 ? 'bg-green-100 text-green-700' :
+                                        item.strataDesa === 3 ? 'bg-blue-100 text-blue-700' :
+                                            item.strataDesa === 2 ? 'bg-yellow-100 text-yellow-700' :
+                                                item.strataDesa === 1 ? 'bg-orange-100 text-orange-700' :
+                                                    'bg-red-100 text-red-700'
+                                    }`}>
+                                    {item.strataDesa === 4 ? 'Mandiri' :
+                                        item.strataDesa === 3 ? 'Maju' :
+                                            item.strataDesa === 2 ? 'Berkembang' :
+                                                item.strataDesa === 1 ? 'Tertinggal' : 'Sangat Tertinggal'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </Popup>

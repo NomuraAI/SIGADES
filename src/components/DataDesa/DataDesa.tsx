@@ -176,16 +176,32 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         row[key.trim().toLowerCase().replace(/[\s\/]+/g, '_')] = rawRow[key];
                     });
 
-                    // Helper map Strata
-                    let strataVal = null;
-                    if (row.strata_desa !== undefined) strataVal = row.strata_desa;
-                    else if (row.idm !== undefined) strataVal = row.idm;
-                    else if (row.status_desa !== undefined) strataVal = row.status_desa;
-
                     // Helper for fuzzy finding keys
                     const findKey = (keywords: string[]) => {
                         return Object.keys(row).find(key => keywords.some(kw => key.includes(kw)));
                     };
+
+                    // Helper map Strata
+                    let strataVal = row.strata_desa;
+                    if (strataVal === undefined) {
+                        const key = findKey(['strata', 'idm', 'status_desa', 'status']);
+                        if (key) strataVal = row[key];
+                    }
+
+                    // Parse Strata Value (Handle numbers and strings)
+                    let parsedStrata: number | undefined = undefined;
+                    if (strataVal !== undefined && strataVal !== null) {
+                        const sVal = String(strataVal).trim().toLowerCase();
+                        if (!isNaN(Number(sVal)) && sVal !== '') {
+                            parsedStrata = Number(sVal);
+                        } else {
+                            if (sVal.includes('mandiri')) parsedStrata = 4;
+                            else if (sVal.includes('maju')) parsedStrata = 3;
+                            else if (sVal.includes('berkembang')) parsedStrata = 2;
+                            else if (sVal.includes('sangat tertinggal')) parsedStrata = 0; // Check "Sangat" first
+                            else if (sVal.includes('tertinggal')) parsedStrata = 1;
+                        }
+                    }
 
                     // Kemiskinan Fuzzy Match
                     let kemiskinanVal = row.jumlah_angka_kemiskinan || row.kemiskinan;
@@ -221,7 +237,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         keterangan: row.keterangan || '',
                         latitude: cleanFloat(row.latitude || row.lat || row.llatitude),
                         longitude: cleanFloat(row.longitude || row.long || row.lng),
-                        strataDesa: strataVal !== null ? Number(strataVal) : undefined,
+                        strataDesa: parsedStrata,
                         dataVersion: targetVersion
                     };
                 });
