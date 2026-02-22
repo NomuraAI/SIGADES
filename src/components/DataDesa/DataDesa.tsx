@@ -425,7 +425,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
     const formatRupiah = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
     return (
-        <div className="flex flex-col h-full bg-slate-50 p-6 overflow-hidden">
+        <div className="flex flex-col min-h-full bg-slate-50 p-4 md:p-6">
             <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept=".xlsx, .xls" />
 
             {/* Header Section */}

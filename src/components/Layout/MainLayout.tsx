@@ -33,7 +33,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, activePage, setActive
             <div className="flex-1 flex flex-col h-full w-full relative">
                 <Header toggleSidebar={toggleSidebar} />
 
-                <main className="flex-1 relative overflow-hidden bg-slate-50 min-h-0">
+                <main className="flex-1 relative overflow-y-auto overflow-x-hidden bg-slate-50 min-h-0">
                     {children}
                 </main>
             </div>
