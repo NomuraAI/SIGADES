@@ -11,7 +11,7 @@ interface BreakdownAnggaranPageProps {
 const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedVersion }) => {
     const [data, setData] = useState<ProjectData[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filterKecamatan, setFilterKecamatan] = useState<string>('Gerung');
+    const [filterKecamatan, setFilterKecamatan] = useState<string>('');
     const [filterBudget, setFilterBudget] = useState<'all' | 'above1M' | 'below1M'>('all');
 
     // Refs for scrolling
