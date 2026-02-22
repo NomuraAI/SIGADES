@@ -79,6 +79,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                 jumlahPenduduk: item.jumlah_penduduk || 0,
                 jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
                 jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
+                kepadatanPenduduk: item.kepadatan_penduduk !== undefined && item.kepadatan_penduduk !== null ? Number(item.kepadatan_penduduk) : 0,
                 keterangan: item.keterangan || '',
                 potensiDesa: item.potensi_desa || '',
                 latitude: item.latitude || item.lat || null,
