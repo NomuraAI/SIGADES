@@ -183,21 +183,21 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                     };
 
                     // Kemiskinan Fuzzy Match
-                    let kemiskinanVal = row.jumlah_angka_kemiskinan || row.kemiskinan;
+                    let kemiskinanVal = row.jumlah_angka_kemiskinan !== undefined ? row.jumlah_angka_kemiskinan : row.kemiskinan;
                     if (kemiskinanVal === undefined) {
                         const key = findKey(['kemiskinan', 'miskin']);
                         if (key) kemiskinanVal = row[key];
                     }
 
                     // Stunting Fuzzy Match
-                    let stuntingVal = row.jumlah_angka_stunting || row.stunting || row.jumlah_balita_stunting;
+                    let stuntingVal = row.jumlah_angka_stunting !== undefined ? row.jumlah_angka_stunting : (row.stunting !== undefined ? row.stunting : row.jumlah_balita_stunting);
                     if (stuntingVal === undefined) {
                         const key = findKey(['stunting', 'balita']);
                         if (key) stuntingVal = row[key];
                     }
 
                     // Luas Fuzzy Match & Clean
-                    let luasVal = row.luas || row.luas_wilayah || null;
+                    let luasVal = row.luas !== undefined ? row.luas : (row.luas_wilayah !== undefined ? row.luas_wilayah : undefined);
                     if (luasVal === undefined) {
                         const key = findKey(['luas', 'area']);
                         if (key) luasVal = row[key];
@@ -206,7 +206,10 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                     const cleanPenduduk = cleanNumber(row.penduduk || row.jumlah_penduduk);
 
                     // Kepadatan Penduduk Fuzzy Match & Auto-calculate
-                    let kepadatanVal = row.kepadatan_penduduk || row.kepadatan || row.density;
+                    let kepadatanVal = row.kepadatan_penduduk !== undefined ? row.kepadatan_penduduk :
+                        (row.kepadatan !== undefined ? row.kepadatan :
+                            (row.density !== undefined ? row.density : undefined));
+
                     if (kepadatanVal === undefined) {
                         const key = findKey(['kepadatan', 'density']);
                         if (key) {
