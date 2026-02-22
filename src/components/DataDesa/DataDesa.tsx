@@ -23,6 +23,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordAction, setPasswordAction] = useState<'edit' | 'delete' | null>(null);
     const [passwordInput, setPasswordInput] = useState('');
     const [editingItem, setEditingItem] = useState<ProjectData | null>(null);
     const [newItem, setNewItem] = useState<Partial<ProjectData>>({});
@@ -358,9 +359,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
 
     const handleEditClick = (item: ProjectData) => {
         setEditingItem(item);
+        setPasswordAction('edit');
         setIsPasswordModalOpen(true);
         setPasswordInput('');
-        // Focus input after a short delay to allow transition
         setTimeout(() => passwordInputRef.current?.focus(), 100);
     };
 
@@ -368,17 +369,24 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         if (e) e.preventDefault();
         if (passwordInput === '17041958') {
             setIsPasswordModalOpen(false);
-            setIsEditModalOpen(true);
+            if (passwordAction === 'edit') {
+                setIsEditModalOpen(true);
+            } else if (passwordAction === 'delete') {
+                setIsDeleteModalOpen(true);
+            }
+            setPasswordAction(null);
         } else {
             alert('Password salah!');
         }
     };
 
     const handleDeleteClick = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation(); // Stop event from bubbling
-        console.log("Delete clicked for ID:", id); // Debug log
+        e.stopPropagation();
         setItemToDelete(id);
-        setIsDeleteModalOpen(true);
+        setPasswordAction('delete');
+        setIsPasswordModalOpen(true);
+        setPasswordInput('');
+        setTimeout(() => passwordInputRef.current?.focus(), 100);
     };
 
     const confirmDelete = async () => {
@@ -899,7 +907,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                             </button>
                         </div>
                         <form onSubmit={handlePasswordSubmit} className="p-6">
-                            <p className="text-sm text-slate-600 mb-4">Masukkan password untuk melanjutkan aksi edit data.</p>
+                            <p className="text-sm text-slate-600 mb-4">
+                                Masukkan password untuk melanjutkan aksi {passwordAction === 'edit' ? 'edit' : 'hapus'} data.
+                            </p>
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Password</label>
