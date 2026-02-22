@@ -41,9 +41,9 @@ const App = () => {
                 if (newSelectedVersion && versions.includes(newSelectedVersion)) {
                     setSelectedVersion(newSelectedVersion);
                 }
-                // If current selected version doesn't exist in new mode, reset to Default or first available
-                else if (!versions.includes(selectedVersion) && selectedVersion !== 'Default') {
-                    // Keep current or reset? For now let's be safe
+                // Automatically select the active version if the current one is no longer available
+                else if (!versions.includes(selectedVersion)) {
+                    setSelectedVersion(versions[0]);
                 }
             } else {
                 setAvailableVersions(['Default']);
