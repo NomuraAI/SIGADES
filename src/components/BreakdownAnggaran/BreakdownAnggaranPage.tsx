@@ -325,11 +325,11 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
     return (
         <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
             {/* Sticky Header Section */}
-            <div className="flex-none pt-6 px-6 pb-2 z-30 bg-slate-50 border-b border-slate-100">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <div className="flex-none pt-4 md:pt-6 px-4 md:px-6 pb-2 z-30 bg-slate-50 border-b border-slate-100">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-3 md:mb-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Dashboard Interaktif</h1>
-                        <p className="text-slate-500 text-sm">Analisis distribusi anggaran dan statistik proyek desa</p>
+                        <h1 className="text-xl md:text-2xl font-bold text-slate-800">Dashboard Interaktif</h1>
+                        <p className="text-slate-500 text-xs md:text-sm">Analisis distribusi anggaran dan statistik proyek desa</p>
                     </div>
 
                     {/* Navigation Pills */}
@@ -366,8 +366,8 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar scroll-smooth">
-                <div className="max-w-7xl mx-auto space-y-8 pt-6">
+            <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 custom-scrollbar scroll-smooth">
+                <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 pt-4 md:pt-6">
 
                     {/* Section 1: Stats Cards */}
                     <div ref={sectionStatsRef} className="scroll-mt-32 grid grid-cols-1 md:grid-cols-3 gap-4">

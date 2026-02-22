@@ -80,7 +80,7 @@ const App = () => {
             )}
             {activePage === 'Dashboard Interaktif' && <BreakdownAnggaranPage selectedVersion={selectedVersion} />}
 
-            {(activePage === 'Monitoring Proyek' || activePage === 'Pengaduan Warga' || activePage === 'Pengaturan') && (
+            {activePage === 'Pengaturan' && (
                 <ComingSoon title={activePage} />
             )}
         </MainLayout>

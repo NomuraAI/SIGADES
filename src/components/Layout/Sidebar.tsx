@@ -123,8 +123,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeItem, setActiv
         { icon: <PieChart size={22} strokeWidth={1.5} />, label: 'Dashboard Interaktif' },
         { icon: <MapPin size={22} strokeWidth={1.5} />, label: 'Peta Interaktif' },
         { icon: <Building2 size={22} strokeWidth={1.5} />, label: 'Data Desa' },
-        { icon: <Activity size={22} strokeWidth={1.5} />, label: 'Monitoring Proyek' },
-        { icon: <MessageSquareWarning size={22} strokeWidth={1.5} />, label: 'Pengaduan Warga' },
         { icon: <Settings size={22} strokeWidth={1.5} />, label: 'Pengaturan' },
     ];
 
