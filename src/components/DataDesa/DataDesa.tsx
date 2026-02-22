@@ -22,12 +22,15 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordInput, setPasswordInput] = useState('');
     const [editingItem, setEditingItem] = useState<ProjectData | null>(null);
     const [newItem, setNewItem] = useState<Partial<ProjectData>>({});
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const filterRef = useRef<HTMLDivElement>(null);
+    const passwordInputRef = useRef<HTMLInputElement>(null);
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
@@ -334,6 +337,24 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         } catch (error) {
             console.error('Error saving:', error);
             alert('Gagal menyimpan data.');
+        }
+    };
+
+    const handleEditClick = (item: ProjectData) => {
+        setEditingItem(item);
+        setIsPasswordModalOpen(true);
+        setPasswordInput('');
+        // Focus input after a short delay to allow transition
+        setTimeout(() => passwordInputRef.current?.focus(), 100);
+    };
+
+    const handlePasswordSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (passwordInput === '17041958') {
+            setIsPasswordModalOpen(false);
+            setIsEditModalOpen(true);
+        } else {
+            alert('Password salah!');
         }
     };
 
@@ -702,7 +723,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                         <div className="flex justify-center gap-1">
                                             {/* Pindahkan tombol hapus ke kiri untuk menghindari masalah klik border kanan sticky */}
                                             <button type="button" onClick={(e) => handleDeleteClick(item.id, e)} title="Hapus" className="relative z-10 p-1 text-red-600 hover:bg-red-100 rounded transition-colors"><Trash2 size={14} /></button>
-                                            <button type="button" onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }} title="Edit" className="p-1 text-amber-600 hover:bg-amber-100 rounded transition-colors"><Edit2 size={14} /></button>
+                                            <button type="button" onClick={() => handleEditClick(item)} title="Edit" className="p-1 text-amber-600 hover:bg-amber-100 rounded transition-colors"><Edit2 size={14} /></button>
                                             <button type="button" onClick={() => onViewMap && onViewMap(item)} title="Lihat Peta" className="p-1 text-lobar-blue hover:bg-blue-100 rounded transition-colors"><MapPin size={14} /></button>
                                         </div>
                                     </td>
@@ -799,6 +820,55 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                             <button onClick={() => { setIsEditModalOpen(false); setIsAddModalOpen(false); }} className="px-6 py-2 border border-slate-200 rounded-lg hover:bg-white text-slate-600 text-sm font-bold transition-all">Batal</button>
                             <button onClick={() => handleSave(isEditModalOpen)} className="px-8 py-2 bg-lobar-blue text-white rounded-lg hover:bg-lobar-blue-dark text-sm font-bold shadow-lg shadow-blue-500/20 transition-all">Simpan</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Password Verification Modal */}
+            {isPasswordModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-5 border-b flex justify-between items-center bg-slate-50">
+                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <AlertCircle className="text-amber-500" size={20} />
+                                Keamanan Data
+                            </h2>
+                            <button onClick={() => setIsPasswordModalOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <form onSubmit={handlePasswordSubmit} className="p-6">
+                            <p className="text-sm text-slate-600 mb-4">Masukkan password untuk melanjutkan aksi edit data.</p>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Password</label>
+                                    <input
+                                        ref={passwordInputRef}
+                                        type="password"
+                                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all bg-slate-50"
+                                        placeholder="••••••••"
+                                        value={passwordInput}
+                                        onChange={(e) => setPasswordInput(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPasswordModalOpen(false)}
+                                        className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 text-sm font-bold transition-all"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="flex-1 px-4 py-2.5 bg-lobar-blue text-white rounded-xl hover:bg-lobar-blue-dark text-sm font-bold shadow-lg shadow-blue-500/20 transition-all"
+                                    >
+                                        Konfirmasi
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
