@@ -42,7 +42,7 @@ const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectDat
     kodeKecamatan: item.kode_kecamatan || '',
     desaKelurahan: item.desa_kelurahan || item.desa || '',
     kecamatan: item.kecamatan || '',
-    luasWilayah: item.luas_wilayah || '',
+    luasWilayah: item.luas_wilayah !== undefined && item.luas_wilayah !== null ? Number(item.luas_wilayah) : 0,
     jumlahPenduduk: item.jumlah_penduduk || 0,
     jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
     jumlahBalitaStunting: item.jumlah_balita_stunting || 0,

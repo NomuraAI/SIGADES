@@ -107,12 +107,12 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
 
                         <div className="grid grid-cols-2 gap-4 border-y border-dashed py-2">
                             <div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Anggaran</span>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Anggaran Paket</span>
                                 <span className="text-green-700 font-extrabold">{formatRupiah(item.paguAnggaran)}</span>
                             </div>
                             <div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Penduduk</span>
-                                <span className="text-slate-800 font-bold">{item.jumlahPenduduk?.toLocaleString() || '0'} Jiwa</span>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Luas Wilayah</span>
+                                <span className="text-slate-800 font-bold">{item.luasWilayah || '0'} km²</span>
                             </div>
                         </div>
 
@@ -127,12 +127,16 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                             </div>
                         </div>
 
-                        {item.kepadatanPenduduk !== undefined && (
-                            <div className="bg-teal-50 p-2 rounded-lg border border-teal-100 mt-2">
-                                <span className="text-[9px] font-bold text-teal-600 uppercase block mb-0.5">Kepadatan Penduduk</span>
-                                <span className="text-teal-700 font-bold">{item.kepadatanPenduduk.toLocaleString()} Jiwa/km²</span>
+                        <div className="grid grid-cols-2 gap-4 pt-1">
+                            <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                                <span className="text-[9px] font-bold text-lobar-blue uppercase block mb-0.5">Penduduk</span>
+                                <span className="text-lobar-blue font-bold">{item.jumlahPenduduk?.toLocaleString() || '0'} Jiwa</span>
                             </div>
-                        )}
+                            <div className="bg-teal-50 p-2 rounded-lg border border-teal-100">
+                                <span className="text-[9px] font-bold text-teal-600 uppercase block mb-0.5">Kepadatan</span>
+                                <span className="text-teal-700 font-bold">{item.kepadatanPenduduk?.toLocaleString() || '0'} jw/km²</span>
+                            </div>
+                        </div>
 
                         {item.potensiDesa && (
                             <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
@@ -153,42 +157,39 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                 const position = groupItems[0]; // Ambil koordinat dari item pertama
                 if (!position.latitude || !position.longitude) return null;
 
-                // Hitung Max Values untuk normalisasi (sekali saja atau memoize jika perlu, tapi disini ringan)
-                // Note: Idealnya ini dihitung di parent atau useMemo globally, tapi untuk simplicitas kita hitung dr projects prop
-                // Kita gunakan local max dari 'projects' yang ada di map
+                // Find best representative data from group (max values to handle de-normalized records)
+                const groupMaxStunting = Math.max(...groupItems.map(p => p.jumlahBalitaStunting || 0));
+                const groupMaxPoverty = Math.max(...groupItems.map(p => p.jumlahAngkaKemiskinan || 0));
+                const groupMaxKepadatan = Math.max(...groupItems.map(p => p.kepadatanPenduduk || 0));
+
+                // Hitung Global Max Values untuk normalisasi
+                const filteredProjects = projects.filter(p => !isNaN(Number(p.kepadatanPenduduk)));
                 const maxStunting = Math.max(...projects.map(p => p.jumlahBalitaStunting || 0), 1);
                 const maxPoverty = Math.max(...projects.map(p => p.jumlahAngkaKemiskinan || 0), 1);
-                const maxKepadatan = Math.max(...projects.map(p => p.kepadatanPenduduk || 0), 1);
+                const maxKepadatan = Math.max(...filteredProjects.map(p => Number(p.kepadatanPenduduk) || 0), 1);
 
                 // Determine Color
                 let fillColor = '#009FE3'; // Default
                 let radius = 8;
 
                 if (vizMode === 'stunting') {
-                    const val = groupItems[0].jumlahBalitaStunting || 0;
-                    const ratio = Math.min(val / maxStunting, 1);
+                    const ratio = Math.min(groupMaxStunting / maxStunting, 1);
                     // Green to Red
                     const r = Math.round(255 * ratio);
                     const g = Math.round(255 * (1 - ratio));
                     fillColor = `rgb(${r},${g},0)`;
                     radius = 6 + (ratio * 8); // Scale size with severity
                 } else if (vizMode === 'poverty') {
-                    const val = groupItems[0].jumlahAngkaKemiskinan || 0;
-                    const ratio = Math.min(val / maxPoverty, 1);
+                    const ratio = Math.min(groupMaxPoverty / maxPoverty, 1);
                     // Blue to Orange
-                    // Simple approach: Low=Blue(0,0,255), High=Orange(255,165,0)
-                    // Interpolasi manual:
                     const r = Math.round(0 + (255 - 0) * ratio);
                     const g = Math.round(0 + (165 - 0) * ratio);
                     const b = Math.round(255 + (0 - 255) * ratio);
                     fillColor = `rgb(${r},${g},${b})`;
                     radius = 6 + (ratio * 8);
                 } else if (vizMode === 'priority') {
-                    const valStunt = groupItems[0].jumlahBalitaStunting || 0;
-                    const valPov = groupItems[0].jumlahAngkaKemiskinan || 0;
-
-                    const scoreStunt = valStunt / maxStunting;
-                    const scorePov = valPov / maxPoverty;
+                    const scoreStunt = groupMaxStunting / maxStunting;
+                    const scorePov = groupMaxPoverty / maxPoverty;
                     const avgScore = (scoreStunt + scorePov) / 2;
 
                     // Low=Gray, High=Purple/DarkIndigo
@@ -197,16 +198,14 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                     const b = Math.round(200 + (130 - 200) * avgScore); // Gray 200 -> 130
 
                     fillColor = `rgb(${r},${g},${b})`;
-                    // Jika priority tinggi, buat lebih besar mencolok
                     if (avgScore > 0.7) {
-                        fillColor = '#4c1d95'; // Dark Violet solid for very high
+                        fillColor = '#4c1d95';
                         radius = 16;
                     } else {
                         radius = 6 + (avgScore * 8);
                     }
                 } else if (vizMode === 'kepadatan') {
-                    const val = groupItems[0].kepadatanPenduduk || 0;
-                    const ratio = Math.min(val / maxKepadatan, 1);
+                    const ratio = Math.min(groupMaxKepadatan / maxKepadatan, 1);
                     // Teal 200 (153, 246, 228) -> Teal 900 (19, 78, 74)
                     const r = Math.round(153 + (19 - 153) * ratio);
                     const g = Math.round(246 + (78 - 246) * ratio);
