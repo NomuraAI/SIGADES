@@ -144,7 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeItem, setActiv
                         animate={{ x: 0 }}
                         exit={{ x: -280 }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                        className="fixed lg:static top-0 left-0 h-full w-72 bg-lobar-blue text-white border-r border-white/10 z-40 flex flex-col shadow-2xl relative overflow-hidden"
+                        className="fixed lg:static lg:relative top-0 left-0 h-full w-72 bg-lobar-blue text-white border-r border-white/10 z-40 flex-shrink-0 flex flex-col shadow-2xl overflow-hidden"
                     >
                         {/* Decorative Circle */}
                         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -184,8 +184,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeItem, setActiv
                             <p className="px-3 mb-2 text-xs font-semibold text-white/60 uppercase tracking-wider">Aplikasi Utama</p>
                             {menuItems.map((item, index) => (
                                 <div
-                                    key={index}
-                                    onClick={() => setActiveItem(item.label)}
+                                    onClick={() => {
+                                        setActiveItem(item.label);
+                                        if (window.innerWidth < 1024) onClose();
+                                    }}
                                     className={`relative flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 cursor-pointer group overflow-hidden
                                     ${activeItem === item.label
                                             ? 'bg-white text-lobar-blue shadow-lg shadow-black/10 translate-x-1 font-semibold'
