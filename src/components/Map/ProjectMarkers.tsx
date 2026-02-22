@@ -154,64 +154,59 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
     return (
         <>
             {Object.entries(groupedProjects).map(([key, groupItems]) => {
-                const position = groupItems[0]; // Ambil koordinat dari item pertama
+                const position = groupItems[0];
                 if (!position.latitude || !position.longitude) return null;
 
-                // Find best representative data from group (max values to handle de-normalized records)
-                const groupMaxStunting = Math.max(...groupItems.map(p => p.jumlahBalitaStunting || 0));
-                const groupMaxPoverty = Math.max(...groupItems.map(p => p.jumlahAngkaKemiskinan || 0));
-                const groupMaxKepadatan = Math.max(...groupItems.map(p => p.kepadatanPenduduk || 0));
+                // 1. Find best representative data from group (Greedy Inheritance)
+                const groupMaxStunting = Math.max(...groupItems.map(p => Number(p.jumlahBalitaStunting) || 0), 0);
+                const groupMaxPoverty = Math.max(...groupItems.map(p => Number(p.jumlahAngkaKemiskinan) || 0), 0);
+                const groupMaxKepadatan = Math.max(...groupItems.map(p => Number(p.kepadatanPenduduk) || 0), 0);
+                const groupMaxPenduduk = Math.max(...groupItems.map(p => Number(p.jumlahPenduduk) || 0), 0);
+                const groupMaxLuas = Math.max(...groupItems.map(p => Number(p.luasWilayah) || 0), 0);
 
-                // Hitung Global Max Values untuk normalisasi
-                const filteredProjects = projects.filter(p => !isNaN(Number(p.kepadatanPenduduk)));
-                const maxStunting = Math.max(...projects.map(p => p.jumlahBalitaStunting || 0), 1);
-                const maxPoverty = Math.max(...projects.map(p => p.jumlahAngkaKemiskinan || 0), 1);
-                const maxKepadatan = Math.max(...filteredProjects.map(p => Number(p.kepadatanPenduduk) || 0), 1);
+                // 2. Patch ALL items in this group with the max values so the Popup is always correct
+                const patchedItems = groupItems.map(item => ({
+                    ...item,
+                    jumlahBalitaStunting: item.jumlahBalitaStunting || groupMaxStunting,
+                    jumlahAngkaKemiskinan: item.jumlahAngkaKemiskinan || groupMaxPoverty,
+                    kepadatanPenduduk: item.kepadatanPenduduk || groupMaxKepadatan,
+                    jumlahPenduduk: item.jumlahPenduduk || groupMaxPenduduk,
+                    luasWilayah: item.luasWilayah || groupMaxLuas
+                }));
 
-                // Determine Color
-                let fillColor = '#009FE3'; // Default
+                // 3. Global Normalization Constants
+                const maxStunting = Math.max(...projects.map(p => Number(p.jumlahBalitaStunting) || 0), 1);
+                const maxPoverty = Math.max(...projects.map(p => Number(p.jumlahAngkaKemiskinan) || 0), 1);
+                const maxKepadatan = Math.max(...projects.map(p => Number(p.kepadatanPenduduk) || 0), 1);
+
+                // 4. Visualization Logic
+                let fillColor = '#009FE3';
                 let radius = 8;
 
                 if (vizMode === 'stunting') {
                     const ratio = Math.min(groupMaxStunting / maxStunting, 1);
-                    // Green to Red
                     const r = Math.round(255 * ratio);
                     const g = Math.round(255 * (1 - ratio));
                     fillColor = `rgb(${r},${g},0)`;
-                    radius = 6 + (ratio * 8); // Scale size with severity
+                    radius = 6 + (ratio * 10);
                 } else if (vizMode === 'poverty') {
                     const ratio = Math.min(groupMaxPoverty / maxPoverty, 1);
-                    // Blue to Orange
-                    const r = Math.round(0 + (255 - 0) * ratio);
-                    const g = Math.round(0 + (165 - 0) * ratio);
-                    const b = Math.round(255 + (0 - 255) * ratio);
+                    const r = Math.round(255 * ratio);
+                    const g = Math.round(200 * (1 - ratio));
+                    const b = Math.round(255 * (1 - ratio));
                     fillColor = `rgb(${r},${g},${b})`;
-                    radius = 6 + (ratio * 8);
+                    radius = 6 + (ratio * 10);
                 } else if (vizMode === 'priority') {
-                    const scoreStunt = groupMaxStunting / maxStunting;
-                    const scorePov = groupMaxPoverty / maxPoverty;
-                    const avgScore = (scoreStunt + scorePov) / 2;
-
-                    // Low=Gray, High=Purple/DarkIndigo
-                    const r = Math.round(200 + (75 - 200) * avgScore); // Gray 200 -> Indigo 75
-                    const g = Math.round(200 + (0 - 200) * avgScore);   // Gray 200 -> 0
-                    const b = Math.round(200 + (130 - 200) * avgScore); // Gray 200 -> 130
-
-                    fillColor = `rgb(${r},${g},${b})`;
-                    if (avgScore > 0.7) {
-                        fillColor = '#4c1d95';
-                        radius = 16;
-                    } else {
-                        radius = 6 + (avgScore * 8);
-                    }
+                    const score = (groupMaxStunting / maxStunting + groupMaxPoverty / maxPoverty) / 2;
+                    fillColor = score > 0.7 ? '#4c1d95' : `rgb(${Math.round(200 - 125 * score)}, ${Math.round(200 - 200 * score)}, ${Math.round(200 - 70 * score)})`;
+                    radius = 6 + (score * 12);
                 } else if (vizMode === 'kepadatan') {
                     const ratio = Math.min(groupMaxKepadatan / maxKepadatan, 1);
-                    // Teal 200 (153, 246, 228) -> Teal 900 (19, 78, 74)
                     const r = Math.round(153 + (19 - 153) * ratio);
                     const g = Math.round(246 + (78 - 246) * ratio);
                     const b = Math.round(228 + (74 - 228) * ratio);
                     fillColor = `rgb(${r},${g},${b})`;
-                    radius = 6 + (ratio * 8);
+                    radius = 8 + (ratio * 15); // Larger markers for density
                 }
 
                 return (
@@ -221,17 +216,12 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                         radius={radius}
                         pathOptions={{
                             fillColor: fillColor,
-                            fillOpacity: 0.8,
+                            fillOpacity: 0.9,
                             color: 'white',
                             weight: 2
                         }}
-                        eventHandlers={{
-                            click: (e) => {
-                                e.target.openPopup();
-                            }
-                        }}
                     >
-                        <PaginatedPopup items={groupItems} />
+                        <PaginatedPopup items={patchedItems} />
                     </CircleMarker>
                 );
             })}
