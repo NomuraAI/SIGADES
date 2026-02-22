@@ -19,7 +19,6 @@ export interface ProjectData {
     jumlahBalitaStunting: number;
     potensiDesa: string;
     keterangan: string;
-    strataDesa?: number; // 0: Sangat Tertinggal, 1: Tertinggal, 2: Berkembang, 3: Maju, 4: Mandiri
     kepadatanPenduduk?: number;
     dataVersion?: string;
 }

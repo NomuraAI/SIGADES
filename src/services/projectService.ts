@@ -34,7 +34,6 @@ const mapDbRowToProject = (item: any): ProjectData => ({
     potensiDesa: item.potensi_desa || '',
     latitude: item.latitude || item.lat || null,
     longitude: item.longitude || item.lng || null,
-    strataDesa: item.strata_desa !== undefined && item.strata_desa !== null ? Number(item.strata_desa) : undefined,
     dataVersion: item.data_version || 'Default'
 });
 
@@ -59,7 +58,6 @@ const mapProjectToDbRow = (item: Partial<ProjectData>) => ({
     keterangan: item.keterangan,
     latitude: item.latitude,
     longitude: item.longitude,
-    strata_desa: item.strataDesa,
     data_version: item.dataVersion
 });
 

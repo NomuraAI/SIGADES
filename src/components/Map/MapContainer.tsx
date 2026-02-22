@@ -49,7 +49,6 @@ const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectDat
     kepadatanPenduduk: item.kepadatan_penduduk || 0,
     potensiDesa: item.potensi_desa || '',
     keterangan: item.keterangan || '',
-    strataDesa: item.strata_desa !== undefined ? item.strata_desa : undefined,
 
     latitude: item.latitude || item.lat || lat,
     longitude: item.longitude || item.lng || lng
@@ -86,7 +85,7 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
 const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion }) => {
     // ... (state defs same)
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
-    const [vizMode, setVizMode] = useState<'default' | 'strata' | 'stunting' | 'poverty' | 'priority'>('default');
+    const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority'>('default');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [activeProjects, setActiveProjects] = useState<ProjectData[]>([]);
@@ -330,12 +329,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         Proyek
                     </button>
                     <button
-                        onClick={() => setVizMode('strata')}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'strata' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
-                    >
-                        Strata
-                    </button>
-                    <button
                         onClick={() => setVizMode('stunting')}
                         className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'stunting' ? 'bg-red-500 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
                     >
@@ -354,16 +347,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         Prioritas
                     </button>
                 </div>
-
-                {vizMode === 'strata' && (
-                    <div className="grid grid-cols-1 gap-1 mt-1 pt-2 border-t border-slate-200">
-                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500"></div><span className="text-[9px]">Mandiri</span></div>
-                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-500"></div><span className="text-[9px]">Maju</span></div>
-                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-yellow-500"></div><span className="text-[9px]">Berkembang</span></div>
-                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500"></div><span className="text-[9px]">Tertinggal</span></div>
-                        <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span className="text-[9px]">Sangat Tertinggal</span></div>
-                    </div>
-                )}
 
                 {vizMode === 'stunting' && (
                     <div className="mt-1 pt-2 border-t border-slate-200">

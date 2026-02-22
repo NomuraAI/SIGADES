@@ -4,7 +4,7 @@ import { ProjectData } from '../../types';
 
 interface ProjectMarkersProps {
     projects: ProjectData[];
-    vizMode?: 'default' | 'strata' | 'stunting' | 'poverty' | 'priority';
+    vizMode?: 'default' | 'stunting' | 'poverty' | 'priority';
 }
 
 const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'default' }) => {
@@ -134,23 +134,6 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                             </div>
                         )}
 
-                        {/* Display Strata Desa if available */}
-                        {item.strataDesa !== undefined && item.strataDesa !== null && (
-                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-dashed">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase">Status IDM:</span>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${item.strataDesa === 4 ? 'bg-green-100 text-green-700' :
-                                        item.strataDesa === 3 ? 'bg-blue-100 text-blue-700' :
-                                            item.strataDesa === 2 ? 'bg-yellow-100 text-yellow-700' :
-                                                item.strataDesa === 1 ? 'bg-orange-100 text-orange-700' :
-                                                    'bg-red-100 text-red-700'
-                                    }`}>
-                                    {item.strataDesa === 4 ? 'Mandiri' :
-                                        item.strataDesa === 3 ? 'Maju' :
-                                            item.strataDesa === 2 ? 'Berkembang' :
-                                                item.strataDesa === 1 ? 'Tertinggal' : 'Sangat Tertinggal'}
-                                </span>
-                            </div>
-                        )}
                     </div>
                 </div>
             </Popup>
@@ -173,14 +156,7 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                 let fillColor = '#009FE3'; // Default
                 let radius = 8;
 
-                if (vizMode === 'strata') {
-                    const s = groupItems[0].strataDesa;
-                    fillColor = s === 4 ? '#22c55e' :
-                        s === 3 ? '#3b82f6' :
-                            s === 2 ? '#eab308' :
-                                s === 1 ? '#f97316' :
-                                    s === 0 ? '#ef4444' : '#94a3b8';
-                } else if (vizMode === 'stunting') {
+                if (vizMode === 'stunting') {
                     const val = groupItems[0].jumlahBalitaStunting || 0;
                     const ratio = Math.min(val / maxStunting, 1);
                     // Green to Red
