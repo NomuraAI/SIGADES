@@ -644,8 +644,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                 )}
             </div>
 
-            <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                <div className="overflow-x-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
+            <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-0">
+                <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
                     <table className="w-full text-[12px] text-left border-collapse min-w-[2000px]">
                         <thead className="bg-slate-50 text-slate-600 font-bold sticky top-0 z-20 border-b">
                             <tr>

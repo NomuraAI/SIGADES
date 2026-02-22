@@ -19,7 +19,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, activePage, setActive
     };
 
     return (
-        <div className="flex h-screen w-full bg-slate-900 overflow-hidden">
+        <div className="flex h-[100dvh] w-full bg-slate-900 overflow-hidden">
             <Sidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
@@ -33,7 +33,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, activePage, setActive
             <div className="flex-1 flex flex-col h-full w-full relative">
                 <Header toggleSidebar={toggleSidebar} />
 
-                <main className="flex-1 relative overflow-hidden bg-slate-50">
+                <main className="flex-1 relative overflow-hidden bg-slate-50 min-h-0">
                     {children}
                 </main>
             </div>
