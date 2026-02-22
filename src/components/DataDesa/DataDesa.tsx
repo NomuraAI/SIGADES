@@ -50,6 +50,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         { key: 'jumlahPenduduk', label: 'Penduduk', align: 'center' },
         { key: 'jumlahAngkaKemiskinan', label: 'Kemiskinan', align: 'center' },
         { key: 'jumlahBalitaStunting', label: 'Stunting', align: 'center' },
+        { key: 'kepadatanPenduduk', label: 'Kepadatan', align: 'center' },
         { key: 'potensiDesa', label: 'Potensi Desa', align: 'left' },
         { key: 'keterangan', label: 'Keterangan', align: 'left' },
         { key: 'latitude', label: 'Latitude', align: 'center' },
@@ -687,6 +688,11 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                             <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-bold">{item.jumlahBalitaStunting}</span>
                                         </td>
                                     )}
+                                    {visibleColumns.includes('kepadatanPenduduk') && (
+                                        <td className="px-3 py-2.5 text-center font-bold text-slate-700">
+                                            {item.kepadatanPenduduk !== undefined ? item.kepadatanPenduduk : '-'}
+                                        </td>
+                                    )}
                                     {visibleColumns.includes('potensiDesa') && <td className="px-3 py-2.5 text-slate-600">{item.potensiDesa || '-'}</td>}
                                     {visibleColumns.includes('keterangan') && <td className="px-3 py-2.5 text-slate-500 max-w-xs truncate" title={item.keterangan}>{item.keterangan || '-'}</td>}
                                     {visibleColumns.includes('latitude') && <td className="px-3 py-2.5 text-slate-500">{item.latitude || '-'}</td>}
@@ -779,6 +785,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                 <FormField label="Penduduk" type="number" value={(isEditModalOpen ? editingItem?.jumlahPenduduk : newItem.jumlahPenduduk) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahPenduduk: Number(val) }) : setNewItem({ ...newItem, jumlahPenduduk: Number(val) })} />
                                 <FormField label="Jml Angka Kemiskinan" type="number" value={(isEditModalOpen ? editingItem?.jumlahAngkaKemiskinan : newItem.jumlahAngkaKemiskinan) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahAngkaKemiskinan: Number(val) }) : setNewItem({ ...newItem, jumlahAngkaKemiskinan: Number(val) })} />
                                 <FormField label="Jml Angka Stunting" type="number" value={(isEditModalOpen ? editingItem?.jumlahBalitaStunting : newItem.jumlahBalitaStunting) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahBalitaStunting: Number(val) }) : setNewItem({ ...newItem, jumlahBalitaStunting: Number(val) })} />
+                                <FormField label="Kepadatan Penduduk" type="number" value={(isEditModalOpen ? editingItem?.kepadatanPenduduk : newItem.kepadatanPenduduk) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kepadatanPenduduk: Number(val) }) : setNewItem({ ...newItem, kepadatanPenduduk: Number(val) })} />
                                 <FormField label="Potensi Desa" value={(isEditModalOpen ? editingItem?.potensiDesa : newItem.potensiDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, potensiDesa: val }) : setNewItem({ ...newItem, potensiDesa: val })} />
                                 <FormField label="Latitude" type="number" value={(isEditModalOpen ? editingItem?.latitude : newItem.latitude) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, latitude: Number(val) }) : setNewItem({ ...newItem, latitude: Number(val) })} />
                                 <FormField label="Longitude" type="number" value={(isEditModalOpen ? editingItem?.longitude : newItem.longitude) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, longitude: Number(val) }) : setNewItem({ ...newItem, longitude: Number(val) })} />

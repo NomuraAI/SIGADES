@@ -85,7 +85,7 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
 const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion }) => {
     // ... (state defs same)
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
-    const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority'>('default');
+    const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority' | 'kepadatan'>('default');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [activeProjects, setActiveProjects] = useState<ProjectData[]>([]);
@@ -346,6 +346,12 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                     >
                         Prioritas
                     </button>
+                    <button
+                        onClick={() => setVizMode('kepadatan')}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'kepadatan' ? 'bg-teal-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
+                    >
+                        Kepadatan
+                    </button>
                 </div>
 
                 {vizMode === 'stunting' && (
@@ -366,6 +372,13 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                     <div className="mt-1 pt-2 border-t border-slate-200">
                         <div className="flex justify-between text-[9px] mb-1"><span>Aman</span><span>Kritis</span></div>
                         <div className="h-2 w-full rounded-full bg-gradient-to-r from-gray-300 via-purple-500 to-indigo-900"></div>
+                    </div>
+                )}
+
+                {vizMode === 'kepadatan' && (
+                    <div className="mt-1 pt-2 border-t border-slate-200">
+                        <div className="flex justify-between text-[9px] mb-1"><span>Rendah</span><span>Tinggi</span></div>
+                        <div className="h-2 w-full rounded-full bg-gradient-to-r from-teal-200 via-teal-500 to-teal-900"></div>
                     </div>
                 )}
             </div>

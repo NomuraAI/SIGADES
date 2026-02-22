@@ -32,6 +32,7 @@ const mapDbRowToProject = (item: any): ProjectData => ({
     jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
     keterangan: item.keterangan || '',
     potensiDesa: item.potensi_desa || '',
+    kepadatanPenduduk: item.kepadatan_penduduk !== undefined && item.kepadatan_penduduk !== null ? Number(item.kepadatan_penduduk) : undefined,
     latitude: item.latitude || item.lat || null,
     longitude: item.longitude || item.lng || null,
     dataVersion: item.data_version || 'Default'
@@ -55,6 +56,7 @@ const mapProjectToDbRow = (item: Partial<ProjectData>) => ({
     jumlah_angka_kemiskinan: item.jumlahAngkaKemiskinan,
     jumlah_balita_stunting: item.jumlahBalitaStunting,
     potensi_desa: item.potensiDesa,
+    kepadatan_penduduk: item.kepadatanPenduduk,
     keterangan: item.keterangan,
     latitude: item.latitude,
     longitude: item.longitude,

@@ -4,7 +4,7 @@ import { ProjectData } from '../../types';
 
 interface ProjectMarkersProps {
     projects: ProjectData[];
-    vizMode?: 'default' | 'stunting' | 'poverty' | 'priority';
+    vizMode?: 'default' | 'stunting' | 'poverty' | 'priority' | 'kepadatan';
 }
 
 const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'default' }) => {
@@ -127,6 +127,13 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                             </div>
                         </div>
 
+                        {item.kepadatanPenduduk !== undefined && (
+                            <div className="bg-teal-50 p-2 rounded-lg border border-teal-100 mt-2">
+                                <span className="text-[9px] font-bold text-teal-600 uppercase block mb-0.5">Kepadatan Penduduk</span>
+                                <span className="text-teal-700 font-bold">{item.kepadatanPenduduk.toLocaleString()} Jiwa/km²</span>
+                            </div>
+                        )}
+
                         {item.potensiDesa && (
                             <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
                                 <span className="text-[10px] font-bold text-lobar-blue uppercase block mb-1">Potensi Desa</span>
@@ -151,6 +158,7 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                 // Kita gunakan local max dari 'projects' yang ada di map
                 const maxStunting = Math.max(...projects.map(p => p.jumlahBalitaStunting || 0), 1);
                 const maxPoverty = Math.max(...projects.map(p => p.jumlahAngkaKemiskinan || 0), 1);
+                const maxKepadatan = Math.max(...projects.map(p => p.kepadatanPenduduk || 0), 1);
 
                 // Determine Color
                 let fillColor = '#009FE3'; // Default
@@ -196,6 +204,15 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                     } else {
                         radius = 6 + (avgScore * 8);
                     }
+                } else if (vizMode === 'kepadatan') {
+                    const val = groupItems[0].kepadatanPenduduk || 0;
+                    const ratio = Math.min(val / maxKepadatan, 1);
+                    // Teal 200 (153, 246, 228) -> Teal 900 (19, 78, 74)
+                    const r = Math.round(153 + (19 - 153) * ratio);
+                    const g = Math.round(246 + (78 - 246) * ratio);
+                    const b = Math.round(228 + (74 - 228) * ratio);
+                    fillColor = `rgb(${r},${g},${b})`;
+                    radius = 6 + (ratio * 8);
                 }
 
                 return (
