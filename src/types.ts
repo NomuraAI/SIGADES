@@ -13,7 +13,7 @@ export interface ProjectData {
     kecamatan: string;
     latitude: number | null;
     longitude: number | null;
-    luasWilayah: string;
+    luasWilayah: number | string;
     jumlahPenduduk: number;
     jumlahAngkaKemiskinan: number;
     jumlahBalitaStunting: number;

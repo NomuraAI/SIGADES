@@ -49,11 +49,11 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         { key: 'desaKelurahan', label: 'Desa/Kelurahan', align: 'left' },
         { key: 'kodeKecamatan', label: 'Kode Kecamatan', align: 'left' },
         { key: 'kecamatan', label: 'Kecamatan', align: 'left' },
-        { key: 'luasWilayah', label: 'Luas', align: 'left' },
+        { key: 'luasWilayah', label: 'Luas (km²)', align: 'left' },
         { key: 'jumlahPenduduk', label: 'Penduduk', align: 'center' },
         { key: 'jumlahAngkaKemiskinan', label: 'Kemiskinan', align: 'center' },
         { key: 'jumlahBalitaStunting', label: 'Stunting', align: 'center' },
-        { key: 'kepadatanPenduduk', label: 'Kepadatan', align: 'center' },
+        { key: 'kepadatanPenduduk', label: 'Kepadatan (jiwa/km²)', align: 'center' },
         { key: 'potensiDesa', label: 'Potensi Desa', align: 'left' },
         { key: 'keterangan', label: 'Keterangan', align: 'left' },
         { key: 'latitude', label: 'Latitude', align: 'center' },
@@ -196,11 +196,24 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         if (key) stuntingVal = row[key];
                     }
 
-                    // Kepadatan Penduduk Fuzzy Match
+                    // Luas Fuzzy Match & Clean
+                    let luasVal = row.luas || row.luas_wilayah || null;
+                    if (luasVal === undefined) {
+                        const key = findKey(['luas', 'area']);
+                        if (key) luasVal = row[key];
+                    }
+                    const cleanLuas = cleanFloat(luasVal);
+                    const cleanPenduduk = cleanNumber(row.penduduk || row.jumlah_penduduk);
+
+                    // Kepadatan Penduduk Fuzzy Match & Auto-calculate
                     let kepadatanVal = row.kepadatan_penduduk || row.kepadatan || row.density;
                     if (kepadatanVal === undefined) {
                         const key = findKey(['kepadatan', 'density']);
-                        if (key) kepadatanVal = row[key];
+                        if (key) {
+                            kepadatanVal = row[key];
+                        } else if (cleanLuas && cleanLuas > 0) {
+                            kepadatanVal = Math.round(cleanPenduduk / cleanLuas);
+                        }
                     }
 
                     return {
@@ -215,8 +228,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         desaKelurahan: row.desa_kelurahan || row.desa || row.nama_desa || row.desa_kel || row.nama_desa_kelurahan || null,
                         kodeKecamatan: String(row.kode_kecamatan || row.kode_kec || '').trim() || null,
                         kecamatan: row.kecamatan || null,
-                        luasWilayah: row.luas || row.luas_wilayah || null,
-                        jumlahPenduduk: cleanNumber(row.penduduk || row.jumlah_penduduk),
+                        luasWilayah: cleanLuas,
+                        jumlahPenduduk: cleanPenduduk,
                         jumlahAngkaKemiskinan: cleanNumber(kemiskinanVal),
                         jumlahBalitaStunting: cleanNumber(stuntingVal),
                         kepadatanPenduduk: cleanNumber(kepadatanVal),
@@ -697,7 +710,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                     {visibleColumns.includes('desaKelurahan') && <td className="px-3 py-2.5 font-semibold text-lobar-blue">{item.desaKelurahan || '-'}</td>}
                                     {visibleColumns.includes('kodeKecamatan') && <td className="px-3 py-2.5 text-slate-600">{item.kodeKecamatan || '-'}</td>}
                                     {visibleColumns.includes('kecamatan') && <td className="px-3 py-2.5 text-slate-600">{item.kecamatan || '-'}</td>}
-                                    {visibleColumns.includes('luasWilayah') && <td className="px-3 py-2.5 text-slate-600">{item.luasWilayah || '-'}</td>}
+                                    {visibleColumns.includes('luasWilayah') && <td className="px-3 py-2.5 text-slate-600 font-medium">{item.luasWilayah ? `${item.luasWilayah} km²` : '-'}</td>}
                                     {visibleColumns.includes('jumlahPenduduk') && <td className="px-3 py-2.5 text-center text-slate-700">{item.jumlahPenduduk?.toLocaleString() || '0'}</td>}
                                     {visibleColumns.includes('jumlahAngkaKemiskinan') && (
                                         <td className="px-3 py-2.5 text-center">
@@ -711,7 +724,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                     )}
                                     {visibleColumns.includes('kepadatanPenduduk') && (
                                         <td className="px-3 py-2.5 text-center font-bold text-slate-700">
-                                            {item.kepadatanPenduduk !== undefined ? item.kepadatanPenduduk : '-'}
+                                            {item.kepadatanPenduduk !== undefined ? `${item.kepadatanPenduduk} jw/km²` : '-'}
                                         </td>
                                     )}
                                     {visibleColumns.includes('potensiDesa') && <td className="px-3 py-2.5 text-slate-600">{item.potensiDesa || '-'}</td>}
@@ -802,11 +815,56 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                 <FormField label="Desa/Kelurahan" value={(isEditModalOpen ? editingItem?.desaKelurahan : newItem.desaKelurahan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, desaKelurahan: val }) : setNewItem({ ...newItem, desaKelurahan: val })} />
                                 <FormField label="Kode Kecamatan" value={(isEditModalOpen ? editingItem?.kodeKecamatan : newItem.kodeKecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kodeKecamatan: val }) : setNewItem({ ...newItem, kodeKecamatan: val })} />
                                 <FormField label="Kecamatan" value={(isEditModalOpen ? editingItem?.kecamatan : newItem.kecamatan) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kecamatan: val }) : setNewItem({ ...newItem, kecamatan: val })} />
-                                <FormField label="Luas" value={(isEditModalOpen ? editingItem?.luasWilayah : newItem.luasWilayah) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, luasWilayah: val }) : setNewItem({ ...newItem, luasWilayah: val })} />
-                                <FormField label="Penduduk" type="number" value={(isEditModalOpen ? editingItem?.jumlahPenduduk : newItem.jumlahPenduduk) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahPenduduk: Number(val) }) : setNewItem({ ...newItem, jumlahPenduduk: Number(val) })} />
+                                <FormField
+                                    label="Luas (km²)"
+                                    type="number"
+                                    value={(isEditModalOpen ? editingItem?.luasWilayah : newItem.luasWilayah) || ''}
+                                    onChange={(val) => {
+                                        const numLuas = cleanFloat(val);
+                                        if (isEditModalOpen) {
+                                            const updated = { ...editingItem!, luasWilayah: numLuas || 0 };
+                                            if (updated.luasWilayah > 0 && updated.jumlahPenduduk > 0) {
+                                                updated.kepadatanPenduduk = Math.round(updated.jumlahPenduduk / Number(updated.luasWilayah));
+                                            }
+                                            setEditingItem(updated);
+                                        } else {
+                                            const updated = { ...newItem, luasWilayah: numLuas || 0 };
+                                            if (updated.luasWilayah > 0 && updated.jumlahPenduduk > 0) {
+                                                updated.kepadatanPenduduk = Math.round(Number(updated.jumlahPenduduk) / Number(updated.luasWilayah));
+                                            }
+                                            setNewItem(updated);
+                                        }
+                                    }}
+                                />
+                                <FormField
+                                    label="Penduduk (Jiwa)"
+                                    type="number"
+                                    value={(isEditModalOpen ? editingItem?.jumlahPenduduk : newItem.jumlahPenduduk) || 0}
+                                    onChange={(val) => {
+                                        const numPenduduk = cleanNumber(val);
+                                        if (isEditModalOpen) {
+                                            const updated = { ...editingItem!, jumlahPenduduk: numPenduduk };
+                                            if (updated.luasWilayah && Number(updated.luasWilayah) > 0) {
+                                                updated.kepadatanPenduduk = Math.round(numPenduduk / Number(updated.luasWilayah));
+                                            }
+                                            setEditingItem(updated);
+                                        } else {
+                                            const updated = { ...newItem, jumlahPenduduk: numPenduduk };
+                                            if (updated.luasWilayah && Number(updated.luasWilayah) > 0) {
+                                                updated.kepadatanPenduduk = Math.round(numPenduduk / Number(updated.luasWilayah));
+                                            }
+                                            setNewItem(updated);
+                                        }
+                                    }}
+                                />
                                 <FormField label="Jml Angka Kemiskinan" type="number" value={(isEditModalOpen ? editingItem?.jumlahAngkaKemiskinan : newItem.jumlahAngkaKemiskinan) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahAngkaKemiskinan: Number(val) }) : setNewItem({ ...newItem, jumlahAngkaKemiskinan: Number(val) })} />
                                 <FormField label="Jml Angka Stunting" type="number" value={(isEditModalOpen ? editingItem?.jumlahBalitaStunting : newItem.jumlahBalitaStunting) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, jumlahBalitaStunting: Number(val) }) : setNewItem({ ...newItem, jumlahBalitaStunting: Number(val) })} />
-                                <FormField label="Kepadatan Penduduk" type="number" value={(isEditModalOpen ? editingItem?.kepadatanPenduduk : newItem.kepadatanPenduduk) || 0} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kepadatanPenduduk: Number(val) }) : setNewItem({ ...newItem, kepadatanPenduduk: Number(val) })} />
+                                <FormField
+                                    label="Kepadatan Penduduk (Auto)"
+                                    type="number"
+                                    value={(isEditModalOpen ? editingItem?.kepadatanPenduduk : newItem.kepadatanPenduduk) || 0}
+                                    onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, kepadatanPenduduk: Number(val) }) : setNewItem({ ...newItem, kepadatanPenduduk: Number(val) })}
+                                />
                                 <FormField label="Potensi Desa" value={(isEditModalOpen ? editingItem?.potensiDesa : newItem.potensiDesa) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, potensiDesa: val }) : setNewItem({ ...newItem, potensiDesa: val })} />
                                 <FormField label="Latitude" type="number" value={(isEditModalOpen ? editingItem?.latitude : newItem.latitude) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, latitude: Number(val) }) : setNewItem({ ...newItem, latitude: Number(val) })} />
                                 <FormField label="Longitude" type="number" value={(isEditModalOpen ? editingItem?.longitude : newItem.longitude) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, longitude: Number(val) }) : setNewItem({ ...newItem, longitude: Number(val) })} />
