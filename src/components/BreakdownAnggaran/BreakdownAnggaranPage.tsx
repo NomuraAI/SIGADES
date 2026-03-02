@@ -479,95 +479,115 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                     </div>
 
                     {/* Section 4: Poverty Analysis */}
-                    <div ref={sectionPovertyChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col">
+                    <div ref={sectionPovertyChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Users className="text-red-500" /> Analisis Kemiskinan Desil 1 (Top 20 Tertinggi)</h3>
                         </div>
-                        <div className="h-[400px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={povertyData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
-                                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#fef2f2' }} />
-                                    <Bar dataKey="val" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                        {povertyData.length > 0 ? (
+                            <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                <div style={{ minWidth: Math.max(800, povertyData.length * 60), height: 500 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={povertyData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                            <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#fef2f2' }} />
+                                            <Bar dataKey="val" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        ) : <div className="h-64 flex items-center justify-center text-slate-400">Data tidak tersedia</div>}
                     </div>
 
                     {/* Section 5: Stunting Analysis */}
-                    <div ref={sectionStuntingChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col">
+                    <div ref={sectionStuntingChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Baby className="text-orange-500" /> Analisis Balita Stunting (Top 20 Tertinggi)</h3>
                         </div>
-                        <div className="h-[400px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stuntingData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
-                                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#fff7ed' }} />
-                                    <Bar dataKey="val" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                        {stuntingData.length > 0 ? (
+                            <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                <div style={{ minWidth: Math.max(800, stuntingData.length * 60), height: 500 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={stuntingData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                            <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#fff7ed' }} />
+                                            <Bar dataKey="val" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        ) : <div className="h-64 flex items-center justify-center text-slate-400">Data tidak tersedia</div>}
                     </div>
 
                     {/* Section 5.b: Poverty Lowest Analysis */}
-                    <div ref={sectionPovertyLowestChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col">
+                    <div ref={sectionPovertyLowestChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Users className="text-teal-500" /> Analisis Kemiskinan Desil 1 (20 Terendah)</h3>
                             <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full font-bold">Terendah = Baik</span>
                         </div>
-                        <div className="h-[400px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={povertyDataLowest} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
-                                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f0fdf4' }} />
-                                    <Bar dataKey="val" fill="#14b8a6" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                        {povertyDataLowest.length > 0 ? (
+                            <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                <div style={{ minWidth: Math.max(800, povertyDataLowest.length * 60), height: 500 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={povertyDataLowest} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                            <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f0fdf4' }} />
+                                            <Bar dataKey="val" fill="#14b8a6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        ) : <div className="h-64 flex items-center justify-center text-slate-400">Data tidak tersedia</div>}
                     </div>
 
                     {/* Section 5.c: Stunting Lowest Analysis */}
-                    <div ref={sectionStuntingLowestChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col">
+                    <div ref={sectionStuntingLowestChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Baby className="text-cyan-500" /> Analisis Balita Stunting (20 Terendah)</h3>
                             <span className="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded-full font-bold">Terendah = Baik</span>
                         </div>
-                        <div className="h-[400px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={stuntingDataLowest} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
-                                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#ecfeff' }} />
-                                    <Bar dataKey="val" fill="#06b6d4" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                        {stuntingDataLowest.length > 0 ? (
+                            <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                <div style={{ minWidth: Math.max(800, stuntingDataLowest.length * 60), height: 500 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={stuntingDataLowest} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                            <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#ecfeff' }} />
+                                            <Bar dataKey="val" fill="#06b6d4" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        ) : <div className="h-64 flex items-center justify-center text-slate-400">Data tidak tersedia</div>}
                     </div>
 
                     {/* Section 5.d: Density Analysis */}
-                    <div ref={sectionDensityChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col">
+                    <div ref={sectionDensityChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Users className="text-purple-500" /> Analisis Kepadatan Penduduk (20 Tertinggi)</h3>
                         </div>
-                        <div className="h-[400px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={densityData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
-                                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3e8ff' }} />
-                                    <Bar dataKey="val" fill="#9333ea" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                        {densityData.length > 0 ? (
+                            <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                <div style={{ minWidth: Math.max(800, densityData.length * 60), height: 500 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={densityData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                            <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3e8ff' }} />
+                                            <Bar dataKey="val" fill="#9333ea" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        ) : <div className="h-64 flex items-center justify-center text-slate-400">Data tidak tersedia</div>}
                     </div>
 
                     {/* Section 6: Potential Analysis (Pie) */}
