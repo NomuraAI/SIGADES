@@ -583,7 +583,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
             </div>
 
             {/* Filters Row */}
-            <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 flex flex-col xl:flex-row justify-between items-center gap-4">
+            <div className="relative z-30 bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-4 flex flex-col xl:flex-row justify-between items-center gap-4">
                 <div className="relative w-full flex flex-col md:flex-row gap-2 flex-wrap">
 
                     {/* Kecamatan Dropdown */}
@@ -689,8 +689,8 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                 )}
             </div>
 
-            <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-0">
-                <div className="overflow-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200">
+            <div className="relative z-10 flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-0">
+                <div className="overflow-x-auto overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-slate-200" style={{ WebkitOverflowScrolling: 'touch' }}>
                     <table className="w-full text-[12px] text-left border-collapse min-w-[2000px]">
                         <thead className="bg-slate-50 text-slate-600 font-bold sticky top-0 z-20 border-b">
                             <tr>
