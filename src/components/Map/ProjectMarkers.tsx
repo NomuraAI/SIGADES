@@ -51,31 +51,31 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
         };
 
         return (
-            <Popup className="glass-popup" minWidth={300}>
-                <div className="min-w-[280px] p-2">
+            <Popup className="glass-popup" minWidth={220} maxWidth={320}>
+                <div className="w-[260px] sm:min-w-[280px] max-h-[50vh] sm:max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-lobar-blue/50">
                     {/* Header dengan Navigasi jika items > 1 */}
-                    <div className="flex justify-between items-start mb-2 border-b pb-2">
+                    <div className="flex justify-between items-start mb-2 border-b pb-2 sticky top-0 bg-white/90 backdrop-blur-sm z-10 pt-1">
                         <div className="flex-1">
-                            <h3 className="font-bold text-lg text-lobar-blue">Desa {item.desaKelurahan}</h3>
-                            <div className="flex flex-col">
+                            <h3 className="font-bold text-lg text-lobar-blue leading-tight">Desa {item.desaKelurahan}</h3>
+                            <div className="flex flex-col mt-1">
                                 <p className="text-[10px] text-slate-400 uppercase tracking-widest">{item.kecamatan}</p>
                                 {item.kodeKecamatan && <p className="text-[9px] text-slate-300 font-mono mt-0.5">Kode Kec: {item.kodeKecamatan}</p>}
                             </div>
                         </div>
                         {totalItems > 1 && (
-                            <div className="flex items-center gap-2 pl-2">
+                            <div className="flex items-center gap-2 pl-2 bg-slate-50 rounded-lg p-1">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-                                    className="p-1 hover:bg-slate-100 rounded text-slate-600 text-xs font-bold"
+                                    className="p-1 hover:bg-slate-200 rounded text-slate-600 text-xs font-bold transition-colors"
                                 >
                                     &lt;
                                 </button>
-                                <span className="text-[10px] text-slate-500 font-mono">
+                                <span className="text-[10px] text-slate-500 font-mono whitespace-nowrap">
                                     {currentIndex + 1}/{totalItems}
                                 </span>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                                    className="p-1 hover:bg-slate-100 rounded text-slate-600 text-xs font-bold"
+                                    className="p-1 hover:bg-slate-200 rounded text-slate-600 text-xs font-bold transition-colors"
                                 >
                                     &gt;
                                 </button>
@@ -93,7 +93,7 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                         </div>
                     </div>
 
-                    <div className="space-y-3 text-sm">
+                    <div className="space-y-3 text-sm pb-2">
                         <div className="flex flex-col">
                             {item.perangkatDaerah && (
                                 <div className="mb-2">
@@ -102,46 +102,46 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
                                 </div>
                             )}
                             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Paket Pekerjaan</span>
-                            <span className="text-slate-800 font-bold leading-tight">{item.pekerjaan || 'Pembangunan Infrastruktur'}</span>
+                            <span className="text-slate-800 font-bold leading-tight text-xs sm:text-sm">{item.pekerjaan || 'Pembangunan Infrastruktur'}</span>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 border-y border-dashed py-2">
+                        <div className="grid grid-cols-2 gap-3 border-y border-dashed py-2">
                             <div>
                                 <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Anggaran Paket</span>
-                                <span className="text-green-700 font-extrabold">{formatRupiah(item.paguAnggaran)}</span>
+                                <span className="text-green-700 font-extrabold text-xs sm:text-sm">{formatRupiah(item.paguAnggaran)}</span>
                             </div>
                             <div>
                                 <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Luas Wilayah</span>
-                                <span className="text-slate-800 font-bold">{item.luasWilayah || '0'} km²</span>
+                                <span className="text-slate-800 font-bold text-xs sm:text-sm">{item.luasWilayah || '0'} km²</span>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 pt-1">
-                            <div className="bg-red-50 p-2 rounded-lg border border-red-100">
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div className="bg-red-50 p-2 rounded-lg border border-red-100 flex flex-col justify-center">
                                 <span className="text-[9px] font-bold text-red-600 uppercase block mb-0.5">Kemiskinan</span>
-                                <span className="text-red-700 font-bold">{item.jumlahAngkaKemiskinan} Jiwa</span>
+                                <span className="text-red-700 font-bold text-xs">{item.jumlahAngkaKemiskinan} Jiwa</span>
                             </div>
-                            <div className="bg-orange-50 p-2 rounded-lg border border-orange-100">
+                            <div className="bg-orange-50 p-2 rounded-lg border border-orange-100 flex flex-col justify-center">
                                 <span className="text-[9px] font-bold text-orange-600 uppercase block mb-0.5">Stunting</span>
-                                <span className="text-orange-700 font-bold">{item.jumlahBalitaStunting} Balita</span>
+                                <span className="text-orange-700 font-bold text-xs">{item.jumlahBalitaStunting} Balita</span>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 pt-1">
-                            <div className="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                            <div className="bg-blue-50 p-2 rounded-lg border border-blue-100 flex flex-col justify-center">
                                 <span className="text-[9px] font-bold text-lobar-blue uppercase block mb-0.5">Penduduk</span>
-                                <span className="text-lobar-blue font-bold">{item.jumlahPenduduk?.toLocaleString() || '0'} Jiwa</span>
+                                <span className="text-lobar-blue font-bold text-xs">{item.jumlahPenduduk?.toLocaleString() || '0'} Jiwa</span>
                             </div>
-                            <div className="bg-teal-50 p-2 rounded-lg border border-teal-100">
+                            <div className="bg-teal-50 p-2 rounded-lg border border-teal-100 flex flex-col justify-center">
                                 <span className="text-[9px] font-bold text-teal-600 uppercase block mb-0.5">Kepadatan</span>
-                                <span className="text-teal-700 font-bold">{item.kepadatanPenduduk?.toLocaleString() || '0'} jw/km²</span>
+                                <span className="text-teal-700 font-bold text-xs">{item.kepadatanPenduduk?.toLocaleString() || '0'} jw/km²</span>
                             </div>
                         </div>
 
                         {item.potensiDesa && (
-                            <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
+                            <div className="bg-blue-50/50 p-2 rounded-lg border border-blue-100 mt-2">
                                 <span className="text-[10px] font-bold text-lobar-blue uppercase block mb-1">Potensi Desa</span>
-                                <span className="text-xs text-slate-600 italic leading-relaxed">"{item.potensiDesa}"</span>
+                                <span className="text-xs text-slate-600 italic leading-relaxed block max-h-[100px] overflow-y-auto scrollbar-thin">"{item.potensiDesa}"</span>
                             </div>
                         )}
 
