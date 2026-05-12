@@ -138,6 +138,15 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
         return '#94a3b8';                  // Tidak ada data
     };
 
+    const getPovertyColor = (count: number) => {
+        if (count >= 500) return '#ea580c'; // Sangat Tinggi
+        if (count >= 250) return '#f97316'; // Tinggi
+        if (count >= 100) return '#f59e0b'; // Sedang
+        if (count >= 50) return '#38bdf8';  // Rendah
+        if (count > 0) return '#2563eb';   // Sangat Rendah
+        return '#94a3b8';
+    };
+
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -353,8 +362,9 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                                 weight = 1;
                             } else if (vizMode === 'poverty') {
                                 value = villageProjects[0]?.jumlahAngkaKemiskinan || 0;
-                                fillColor = value > 200 ? '#ea580c' : value > 100 ? '#f59e0b' : '#3b82f6';
-                                fillOpacity = 0.6;
+                                fillColor = getPovertyColor(value);
+                                fillOpacity = 0.7;
+                                weight = 1;
                             } else if (vizMode === 'kepadatan') {
                                 const density = typeof villageProjects[0]?.kepadatanPenduduk === 'string' 
                                     ? parseFloat((villageProjects[0].kepadatanPenduduk as string).replace(/,/g, '')) 
@@ -595,8 +605,28 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
 
                 {vizMode === 'poverty' && (
                     <div className="mt-1 pt-2 border-t border-slate-200">
-                        <div className="flex justify-between text-[9px] mb-1"><span>Rendah</span><span>Tinggi</span></div>
-                        <div className="h-2 w-full rounded-full bg-gradient-to-r from-blue-400 via-yellow-400 to-orange-600"></div>
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#ea580c]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">&gt; 500 Jiwa</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#f97316]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">250 - 500 Jiwa</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#f59e0b]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">100 - 250 Jiwa</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#38bdf8]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">50 - 100 Jiwa</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#2563eb]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">1 - 50 Jiwa</span>
+                            </div>
+                        </div>
                     </div>
                 )}
 
