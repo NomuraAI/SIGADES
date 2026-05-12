@@ -163,7 +163,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               BAPPERIDA KABUPATEN LOMBOK BARAT
             </h2>
             <p className="text-sky-300/60 font-['Inter'] text-sm md:text-base tracking-widest uppercase">
-              Sistem Informasi Geospasial Anggaran & Desa
+              Sistem Infrastruktur Geo-Spasial Berbasis Desa
             </p>
           </div>
 
