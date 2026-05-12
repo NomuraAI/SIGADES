@@ -155,10 +155,10 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
     };
 
     const getDensityColor = (count: number) => {
-        if (count >= 1500) return '#134e4a'; // Sangat Padat
-        if (count >= 1000) return '#0d9488'; // Padat
-        if (count >= 500) return '#2dd4bf';  // Sedang
-        if (count >= 100) return '#a7f3d0';  // Rendah
+        if (count >= 4500) return '#134e4a'; // Sangat Padat
+        if (count >= 3000) return '#0d9488'; // Padat
+        if (count >= 1500) return '#2dd4bf'; // Sedang
+        if (count >= 500) return '#a7f3d0';  // Rendah
         return '#f0fdfa';                  // Sangat Rendah
     };
 
@@ -703,23 +703,23 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         <div className="flex flex-col gap-1.5">
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#134e4a]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">&gt; 1500 Jiwa/Km²</span>
+                                <span className="text-[9px] font-bold text-slate-600">&gt; 4500 Jiwa/Km²</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#0d9488]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">1000 - 1500 Jiwa/Km²</span>
+                                <span className="text-[9px] font-bold text-slate-600">3000 - 4500 Jiwa/Km²</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#2dd4bf]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">500 - 1000 Jiwa/Km²</span>
+                                <span className="text-[9px] font-bold text-slate-600">1500 - 3000 Jiwa/Km²</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#a7f3d0]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">100 - 500 Jiwa/Km²</span>
+                                <span className="text-[9px] font-bold text-slate-600">500 - 1500 Jiwa/Km²</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#f0fdfa] border border-slate-200"></div>
-                                <span className="text-[9px] font-bold text-slate-600">&lt; 100 Jiwa/Km²</span>
+                                <span className="text-[9px] font-bold text-slate-600">&lt; 500 Jiwa/Km²</span>
                             </div>
                         </div>
                     </div>
