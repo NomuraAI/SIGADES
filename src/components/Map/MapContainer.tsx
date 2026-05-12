@@ -147,11 +147,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
         return '#94a3b8';
     };
 
-    const getPriorityColor = (count: number) => {
-        if (count >= 5) return '#312e81'; // Sangat Tinggi
-        if (count >= 3) return '#7c3aed'; // Tinggi
-        if (count >= 1) return '#d946ef'; // Sedang
-        return '#f1f5f9';                 // Rendah / Bukan Prioritas
+    const getPriorityColor = (score: number) => {
+        if (score >= 5) return '#7f1d1d'; // Sangat Tinggi / Kritis
+        if (score >= 3) return '#ea580c'; // Tinggi / Waspada
+        if (score >= 1) return '#f59e0b'; // Sedang / Pantauan
+        return '#f1f5f9';                 // Rendah / Stabil
     };
 
     const getDensityColor = (count: number) => {
@@ -389,9 +389,24 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                                 fillOpacity = 0.7;
                                 weight = 1;
                             } else if (vizMode === 'priority') {
-                                value = villageProjects.filter(p => p.aksiPrioritas && p.aksiPrioritas.trim() !== '').length;
-                                fillColor = getPriorityColor(value);
-                                fillOpacity = 0.7;
+                                // Hitung Skor Komposit (Analytical Priority)
+                                const stunting = villageProjects[0]?.jumlahBalitaStunting || 0;
+                                const poverty = villageProjects[0]?.jumlahAngkaKemiskinan || 0;
+                                
+                                let score = 0;
+                                // Poin Stunting
+                                if (stunting >= 50) score += 3;
+                                else if (stunting >= 30) score += 2;
+                                else if (stunting >= 15) score += 1;
+                                
+                                // Poin Kemiskinan
+                                if (poverty >= 500) score += 3;
+                                else if (poverty >= 250) score += 2;
+                                else if (poverty >= 100) score += 1;
+
+                                value = score;
+                                fillColor = getPriorityColor(score);
+                                fillOpacity = 0.8;
                                 weight = 1;
                             }
 
@@ -435,17 +450,16 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                                                     <span class="text-xs font-extrabold text-orange-600">${villageProjects[0]?.jumlahAngkaKemiskinan || 0} Jiwa</span>
                                                 </div>
                                             ` : vizMode === 'priority' ? `
-                                                <div class="border-t pt-1 mt-1">
-                                                    <div class="flex justify-between items-center gap-4 mb-1">
-                                                        <span class="text-[9px] text-slate-500 uppercase font-bold">Proyek Prioritas</span>
-                                                        <span class="text-xs font-extrabold text-indigo-700">${villageProjects.filter(p => p.aksiPrioritas).length} Proyek</span>
-                                                    </div>
-                                                    <div class="max-h-[80px] overflow-y-auto pr-1">
-                                                        ${villageProjects
-                                                            .filter(p => p.aksiPrioritas)
-                                                            .map(p => `<div class="text-[8px] text-slate-600 border-l-2 border-indigo-200 pl-1 mb-1 leading-tight">${p.subKegiatan || p.pekerjaan}</div>`)
-                                                            .join('')}
-                                                    </div>
+                                                <div class="flex justify-between items-center gap-4 border-t pt-1">
+                                                    <span class="text-[9px] text-slate-500 uppercase font-bold">Tingkat Urgensi</span>
+                                                    <span class="text-xs font-extrabold ${villageProjects[0]?.jumlahBalitaStunting >= 50 || villageProjects[0]?.jumlahAngkaKemiskinan >= 500 ? 'text-red-700' : 'text-amber-600'}">
+                                                        ${(villageProjects[0]?.jumlahBalitaStunting || 0) + (villageProjects[0]?.jumlahAngkaKemiskinan || 0) > 0 ? 
+                                                            ((villageProjects[0]?.jumlahBalitaStunting >= 30 && villageProjects[0]?.jumlahAngkaKemiskinan >= 250) ? 'KRITIS' : 'WASPADA') 
+                                                            : 'STABIL'}
+                                                    </span>
+                                                </div>
+                                                <div class="text-[8px] text-slate-500 mt-1 italic">
+                                                    *Berdasarkan irisan data Stunting & Kemiskinan
                                                 </div>
                                             ` : vizMode === 'kepadatan' ? `
                                                 <div class="flex justify-between items-center gap-4 border-t pt-1">
@@ -679,21 +693,24 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                     <div className="mt-1 pt-2 border-t border-slate-200">
                         <div className="flex flex-col gap-1.5">
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded bg-[#312e81]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">&gt; 5 Proyek Prioritas</span>
+                                <div className="w-3 h-3 rounded bg-[#7f1d1d]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">Sangat Tinggi (Kritis)</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded bg-[#7c3aed]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">3 - 5 Proyek Prioritas</span>
+                                <div className="w-3 h-3 rounded bg-[#ea580c]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">Tinggi (Waspada)</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded bg-[#d946ef]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">1 - 2 Proyek Prioritas</span>
+                                <div className="w-3 h-3 rounded bg-[#f59e0b]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">Sedang (Pantauan)</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#f1f5f9] border border-slate-200"></div>
-                                <span className="text-[9px] font-bold text-slate-600">Bukan Prioritas</span>
+                                <span className="text-[9px] font-bold text-slate-600">Rendah (Stabil)</span>
                             </div>
+                        </div>
+                        <div className="mt-2 text-[8px] text-slate-400 italic leading-tight text-center">
+                            Skor dihitung dari akumulasi tingkat Stunting & Kemiskinan
                         </div>
                     </div>
                 )}
