@@ -414,8 +414,8 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
 
                 <SearchSyncHandler onSearchComplete={handleSearchComplete} />
 
-                {(activeProjects.length > 0 || permanentProjects.length > 0) && (
-                    <ProjectMarkers projects={[...permanentProjects, ...activeProjects]} vizMode={vizMode === 'budget' ? 'default' : vizMode} />
+                {vizMode === 'default' && (activeProjects.length > 0 || permanentProjects.length > 0) && (
+                    <ProjectMarkers projects={[...permanentProjects, ...activeProjects]} vizMode={vizMode} />
                 )}
 
                 {activeProjects.length === 0 && permanentProjects.length === 0 && searchResult && (
