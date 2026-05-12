@@ -154,6 +154,14 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
         return '#f1f5f9';                 // Rendah / Bukan Prioritas
     };
 
+    const getDensityColor = (count: number) => {
+        if (count >= 1500) return '#134e4a'; // Sangat Padat
+        if (count >= 1000) return '#0d9488'; // Padat
+        if (count >= 500) return '#2dd4bf';  // Sedang
+        if (count >= 100) return '#a7f3d0';  // Rendah
+        return '#f0fdfa';                  // Sangat Rendah
+    };
+
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -376,8 +384,10 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                                 const density = typeof villageProjects[0]?.kepadatanPenduduk === 'string' 
                                     ? parseFloat((villageProjects[0].kepadatanPenduduk as string).replace(/,/g, '')) 
                                     : villageProjects[0]?.kepadatanPenduduk || 0;
-                                fillColor = density > 1000 ? '#134e4a' : density > 500 ? '#0d9488' : '#99f6e4';
-                                fillOpacity = 0.6;
+                                value = density;
+                                fillColor = getDensityColor(value);
+                                fillOpacity = 0.7;
+                                weight = 1;
                             } else if (vizMode === 'priority') {
                                 value = villageProjects.filter(p => p.aksiPrioritas && p.aksiPrioritas.trim() !== '').length;
                                 fillColor = getPriorityColor(value);
@@ -436,6 +446,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                                                             .map(p => `<div class="text-[8px] text-slate-600 border-l-2 border-indigo-200 pl-1 mb-1 leading-tight">${p.subKegiatan || p.pekerjaan}</div>`)
                                                             .join('')}
                                                     </div>
+                                                </div>
+                                            ` : vizMode === 'kepadatan' ? `
+                                                <div class="flex justify-between items-center gap-4 border-t pt-1">
+                                                    <span class="text-[9px] text-slate-500 uppercase font-bold">Kepadatan Penduduk</span>
+                                                    <span class="text-xs font-extrabold text-teal-700">${villageProjects[0]?.kepadatanPenduduk || 0} Jiwa/Km²</span>
                                                 </div>
                                             ` : ''}
                                             <div class="flex justify-between items-center gap-4">
@@ -685,8 +700,28 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
 
                 {vizMode === 'kepadatan' && (
                     <div className="mt-1 pt-2 border-t border-slate-200">
-                        <div className="flex justify-between text-[9px] mb-1"><span>Rendah</span><span>Tinggi</span></div>
-                        <div className="h-2 w-full rounded-full bg-gradient-to-r from-teal-200 via-teal-500 to-teal-900"></div>
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#134e4a]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">&gt; 1500 Jiwa/Km²</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#0d9488]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">1000 - 1500 Jiwa/Km²</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#2dd4bf]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">500 - 1000 Jiwa/Km²</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#a7f3d0]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">100 - 500 Jiwa/Km²</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#f0fdfa] border border-slate-200"></div>
+                                <span className="text-[9px] font-bold text-slate-600">&lt; 100 Jiwa/Km²</span>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
