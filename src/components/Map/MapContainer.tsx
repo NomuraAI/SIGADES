@@ -84,7 +84,7 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
 
 const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion }) => {
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
-    const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority' | 'kepadatan'>('default');
+    const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority' | 'kepadatan' | 'budget'>('default');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [activeProjects, setActiveProjects] = useState<ProjectData[]>([]);
@@ -96,7 +96,35 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
 
     const [permanentProjects, setPermanentProjects] = useState<ProjectData[]>([]);
 
-    // Fetch ALL projects with coordinates on load
+    // Calculate total budget per village
+    const villageBudgets = React.useMemo(() => {
+        const budgets: { [key: string]: number } = {};
+        [...permanentProjects, ...activeProjects].forEach(p => {
+            if (p.desaKelurahan) {
+                const name = p.desaKelurahan.toLowerCase().trim();
+                budgets[name] = (budgets[name] || 0) + (p.paguAnggaran || 0);
+            }
+        });
+        return budgets;
+    }, [permanentProjects, activeProjects]);
+
+    const getBudgetColor = (amount: number) => {
+        if (amount >= 10000000000) return '#15803d'; // > 10M - Hijau Tua
+        if (amount >= 5000000000) return '#22c55e';  // 5-10M - Hijau
+        if (amount >= 2000000000) return '#84cc16';  // 2-5M - Lime
+        if (amount >= 1000000000) return '#eab308';  // 1-2M - Kuning
+        if (amount > 0) return '#f97316';            // < 1M - Oranye
+        return '#94a3b8';                            // No Data - Abu
+    };
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(value);
+    };
+
     useEffect(() => {
         const fetchAllMarkers = async () => {
             let query = supabase
@@ -259,32 +287,58 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                 {/* Batas Desa Layer */}
                 {showBatasDesa && batasDesaData && (
                     <GeoJSON 
+                        key={vizMode} // Force re-render when vizMode changes
                         data={batasDesaData} 
-                        style={() => ({
-                            color: '#f97316',
-                            weight: 2,
-                            opacity: 0.8,
-                            fillColor: '#fdba74',
-                            fillOpacity: 0.1
-                        })}
+                        style={(feature) => {
+                            if (vizMode === 'budget' && feature) {
+                                const desaName = feature.properties.DESA.toLowerCase().trim();
+                                const budget = villageBudgets[desaName] || 0;
+                                return {
+                                    color: 'white',
+                                    weight: 1,
+                                    opacity: 1,
+                                    fillColor: getBudgetColor(budget),
+                                    fillOpacity: 0.7
+                                };
+                            }
+                            return {
+                                color: '#f97316',
+                                weight: 2,
+                                opacity: 0.8,
+                                fillColor: '#fdba74',
+                                fillOpacity: 0.1
+                            };
+                        }}
                         onEachFeature={(feature, layer) => {
                             if (feature.properties && feature.properties.DESA) {
+                                const desaName = feature.properties.DESA.toLowerCase().trim();
+                                const budget = villageBudgets[desaName] || 0;
+
                                 layer.bindPopup(`
-                                    <div class="p-1">
-                                        <h4 class="font-bold text-lobar-blue text-sm">Desa ${feature.properties.DESA}</h4>
-                                        <p class="text-[10px] text-slate-500 uppercase font-semibold">Kecamatan ${feature.properties.KECAMATAN}</p>
-                                        <p class="text-[9px] text-slate-400 mt-1 italic">${feature.properties.SUMBER || ''}</p>
+                                    <div class="p-1 min-w-[150px]">
+                                        <h4 class="font-bold text-lobar-blue text-sm border-b pb-1 mb-2">Desa ${feature.properties.DESA}</h4>
+                                        <div class="space-y-1.5">
+                                            <div class="flex justify-between items-center gap-4">
+                                                <span class="text-[9px] text-slate-500 uppercase font-bold">Total Pagu DIPA</span>
+                                                <span class="text-xs font-extrabold text-green-700">${formatCurrency(budget)}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center gap-4">
+                                                <span class="text-[9px] text-slate-500 uppercase font-bold">Kecamatan</span>
+                                                <span class="text-[10px] text-slate-700 font-semibold">${feature.properties.KECAMATAN}</span>
+                                            </div>
+                                        </div>
+                                        <p class="text-[8px] text-slate-400 mt-3 italic border-t pt-1">${feature.properties.SUMBER || ''}</p>
                                     </div>
                                 `);
                             }
                             layer.on({
                                 mouseover: (e) => {
                                     const l = e.target;
-                                    l.setStyle({ fillOpacity: 0.3, weight: 3 });
+                                    l.setStyle({ fillOpacity: vizMode === 'budget' ? 0.9 : 0.3, weight: 3 });
                                 },
                                 mouseout: (e) => {
                                     const l = e.target;
-                                    l.setStyle({ fillOpacity: 0.1, weight: 2 });
+                                    l.setStyle({ fillOpacity: vizMode === 'budget' ? 0.7 : 0.1, weight: vizMode === 'budget' ? 1 : 2 });
                                 }
                             });
                         }}
@@ -294,7 +348,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                 <SearchSyncHandler onSearchComplete={handleSearchComplete} />
 
                 {(activeProjects.length > 0 || permanentProjects.length > 0) && (
-                    <ProjectMarkers projects={[...permanentProjects, ...activeProjects]} vizMode={vizMode} />
+                    <ProjectMarkers projects={[...permanentProjects, ...activeProjects]} vizMode={vizMode === 'budget' ? 'default' : vizMode} />
                 )}
 
                 {activeProjects.length === 0 && permanentProjects.length === 0 && searchResult && (
@@ -361,7 +415,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
             </div>
 
             {/* Visualization Mode Switcher (Bottom Left) */}
-            <div className="absolute bottom-20 left-4 z-[400] bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-2 max-w-[200px]">
+            <div className="absolute bottom-10 left-4 z-[400] bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-2 max-w-[200px]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase px-1">Mode Visualisasi</span>
                 <div className="flex flex-wrap gap-1">
                     <button
@@ -369,6 +423,12 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'default' ? 'bg-lobar-blue text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
                     >
                         Proyek
+                    </button>
+                    <button
+                        onClick={() => setVizMode('budget')}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${vizMode === 'budget' ? 'bg-green-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
+                    >
+                        Anggaran
                     </button>
                     <button
                         onClick={() => setVizMode('stunting')}
@@ -395,6 +455,33 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         Kepadatan
                     </button>
                 </div>
+
+                {vizMode === 'budget' && (
+                    <div className="mt-1 pt-2 border-t border-slate-200">
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#15803d]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">&gt; 10 Miliar</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#22c55e]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">5 - 10 Miliar</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#84cc16]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">2 - 5 Miliar</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#eab308]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">1 - 2 Miliar</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#f97316]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">&lt; 1 Miliar</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {vizMode === 'stunting' && (
                     <div className="mt-1 pt-2 border-t border-slate-200">
@@ -427,5 +514,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
         </div >
     );
 };
+
 
 export default MapContainer;
