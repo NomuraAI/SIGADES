@@ -14,9 +14,9 @@ ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 -- 3. Seed Initial Users
 INSERT INTO users (username, password, role, name) 
 VALUES 
-('admin', 'admin123', 'admin', 'Administrator Bapperida'),
-('user', 'user123', 'user', 'Staff Perencanaan'),
-('view', 'view123', 'viewer', 'Viewer Umum')
+('LobarAdmin', '@Lombok1_1', 'admin', 'Administrator Bapperida'),
+('LobarUser', '@Lombok2_2', 'user', 'Staff Perencanaan'),
+('LobarView', '@Lombok3_3', 'viewer', 'Viewer Umum')
 ON CONFLICT (username) DO NOTHING;
 
 -- 4. Verifikasi Data

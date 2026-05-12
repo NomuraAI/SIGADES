@@ -153,9 +153,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
             </div>
             
             <div className="mt-6 grid grid-cols-3 gap-2 opacity-50 group hover:opacity-100 transition-opacity">
-               <div className="text-[10px] text-sky-300 p-1.5 border border-sky-500/20 rounded cursor-help font-bold tracking-widest" title="admin / admin123">ADMIN</div>
-               <div className="text-[10px] text-sky-300 p-1.5 border border-sky-500/20 rounded cursor-help font-bold tracking-widest" title="user / user123">STAFF</div>
-               <div className="text-[10px] text-sky-300 p-1.5 border border-sky-500/20 rounded cursor-help font-bold tracking-widest" title="view / view123">VIEWER</div>
+               <div className="text-[10px] text-sky-300 p-1.5 border border-sky-500/20 rounded cursor-help font-bold tracking-widest" title="LobarAdmin / @Lombok1_1">ADMIN</div>
+               <div className="text-[10px] text-sky-300 p-1.5 border border-sky-500/20 rounded cursor-help font-bold tracking-widest" title="LobarUser / @Lombok2_2">STAFF</div>
+               <div className="text-[10px] text-sky-300 p-1.5 border border-sky-500/20 rounded cursor-help font-bold tracking-widest" title="LobarView / @Lombok3_3">VIEWER</div>
             </div>
           </div>
         </div>
