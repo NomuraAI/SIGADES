@@ -18,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({
     setSelectedVersion 
 }) => {
     return (
-        <header className="h-16 md:h-24 bg-gradient-to-r from-lobar-red to-red-800 text-white shadow-md flex items-center justify-between px-3 md:px-6 z-20 relative border-b border-white/5">
+        <header className="h-16 md:h-24 bg-gradient-to-r from-[#002e5d] to-[#001a35] text-white shadow-md flex items-center justify-between px-3 md:px-6 z-20 relative border-b border-white/10">
             <div className="flex items-center gap-4 md:gap-8">
                 <div className="flex items-center gap-2 md:gap-3">
                     <img src="/logo_lombok_barat.png" alt="Logo Lombok Barat" className="h-8 md:h-12 w-auto drop-shadow-md" />
@@ -92,7 +92,11 @@ const Header: React.FC<HeaderProps> = ({
                     </div>
                 )}
 
-                <img src="/logo_kerja_nyata.png" alt="Logo Kerja Nyata" className="h-8 md:h-16 w-auto object-contain drop-shadow-sm opacity-80" />
+                <img 
+                    src="/logo_kerja_nyata.png" 
+                    alt="Logo Kerja Nyata" 
+                    className="h-8 md:h-16 w-auto object-contain opacity-90 filter drop-shadow-[0_0_2px_rgba(255,255,255,0.8)]" 
+                />
             </div>
         </header>
     );
