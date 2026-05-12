@@ -407,6 +407,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                                                     <span class="text-[9px] text-slate-500 uppercase font-bold">Balita Stunting</span>
                                                     <span class="text-xs font-extrabold text-red-600">${villageProjects[0]?.jumlahBalitaStunting || 0}</span>
                                                 </div>
+                                            ` : vizMode === 'poverty' ? `
+                                                <div class="flex justify-between items-center gap-4 border-t pt-1">
+                                                    <span class="text-[9px] text-slate-500 uppercase font-bold">Penduduk Miskin</span>
+                                                    <span class="text-xs font-extrabold text-orange-600">${villageProjects[0]?.jumlahAngkaKemiskinan || 0} Jiwa</span>
+                                                </div>
                                             ` : ''}
                                             <div class="flex justify-between items-center gap-4">
                                                 <span class="text-[9px] text-slate-500 uppercase font-bold">Kecamatan</span>
