@@ -425,9 +425,17 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                                                     <span class="text-xs font-extrabold text-orange-600">${villageProjects[0]?.jumlahAngkaKemiskinan || 0} Jiwa</span>
                                                 </div>
                                             ` : vizMode === 'priority' ? `
-                                                <div class="flex justify-between items-center gap-4 border-t pt-1">
-                                                    <span class="text-[9px] text-slate-500 uppercase font-bold">Proyek Prioritas</span>
-                                                    <span class="text-xs font-extrabold text-indigo-700">${villageProjects.filter(p => p.aksiPrioritas).length} Proyek</span>
+                                                <div class="border-t pt-1 mt-1">
+                                                    <div class="flex justify-between items-center gap-4 mb-1">
+                                                        <span class="text-[9px] text-slate-500 uppercase font-bold">Proyek Prioritas</span>
+                                                        <span class="text-xs font-extrabold text-indigo-700">${villageProjects.filter(p => p.aksiPrioritas).length} Proyek</span>
+                                                    </div>
+                                                    <div class="max-h-[80px] overflow-y-auto pr-1">
+                                                        ${villageProjects
+                                                            .filter(p => p.aksiPrioritas)
+                                                            .map(p => `<div class="text-[8px] text-slate-600 border-l-2 border-indigo-200 pl-1 mb-1 leading-tight">${p.subKegiatan || p.pekerjaan}</div>`)
+                                                            .join('')}
+                                                    </div>
                                                 </div>
                                             ` : ''}
                                             <div class="flex justify-between items-center gap-4">
