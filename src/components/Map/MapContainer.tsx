@@ -96,12 +96,21 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
 
     const [permanentProjects, setPermanentProjects] = useState<ProjectData[]>([]);
 
+    const normalizeName = (name: string) => {
+        if (!name) return '';
+        return name.toLowerCase()
+            .replace(/^desa\s+/, '')
+            .replace(/^kelurahan\s+/, '')
+            .replace(/^kel\.\s+/, '')
+            .trim();
+    };
+
     // Calculate total budget per village
     const villageBudgets = React.useMemo(() => {
         const budgets: { [key: string]: number } = {};
         [...permanentProjects, ...activeProjects].forEach(p => {
             if (p.desaKelurahan) {
-                const name = p.desaKelurahan.toLowerCase().trim();
+                const name = normalizeName(p.desaKelurahan);
                 budgets[name] = (budgets[name] || 0) + (p.paguAnggaran || 0);
             }
         });
@@ -125,13 +134,12 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
         }).format(value);
     };
 
+    // Fetch ALL projects on load (even those without coordinates for budget calculation)
     useEffect(() => {
         const fetchAllMarkers = async () => {
             let query = supabase
                 .from('projects')
-                .select('*')
-                .not('latitude', 'is', null)
-                .not('longitude', 'is', null);
+                .select('*');
 
             if (selectedVersion) {
                 query = query.eq('data_version', selectedVersion);
@@ -291,7 +299,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         data={batasDesaData} 
                         style={(feature) => {
                             if (vizMode === 'budget' && feature) {
-                                const desaName = feature.properties.DESA.toLowerCase().trim();
+                                const desaName = normalizeName(feature.properties.DESA);
                                 const budget = villageBudgets[desaName] || 0;
                                 return {
                                     color: 'white',
@@ -311,7 +319,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         }}
                         onEachFeature={(feature, layer) => {
                             if (feature.properties && feature.properties.DESA) {
-                                const desaName = feature.properties.DESA.toLowerCase().trim();
+                                const desaName = normalizeName(feature.properties.DESA);
                                 const budget = villageBudgets[desaName] || 0;
 
                                 layer.bindPopup(`
