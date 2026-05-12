@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intro Geospasial - Lombok Barat</title>
+    <!-- Menggunakan font bergaya teknologi dan pemetaan -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #030a12;
+            --grid-color: rgba(14, 165, 233, 0.15);
+            --radar-sweep: rgba(14, 165, 233, 0.4);
+            --node-color: #f97316; /* Orange untuk titik desa */
+            --path-color: #38bdf8; /* Biru terang untuk jalan/infrastruktur */
+            --text-main: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            color: var(--text-main);
+            position: relative;
+        }
+
+        /* Latar Belakang Grid Koordinat Peta */
+        .coordinate-grid {
+            position: absolute;
+            width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            z-index: 1;
+        }
+
+        /* Tanda bidik silang (Crosshairs) di sudut layar */
+        .crosshair {
+            position: absolute;
+            width: 50px; height: 50px;
+            border: 2px solid var(--path-color);
+            z-index: 2;
+            opacity: 0.5;
+        }
+        .ch-tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .ch-tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+        .ch-bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+        .ch-br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+        /* Kontainer Utama Aplikasi */
+        .app-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Efek Sapuan Radar (Radar Sweep) */
+        .radar-box {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 350px; height: 350px;
+            border-radius: 50%;
+            border: 1px dashed rgba(14, 165, 233, 0.3);
+            z-index: 2;
+        }
+
+        .radar-sweep {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent 70%, var(--radar-sweep) 100%);
+            animation: spinRadar 2s linear infinite;
+        }
+
+        @keyframes spinRadar {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Animasi Jaringan Infrastruktur (SVG) */
+        .map-network {
+            position: absolute;
+            width: 320px;
+            height: 200px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+        }
+
+        /* Garis penghubung antar wilayah */
+        .network-path {
+            fill: none;
+            stroke: var(--path-color);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 500;
+            stroke-dashoffset: 500;
+            animation: drawPath 2s ease-in-out forwards;
+            filter: drop-shadow(0 0 5px var(--path-color));
+        }
+
+        /* Animasi khusus untuk setiap garis agar terlihat menyebar */
+        .path-1 { animation-delay: 0.2s; }
+        .path-2 { animation-delay: 0.7s; }
+        .path-3 { animation-delay: 1.2s; }
+
+        /* Titik-titik Desa (Nodes) */
+        .map-node {
+            fill: var(--node-color);
+            opacity: 0;
+            filter: drop-shadow(0 0 8px var(--node-color));
+            animation: popNode 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Waktu muncul titik desa */
+        .node-1 { animation-delay: 0.2s; }
+        .node-2 { animation-delay: 0.7s; }
+        .node-3 { animation-delay: 1.2s; }
+        .node-4 { animation-delay: 1.7s; }
+        .node-5 { animation-delay: 2.2s; }
+
+        @keyframes drawPath {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes popNode {
+            to { opacity: 1; transform: scale(1); transform-origin: center; }
+            from { transform: scale(0); transform-origin: center; }
+        }
+
+        /* Pembungkus Logo */
+        .logo-wrapper {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+            z-index: 5;
+            opacity: 0;
+            /* Logo memantul layaknya Location Pin jatuh dari atas */
+            animation: dropPinLogo 1s cubic-bezier(0.34, 1.56, 0.64, 1) 2.5s forwards;
+        }
+
+        /* Pendaran di belakang logo (sebagai penanda titik pusat) */
+        .logo-wrapper::before {
+            content: '';
+            position: absolute;
+            width: 80%; height: 20px;
+            bottom: -10px;
+            background: radial-gradient(ellipse at center, rgba(14, 165, 233, 0.8) 0%, transparent 70%);
+            z-index: -1;
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards 3s;
+        }
+
+        .logo {
+            width: 125px;
+            z-index: 2;
+            filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.6));
+        }
+
+        @keyframes dropPinLogo {
+            0% { opacity: 0; transform: translateY(-100px) scale(0.5); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        /* Area Teks Judul */
+        .title-area {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUpFade 1s ease-out 3s forwards;
+            position: relative;
+            z-index: 10;
+        }
+
+        .app-name {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 3.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 15px rgba(14, 165, 233, 0.6);
+        }
+
+        .app-sub {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            color: var(--node-color);
+            font-weight: 600;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        @keyframes slideUpFade {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hilangkan elemen peta saat logo muncul untuk fokus ke judul */
+        .map-layer.fade-out {
+            animation: fadeOutMap 1s ease forwards;
+        }
+        @keyframes fadeOutMap { 
+            to { opacity: 0; transform: translate(-50%, -50%) scale(1.2); filter: blur(10px); } 
+        }
+
+        @media (max-width: 768px) {
+            .app-name { font-size: 2.2rem; }
+            .app-sub { font-size: 0.8rem; letter-spacing: 2px; }
+            .logo-wrapper { width: 130px; height: 130px; }
+            .logo { width: 100px; }
+            .radar-box { width: 250px; height: 250px; }
+            .map-network { width: 250px; height: 160px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Grid Background & Crosshairs -->
+    <div class="coordinate-grid"></div>
+    <div class="crosshair ch-tl"></div>
+    <div class="crosshair ch-tr"></div>
+    <div class="crosshair ch-bl"></div>
+    <div class="crosshair ch-br"></div>
+
+    <div class="app-container">
+        
+        <!-- Lapisan Peta Geospasial (Akan memudar di akhir) -->
+        <div class="map-layer" id="mapLayer" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; z-index: 2;">
+            
+            <div class="radar-box">
+                <div class="radar-sweep"></div>
+            </div>
+
+            <!-- SVG Animasi Jaringan Lokasi -->
+            <svg class="map-network" viewBox="0 0 320 200">
+                <!-- Rute Utama (Jalan Besar) -->
+                <path class="network-path path-1" d="M 40 160 L 120 100 L 200 130 L 280 60" />
+                <!-- Rute Cabang (Infrastruktur Desa) -->
+                <path class="network-path path-2" d="M 120 100 L 100 40" />
+                <path class="network-path path-3" d="M 200 130 L 230 180" />
+                
+                <!-- Titik Lokasi/Desa -->
+                <circle cx="40" cy="160" r="6" class="map-node node-1" />
+                <circle cx="100" cy="40" r="5" class="map-node node-2" />
+                <circle cx="120" cy="100" r="8" class="map-node node-3" />
+                <circle cx="230" cy="180" r="5" class="map-node node-4" />
+                <circle cx="280" cy="60" r="7" class="map-node node-5" />
+            </svg>
+        </div>
+
+        <!-- Logo Instansi yang jatuh ke tengah layar -->
+        <div class="logo-wrapper">
+            <img src="Logo Lobar Blue.png" alt="Logo Lombok Barat" class="logo">
+        </div>
+
+        <div class="title-area">
+            <h1 class="app-name">SI-GADES</h1>
+            <h2 class="app-sub">BAPPERIDA KABUPATEN LOMBOK BARAT</h2>
+        </div>
+
+    </div>
+
+    <script>
+        const mapLayer = document.getElementById('mapLayer');
+
+        // Transisi: Setelah jaringan peta selesai di-render (sekitar 2.8 detik),
+        // lapisan peta dan radar akan memudar (fade out), memberi ruang untuk Logo memantul masuk.
+        setTimeout(() => {
+            mapLayer.classList.add('fade-out');
+        }, 2800); 
+
+        // Klik layar untuk melihat animasi ulang (berguna saat akan merekam layar)
+        document.body.addEventListener('click', () => {
+            location.reload();
+        });
+    </script>
+</body>
+</html>
