@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Map as MapIcon, User as UserIcon, LogOut, ChevronDown, Database } from 'lucide-react';
 import { User } from '../../types';
 import WeatherInfo from './WeatherInfo';
@@ -17,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({
     availableVersions, 
     setSelectedVersion 
 }) => {
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     return (
         <header className="h-16 md:h-24 bg-gradient-to-r from-[#002e5d] to-[#001a35] text-white shadow-md flex items-center justify-between px-3 md:px-6 z-20 relative border-b border-white/10">
