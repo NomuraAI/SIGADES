@@ -1,22 +1,25 @@
-import { Menu, Map as MapIcon, User as UserIcon, LogOut, ChevronDown } from 'lucide-react';
+import { Map as MapIcon, User as UserIcon, LogOut, ChevronDown, Database } from 'lucide-react';
 import { User } from '../../types';
+import WeatherInfo from './WeatherInfo';
 
 interface HeaderProps {
-    toggleSidebar: () => void;
     user: User | null;
     onLogout: () => void;
+    selectedVersion: string;
+    availableVersions: string[];
+    setSelectedVersion: (version: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ toggleSidebar, user, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ 
+    user, 
+    onLogout, 
+    selectedVersion, 
+    availableVersions, 
+    setSelectedVersion 
+}) => {
     return (
-        <header className="h-16 md:h-24 bg-gradient-to-r from-lobar-red to-red-800 text-white shadow-md flex items-center justify-between px-3 md:px-4 z-20 relative">
-            <div className="flex items-center gap-2 md:gap-4">
-                <button
-                    onClick={toggleSidebar}
-                    className="p-1.5 md:p-2 hover:bg-white/20 rounded-lg transition-colors text-white"
-                >
-                    <Menu className="w-5 h-5 md:w-6 md:h-6" />
-                </button>
+        <header className="h-16 md:h-24 bg-gradient-to-r from-lobar-red to-red-800 text-white shadow-md flex items-center justify-between px-3 md:px-6 z-20 relative border-b border-white/5">
+            <div className="flex items-center gap-4 md:gap-8">
                 <div className="flex items-center gap-2 md:gap-3">
                     <img src="/logo_lombok_barat.png" alt="Logo Lombok Barat" className="h-8 md:h-12 w-auto drop-shadow-md" />
                     <div>
@@ -26,12 +29,26 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, user, onLogout }) => {
                         <p className="text-[8px] md:text-xs text-yellow-300 font-medium tracking-wider uppercase">Bapperida LOBAR</p>
                     </div>
                 </div>
+
+                {/* Version Selector - Moved from Sidebar */}
+                <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 rounded-full">
+                    <Database size={14} className="text-yellow-300" />
+                    <select
+                        value={selectedVersion}
+                        onChange={(e) => setSelectedVersion(e.target.value)}
+                        className="bg-transparent text-white text-[10px] font-bold uppercase tracking-widest outline-none cursor-pointer"
+                    >
+                        {availableVersions.map(v => (
+                            <option key={v} value={v} className="bg-slate-800 text-white">{v}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            <div className="flex items-center gap-4 md:gap-6">
-                <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-yellow-400/30 rounded-full text-white text-[10px] font-medium uppercase tracking-widest">
-                    <MapIcon size={12} className="text-yellow-300" />
-                    <span>Infrastruktur & Desa</span>
+            <div className="flex items-center gap-3 md:gap-6">
+                {/* Weather Info - Moved from Sidebar */}
+                <div className="hidden sm:block">
+                    <WeatherInfo />
                 </div>
 
                 {user && (
