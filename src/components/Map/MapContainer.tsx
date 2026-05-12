@@ -21,6 +21,8 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+
+
 const CENTER: [number, number] = [-8.6756, 116.1157];
 const ZOOM = 11;
 
@@ -83,6 +85,7 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
 };
 
 const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion }) => {
+
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
     const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority' | 'kepadatan' | 'budget'>('default');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -137,20 +140,41 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
     // Fetch ALL projects on load (even those without coordinates for budget calculation)
     useEffect(() => {
         const fetchAllMarkers = async () => {
-            let query = supabase
-                .from('projects')
-                .select('*');
 
-            if (selectedVersion) {
-                query = query.eq('data_version', selectedVersion);
+            
+            let allData: any[] = [];
+            let from = 0;
+            const step = 1000;
+            let hasMore = true;
+
+            while (hasMore) {
+                let query = supabase
+                    .from('projects')
+                    .select('*')
+                    .range(from, from + step - 1);
+
+                if (selectedVersion) {
+                    query = query.eq('data_version', selectedVersion);
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    console.error("[MAP DEBUG] Fetch Error:", error);
+                    hasMore = false;
+                    break;
+                }
+
+                if (data && data.length > 0) {
+                    allData = [...allData, ...data];
+                    from += step;
+                } else {
+                    hasMore = false;
+                }
             }
 
-            const { data, error } = await query;
-
-            if (!error && data) {
-                const mapped = data.map(item => mapItemToProjectData(item));
-                setPermanentProjects(mapped);
-            }
+            const mapped = allData.map(item => mapItemToProjectData(item));
+            setPermanentProjects(mapped);
         };
 
         fetchAllMarkers();
@@ -298,38 +322,73 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         key={vizMode} // Force re-render when vizMode changes
                         data={batasDesaData} 
                         style={(feature) => {
-                            if (vizMode === 'budget' && feature) {
-                                const desaName = normalizeName(feature.properties.DESA);
-                                const budget = villageBudgets[desaName] || 0;
-                                return {
-                                    color: 'white',
-                                    weight: 1,
-                                    opacity: 1,
-                                    fillColor: getBudgetColor(budget),
-                                    fillOpacity: 0.7
-                                };
+                            const desaName = normalizeName(feature?.properties.DESA || '');
+                            const villageProjects = [...permanentProjects, ...activeProjects].filter(p => 
+                                normalizeName(p.desaKelurahan || '') === desaName
+                            );
+
+                            let value = 0;
+                            let fillColor = '#fdba74';
+                            let fillOpacity = 0.1;
+                            let weight = 2;
+
+                            if (vizMode === 'budget') {
+                                value = villageProjects.reduce((sum, p) => sum + (p.paguAnggaran || 0), 0);
+                                fillColor = getBudgetColor(value);
+                                fillOpacity = 0.7;
+                                weight = 1;
+                            } else if (vizMode === 'stunting') {
+                                value = villageProjects[0]?.jumlahBalitaStunting || 0;
+                                // Logika pewarnaan gradien stunting (bisa ditambahkan fungsi getColor jika perlu)
+                                fillColor = value > 50 ? '#b91c1c' : value > 20 ? '#f59e0b' : '#22c55e';
+                                fillOpacity = 0.6;
+                            } else if (vizMode === 'poverty') {
+                                value = villageProjects[0]?.jumlahAngkaKemiskinan || 0;
+                                fillColor = value > 200 ? '#ea580c' : value > 100 ? '#f59e0b' : '#3b82f6';
+                                fillOpacity = 0.6;
+                            } else if (vizMode === 'kepadatan') {
+                                const density = typeof villageProjects[0]?.kepadatan_penduduk === 'string' 
+                                    ? parseFloat(villageProjects[0].kepadatan_penduduk.replace(/,/g, '')) 
+                                    : villageProjects[0]?.kepadatan_penduduk || 0;
+                                fillColor = density > 1000 ? '#134e4a' : density > 500 ? '#0d9488' : '#99f6e4';
+                                fillOpacity = 0.6;
                             }
+
                             return {
-                                color: '#f97316',
-                                weight: 2,
+                                color: vizMode === 'budget' ? 'white' : '#f97316',
+                                weight: weight,
                                 opacity: 0.8,
-                                fillColor: '#fdba74',
-                                fillOpacity: 0.1
+                                fillColor: fillColor,
+                                fillOpacity: fillOpacity
                             };
                         }}
                         onEachFeature={(feature, layer) => {
                             if (feature.properties && feature.properties.DESA) {
-                                const desaName = normalizeName(feature.properties.DESA);
-                                const budget = villageBudgets[desaName] || 0;
+                                const desaNameStr = feature.properties.DESA;
+                                const normalized = normalizeName(desaNameStr);
+                                const villageProjects = [...permanentProjects, ...activeProjects].filter(p => 
+                                    normalizeName(p.desaKelurahan || '') === normalized
+                                );
+                                const budget = villageBudgets[normalized] || 0;
 
                                 layer.bindPopup(`
-                                    <div class="p-1 min-w-[150px]">
+                                    <div class="p-1 min-w-[180px]">
                                         <h4 class="font-bold text-lobar-blue text-sm border-b pb-1 mb-2">Desa ${feature.properties.DESA}</h4>
                                         <div class="space-y-1.5">
                                             <div class="flex justify-between items-center gap-4">
-                                                <span class="text-[9px] text-slate-500 uppercase font-bold">Total Pagu DIPA</span>
+                                                <span class="text-[9px] text-slate-500 uppercase font-bold">Total Proyek</span>
+                                                <span class="text-xs font-extrabold text-blue-700">${villageProjects.length}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center gap-4">
+                                                <span class="text-[9px] text-slate-500 uppercase font-bold">Total Anggaran</span>
                                                 <span class="text-xs font-extrabold text-green-700">${formatCurrency(budget)}</span>
                                             </div>
+                                            ${vizMode === 'stunting' ? `
+                                                <div class="flex justify-between items-center gap-4 border-t pt-1">
+                                                    <span class="text-[9px] text-slate-500 uppercase font-bold">Balita Stunting</span>
+                                                    <span class="text-xs font-extrabold text-red-600">${villageProjects[0]?.jumlahBalitaStunting || 0}</span>
+                                                </div>
+                                            ` : ''}
                                             <div class="flex justify-between items-center gap-4">
                                                 <span class="text-[9px] text-slate-500 uppercase font-bold">Kecamatan</span>
                                                 <span class="text-[10px] text-slate-700 font-semibold">${feature.properties.KECAMATAN}</span>
