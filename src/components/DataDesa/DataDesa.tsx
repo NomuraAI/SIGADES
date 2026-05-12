@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Edit2, Trash2, MapPin, ArrowLeft, FileSpreadsheet, X, Loader2, Wallet, Briefcase, Landmark, ChevronLeft, ChevronRight, Filter, Check, RefreshCw, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { ProjectData } from '../../types';
+import { ProjectData, User } from '../../types';
 import { getProjectService } from '../../services/projectService';
 import { Database, HardDrive } from 'lucide-react';
 
@@ -12,9 +12,11 @@ interface DataDesaProps {
     onVersionChange?: (newVersion?: string) => void;
     dataSourceMode: 'supabase' | 'local';
     setDataSourceMode: (mode: 'supabase' | 'local') => void;
+    user: User | null;
 }
 
-const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion, onVersionChange, dataSourceMode, setDataSourceMode }) => {
+const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion, onVersionChange, dataSourceMode, setDataSourceMode, user }) => {
+    const isViewer = user?.role === 'viewer';
     const [searchQuery, setSearchQuery] = useState('');
     const [searchMode, setSearchMode] = useState<'desa' | 'kecamatan'>('desa');
     const [filterOPD, setFilterOPD] = useState('');
@@ -548,12 +550,16 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         </div>
                     )}
 
-                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium">
-                        <FileSpreadsheet size={18} /> Impor Excel
-                    </button>
-                    <button onClick={() => { setNewItem({}); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-lobar-blue text-white rounded-lg hover:bg-lobar-blue-dark transition-all shadow-lg shadow-blue-500/20 font-bold">
-                        <Plus size={18} /> Tambah Data
-                    </button>
+                    {!isViewer && (
+                        <>
+                            <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium">
+                                <FileSpreadsheet size={18} /> Impor Excel
+                            </button>
+                            <button onClick={() => { setNewItem({}); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-lobar-blue text-white rounded-lg hover:bg-lobar-blue-dark transition-all shadow-lg shadow-blue-500/20 font-bold">
+                                <Plus size={18} /> Tambah Data
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -745,9 +751,12 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
 
                                     <td className="px-3 py-2.5 sticky right-0 bg-white shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
                                         <div className="flex justify-center gap-1">
-                                            {/* Pindahkan tombol hapus ke kiri untuk menghindari masalah klik border kanan sticky */}
-                                            <button type="button" onClick={(e) => handleDeleteClick(item.id, e)} title="Hapus" className="relative z-10 p-1 text-red-600 hover:bg-red-100 rounded transition-colors"><Trash2 size={14} /></button>
-                                            <button type="button" onClick={() => handleEditClick(item)} title="Edit" className="p-1 text-amber-600 hover:bg-amber-100 rounded transition-colors"><Edit2 size={14} /></button>
+                                            {!isViewer && (
+                                                <>
+                                                    <button type="button" onClick={(e) => handleDeleteClick(item.id, e)} title="Hapus" className="relative z-10 p-1 text-red-600 hover:bg-red-100 rounded transition-colors"><Trash2 size={14} /></button>
+                                                    <button type="button" onClick={() => handleEditClick(item)} title="Edit" className="p-1 text-amber-600 hover:bg-amber-100 rounded transition-colors"><Edit2 size={14} /></button>
+                                                </>
+                                            )}
                                             <button type="button" onClick={() => onViewMap && onViewMap(item)} title="Lihat Peta" className="p-1 text-lobar-blue hover:bg-blue-100 rounded transition-colors"><MapPin size={14} /></button>
                                         </div>
                                     </td>

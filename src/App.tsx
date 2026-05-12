@@ -110,6 +110,7 @@ const App = () => {
                     onVersionChange={fetchVersions} // Refresh versions after import
                     dataSourceMode={dataSourceMode}
                     setDataSourceMode={setDataSourceMode}
+                    user={user}
                 />
             )}
             {activePage === 'Dashboard Interaktif' && <BreakdownAnggaranPage selectedVersion={selectedVersion} />}

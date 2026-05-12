@@ -43,7 +43,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       icon: <Building2 className="w-6 h-6" />, 
       label: 'Data Desa', 
       color: 'from-amber-400 to-orange-600',
-      roles: ['admin', 'user'] 
+      roles: ['admin', 'user', 'viewer'] 
     },
     { 
       id: 'Pengaturan', 
