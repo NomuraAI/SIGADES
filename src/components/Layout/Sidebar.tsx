@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Building2, Activity, MessageSquareWarning, Settings, X, Edit2, Check, Search, PieChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { User } from '../../types';
+
 interface SidebarProps {
     isOpen: boolean;
     onClose: () => void;
@@ -10,9 +12,21 @@ interface SidebarProps {
     selectedVersion: string;
     availableVersions: string[];
     setSelectedVersion: (version: string) => void;
+    user: User | null;
+    onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeItem, setActiveItem, selectedVersion, availableVersions, setSelectedVersion }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+    isOpen, 
+    onClose, 
+    activeItem, 
+    setActiveItem, 
+    selectedVersion, 
+    availableVersions, 
+    setSelectedVersion,
+    user,
+    onLogout
+}) => {
 
     const [weather, setWeather] = useState({ temp: '--', city: 'Memuat...', code: '...' });
     const [isEditingWeather, setIsEditingWeather] = useState(false);
@@ -119,12 +133,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeItem, setActiv
         }
     };
 
-    const menuItems = [
-        { icon: <PieChart size={22} strokeWidth={1.5} />, label: 'Dashboard Interaktif' },
-        { icon: <MapPin size={22} strokeWidth={1.5} />, label: 'Peta Interaktif' },
-        { icon: <Building2 size={22} strokeWidth={1.5} />, label: 'Data Desa' },
-        { icon: <Settings size={22} strokeWidth={1.5} />, label: 'Pengaturan' },
+    const allMenuItems = [
+        { icon: <PieChart size={22} strokeWidth={1.5} />, label: 'Dashboard Interaktif', roles: ['admin', 'user', 'viewer'] },
+        { icon: <MapPin size={22} strokeWidth={1.5} />, label: 'Peta Interaktif', roles: ['admin', 'user', 'viewer'] },
+        { icon: <Building2 size={22} strokeWidth={1.5} />, label: 'Data Desa', roles: ['admin', 'user'] },
+        { icon: <Settings size={22} strokeWidth={1.5} />, label: 'Pengaturan', roles: ['admin'] },
     ];
+
+    const menuItems = allMenuItems.filter(item => item.roles.includes(user?.role || 'viewer'));
 
     return (
         <AnimatePresence>

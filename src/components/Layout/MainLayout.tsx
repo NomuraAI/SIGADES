@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { User } from '../../types';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -9,9 +10,20 @@ interface MainLayoutProps {
     selectedVersion: string;
     availableVersions: string[];
     setSelectedVersion: (version: string) => void;
+    user: User | null;
+    onLogout: () => void;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children, activePage, setActivePage, selectedVersion, availableVersions, setSelectedVersion }) => {
+const MainLayout: React.FC<MainLayoutProps> = ({ 
+    children, 
+    activePage, 
+    setActivePage, 
+    selectedVersion, 
+    availableVersions, 
+    setSelectedVersion,
+    user,
+    onLogout
+}) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const toggleSidebar = () => {
@@ -28,10 +40,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children, activePage, setActive
                 selectedVersion={selectedVersion}
                 availableVersions={availableVersions}
                 setSelectedVersion={setSelectedVersion}
+                user={user}
+                onLogout={onLogout}
             />
 
             <div className="flex-1 flex flex-col h-full w-full relative">
-                <Header toggleSidebar={toggleSidebar} />
+                <Header toggleSidebar={toggleSidebar} user={user} onLogout={onLogout} />
 
                 <main className="flex-1 relative overflow-y-auto overflow-x-hidden bg-slate-50 min-h-0">
                     {children}

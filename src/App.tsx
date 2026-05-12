@@ -7,10 +7,21 @@ import { Database, HardDrive } from 'lucide-react'
 
 import ComingSoon from './components/Common/ComingSoon';
 import BreakdownAnggaranPage from './components/BreakdownAnggaran/BreakdownAnggaranPage';
+import LandingPage from './components/Landing/LandingPage';
+import LoginPage from './components/Auth/LoginPage';
 
-import { ProjectData } from './types';
+import { ProjectData, User } from './types';
 
 const App = () => {
+    const [step, setStep] = useState<'landing' | 'login' | 'app'>(() => {
+        const savedUser = localStorage.getItem('sigades_user');
+        return savedUser ? 'app' : 'landing';
+    });
+    const [user, setUser] = useState<User | null>(() => {
+        const savedUser = localStorage.getItem('sigades_user');
+        return savedUser ? JSON.parse(savedUser) : null;
+    });
+    
     const [activePage, setActivePage] = useState('Dashboard Interaktif');
     const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
     const [selectedVersion, setSelectedVersion] = useState<string>('Default');
@@ -23,8 +34,10 @@ const App = () => {
 
     useEffect(() => {
         localStorage.setItem('sigades_data_mode', dataSourceMode);
-        fetchVersions();
-    }, [dataSourceMode]); // Refetch when mode changes
+        if (step === 'app') {
+            fetchVersions();
+        }
+    }, [dataSourceMode, step]); // Refetch when mode changes or app starts
 
     const fetchVersions = async (newSelectedVersion?: string) => {
         try {
@@ -53,10 +66,30 @@ const App = () => {
         }
     };
 
+    const handleLogin = (userData: User) => {
+        setUser(userData);
+        localStorage.setItem('sigades_user', JSON.stringify(userData));
+        setStep('app');
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('sigades_user');
+        setUser(null);
+        setStep('login');
+    };
+
     const handleViewMap = (project: ProjectData) => {
         setSelectedProject(project);
         setActivePage('Peta Interaktif');
     };
+
+    if (step === 'landing') {
+        return <LandingPage onLogin={() => setStep('login')} />;
+    }
+
+    if (step === 'login') {
+        return <LoginPage onLogin={handleLogin} onBack={() => setStep('landing')} />;
+    }
 
     return (
         <MainLayout
@@ -65,7 +98,8 @@ const App = () => {
             selectedVersion={selectedVersion}
             availableVersions={availableVersions}
             setSelectedVersion={setSelectedVersion}
-
+            user={user}
+            onLogout={handleLogout}
         >
             {activePage === 'Peta Interaktif' && <MapContainer selectedProject={selectedProject} selectedVersion={selectedVersion} />}
             {activePage === 'Data Desa' && (
