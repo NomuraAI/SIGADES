@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Lock, ArrowRight, ShieldCheck, Info, ChevronLeft } from 'lucide-react';
+import { User, Lock, ArrowRight, ShieldCheck, Info, ChevronLeft, RefreshCcw, Hash } from 'lucide-react';
 import { UserRole, User as UserType } from '../../types';
 import { userService } from '../../services/userService';
 
@@ -14,11 +14,34 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [captcha, setCaptcha] = useState({ question: '', answer: 0 });
+  const [captchaInput, setCaptchaInput] = useState('');
+
+  const generateCaptcha = () => {
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    setCaptcha({
+      question: `${num1} + ${num2}`,
+      answer: num1 + num2
+    });
+    setCaptchaInput('');
+  };
+
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    if (parseInt(captchaInput) !== captcha.answer) {
+      setError('Jawaban CAPTCHA salah.');
+      generateCaptcha();
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const user = await userService.login(username, password);
@@ -110,6 +133,45 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
                   className="w-full bg-[#030a12] border border-sky-500/30 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-sky-500/40 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400/50 transition-all"
                   required
                 />
+              </div>
+
+              {/* CAPTCHA Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sky-400/70 text-[10px] uppercase tracking-[0.2em] font-bold ml-1">Verifikasi Keamanan</label>
+                  <button 
+                    type="button"
+                    onClick={generateCaptcha}
+                    className="text-sky-400 hover:text-sky-300 transition-colors flex items-center space-x-1 group/refresh"
+                  >
+                    <span className="text-[10px] uppercase tracking-widest font-bold">Ganti Soal</span>
+                    <RefreshCcw className="w-3 h-3 group-hover/refresh:rotate-180 transition-transform duration-500" />
+                  </button>
+                </div>
+                
+                <div className="flex space-x-3">
+                  <div className="flex-1 bg-[#030a12] border border-sky-500/30 rounded-xl flex items-center justify-center p-3 relative overflow-hidden">
+                    {/* Captcha Noise background */}
+                    <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #38bdf8 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                    <span className="text-2xl font-black text-white tracking-[0.3em] italic select-none drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">
+                      {captcha.question}
+                    </span>
+                  </div>
+                  
+                  <div className="relative w-1/3">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400">
+                      <Hash className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="number"
+                      value={captchaInput}
+                      onChange={(e) => setCaptchaInput(e.target.value)}
+                      placeholder="?"
+                      className="w-full bg-[#030a12] border border-sky-500/30 rounded-xl py-3.5 pl-9 pr-2 text-white placeholder:text-sky-500/40 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400/50 transition-all text-center font-bold"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
