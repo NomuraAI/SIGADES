@@ -61,7 +61,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       <motion.div 
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-full p-2 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-1 md:gap-4"
+        className="bg-white/20 backdrop-blur-2xl border border-white/40 rounded-full p-2 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex items-center gap-1 md:gap-4 ring-1 ring-white/20"
       >
         {menuItems.map((item) => (
           <button
@@ -81,21 +81,21 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
               relative z-10 p-2 rounded-xl transition-all duration-300
               ${activeItem === item.id 
                 ? `bg-gradient-to-br ${item.color} text-white shadow-lg scale-110` 
-                : 'text-slate-400 group-hover:text-white group-hover:scale-110'}
+                : 'text-slate-600 group-hover:text-slate-900 group-hover:scale-110'}
             `}>
               {item.icon}
             </div>
             
             <span className={`
-              text-[10px] font-bold uppercase tracking-widest transition-all duration-300
-              ${activeItem === item.id ? 'text-white opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'}
+              text-[10px] font-extrabold uppercase tracking-widest transition-all duration-300
+              ${activeItem === item.id ? 'text-slate-800 opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'}
             `}>
               {item.label}
             </span>
           </button>
         ))}
 
-        <div className="w-px h-10 bg-white/10 mx-2" />
+        <div className="w-px h-10 bg-slate-300/50 mx-2" />
 
         <button
           onClick={onLogout}
