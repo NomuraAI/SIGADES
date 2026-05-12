@@ -17,6 +17,7 @@ interface DataDesaProps {
 
 const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion, onVersionChange, dataSourceMode, setDataSourceMode, user }) => {
     const isViewer = user?.role === 'viewer';
+    const isAdmin = user?.role === 'admin';
     const [searchQuery, setSearchQuery] = useState('');
     const [searchMode, setSearchMode] = useState<'desa' | 'kecamatan'>('desa');
     const [filterOPD, setFilterOPD] = useState('');
@@ -552,9 +553,11 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
 
                     {!isViewer && (
                         <>
-                            <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium">
-                                <FileSpreadsheet size={18} /> Impor Excel
-                            </button>
+                            {isAdmin && (
+                                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium">
+                                    <FileSpreadsheet size={18} /> Impor Excel
+                                </button>
+                            )}
                             <button onClick={() => { setNewItem({}); setIsAddModalOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-lobar-blue text-white rounded-lg hover:bg-lobar-blue-dark transition-all shadow-lg shadow-blue-500/20 font-bold">
                                 <Plus size={18} /> Tambah Data
                             </button>
