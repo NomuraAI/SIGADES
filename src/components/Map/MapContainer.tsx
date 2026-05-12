@@ -347,9 +347,9 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                                 fillColor = value > 200 ? '#ea580c' : value > 100 ? '#f59e0b' : '#3b82f6';
                                 fillOpacity = 0.6;
                             } else if (vizMode === 'kepadatan') {
-                                const density = typeof villageProjects[0]?.kepadatan_penduduk === 'string' 
-                                    ? parseFloat(villageProjects[0].kepadatan_penduduk.replace(/,/g, '')) 
-                                    : villageProjects[0]?.kepadatan_penduduk || 0;
+                                const density = typeof villageProjects[0]?.kepadatanPenduduk === 'string' 
+                                    ? parseFloat((villageProjects[0].kepadatanPenduduk as string).replace(/,/g, '')) 
+                                    : villageProjects[0]?.kepadatanPenduduk || 0;
                                 fillColor = density > 1000 ? '#134e4a' : density > 500 ? '#0d9488' : '#99f6e4';
                                 fillOpacity = 0.6;
                             }
