@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MapContainer as LMapContainer, TileLayer, ZoomControl, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { MapContainer as LMapContainer, TileLayer, ZoomControl, Marker, Popup, Circle, useMap, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { Map as MapIcon, Satellite, Mountain, Navigation, Loader2 } from 'lucide-react';
+import { Map as MapIcon, Satellite, Mountain, Navigation, Loader2, Layers } from 'lucide-react';
 import SearchControl from './SearchControl';
 import ProjectMarkers from './ProjectMarkers';
 import { supabase } from '../../lib/supabase';
@@ -83,7 +83,6 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
 };
 
 const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion }) => {
-    // ... (state defs same)
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
     const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority' | 'kepadatan'>('default');
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -91,6 +90,8 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
     const [activeProjects, setActiveProjects] = useState<ProjectData[]>([]);
     const [searchResult, setSearchResult] = useState<{ lat: number, lng: number, label: string } | null>(null);
     const [projectToFocus, setProjectToFocus] = useState<ProjectData | null>(null);
+    const [batasDesaData, setBatasDesaData] = useState<any>(null);
+    const [showBatasDesa, setShowBatasDesa] = useState(true);
     const mapRef = useRef<L.Map>(null);
 
     const [permanentProjects, setPermanentProjects] = useState<ProjectData[]>([]);
@@ -119,11 +120,18 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
         fetchAllMarkers();
     }, [selectedVersion]);
 
+    // Fetch Batas Desa GeoJSON
+    useEffect(() => {
+        fetch('/batas_desa.json')
+            .then(res => res.json())
+            .then(data => setBatasDesaData(data))
+            .catch(err => console.error("Error loading boundaries:", err));
+    }, []);
+
     // Sync selectedProject (dari DataDesa table) ke projectToFocus dan fetch related
     useEffect(() => {
         const fetchRelatedProjects = async () => {
             if (selectedProject) {
-                // 1. Fetch projects with same Desa
                 let relatedProjects: ProjectData[] = [];
                 if (selectedProject.desaKelurahan) {
                     const { data, error } = await supabase
@@ -141,34 +149,28 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                     relatedProjects = [selectedProject];
                 }
 
-                // 2. Jika project sudah punya koordinat (permanen), langsung zoom max
                 if (selectedProject.latitude && selectedProject.longitude) {
                     setActiveProjects(relatedProjects);
                     if (mapRef.current) {
-                        mapRef.current.flyTo([selectedProject.latitude, selectedProject.longitude], 18); // Zoom max
+                        mapRef.current.flyTo([selectedProject.latitude, selectedProject.longitude], 18);
                     }
                 }
-                // 3. Jika tidak punya koordinat, cari via Geocoding (fallback)
                 else {
                     const provider = new OpenStreetMapProvider();
                     const query = `Desa ${selectedProject.desaKelurahan}, ${selectedProject.kecamatan}, Lombok Barat`;
 
                     try {
                         const results = await provider.search({ query });
-
                         if (results.length > 0) {
                             const { x: lng, y: lat } = results[0];
-
                             const updatedProjects = relatedProjects.map(p => ({
                                 ...p,
                                 latitude: p.latitude || lat,
                                 longitude: p.longitude || lng
                             }));
-
                             setActiveProjects(updatedProjects);
-
                             if (mapRef.current) {
-                                mapRef.current.flyTo([lat, lng], 15); // Zoom standar untuk area desa
+                                mapRef.current.flyTo([lat, lng], 15);
                             }
                         } else {
                             setActiveProjects(relatedProjects);
@@ -178,14 +180,12 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         setActiveProjects(relatedProjects);
                     }
                 }
-
                 setSearchResult(null);
             }
         };
         fetchRelatedProjects();
     }, [selectedProject]);
 
-    // Handle search complete event
     const handleSearchComplete = useCallback((location: any, projects: ProjectData[]) => {
         if (projects.length > 0) {
             setActiveProjects(projects);
@@ -199,14 +199,12 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                 lng: location.x,
                 label: location.label
             });
-            // Manual flyTo untuk hasil search yang tidak ada di DB
             if (mapRef.current) {
                 mapRef.current.flyTo([location.y, location.x], 15);
             }
         }
     }, []);
 
-    // Handle user location flyTo
     useEffect(() => {
         if (userLocation && mapRef.current) {
             mapRef.current.flyTo(userLocation, 15);
@@ -258,15 +256,47 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                 <ZoomControl position="bottomright" />
                 <SearchControl />
 
-                {/* SearchSyncHandler akan mencari data proyek berdasarkan hasil geosearch */}
+                {/* Batas Desa Layer */}
+                {showBatasDesa && batasDesaData && (
+                    <GeoJSON 
+                        data={batasDesaData} 
+                        style={() => ({
+                            color: '#f97316',
+                            weight: 2,
+                            opacity: 0.8,
+                            fillColor: '#fdba74',
+                            fillOpacity: 0.1
+                        })}
+                        onEachFeature={(feature, layer) => {
+                            if (feature.properties && feature.properties.DESA) {
+                                layer.bindPopup(`
+                                    <div class="p-1">
+                                        <h4 class="font-bold text-lobar-blue text-sm">Desa ${feature.properties.DESA}</h4>
+                                        <p class="text-[10px] text-slate-500 uppercase font-semibold">Kecamatan ${feature.properties.KECAMATAN}</p>
+                                        <p class="text-[9px] text-slate-400 mt-1 italic">${feature.properties.SUMBER || ''}</p>
+                                    </div>
+                                `);
+                            }
+                            layer.on({
+                                mouseover: (e) => {
+                                    const l = e.target;
+                                    l.setStyle({ fillOpacity: 0.3, weight: 3 });
+                                },
+                                mouseout: (e) => {
+                                    const l = e.target;
+                                    l.setStyle({ fillOpacity: 0.1, weight: 2 });
+                                }
+                            });
+                        }}
+                    />
+                )}
+
                 <SearchSyncHandler onSearchComplete={handleSearchComplete} />
 
-                {/* ProjectMarkers akan menampilkan marker dan popup jika activeProjects ada ATAU permanentProjects ada */}
                 {(activeProjects.length > 0 || permanentProjects.length > 0) && (
                     <ProjectMarkers projects={[...permanentProjects, ...activeProjects]} vizMode={vizMode} />
                 )}
 
-                {/* Jika tidak ada project match, tapi ada hasil search, tampilkan marker basic */}
                 {activeProjects.length === 0 && permanentProjects.length === 0 && searchResult && (
                     <Marker position={[searchResult.lat, searchResult.lng]} icon={DefaultIcon}>
                         <Popup>{searchResult.label}</Popup>
@@ -296,6 +326,19 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                     </span>
                 </div>
 
+                {/* Batas Desa Toggle */}
+                <div className="group relative">
+                    <button
+                        onClick={() => setShowBatasDesa(!showBatasDesa)}
+                        className={`p-2.5 rounded-lg shadow-xl border transition-all duration-300 ${showBatasDesa ? 'bg-orange-500 text-white border-orange-600' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}
+                    >
+                        <Layers size={20} />
+                    </button>
+                    <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
+                        {showBatasDesa ? 'Sembunyikan Batas Desa' : 'Tampilkan Batas Desa'}
+                    </span>
+                </div>
+
                 {/* Layer Switcher */}
                 <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-1.5">
                     {(Object.keys(layers) as Array<keyof typeof layers>).map((key) => (
@@ -309,7 +352,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                             >
                                 {layers[key].icon}
                             </button>
-                            {/* Hover Tooltip */}
                             <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-xl">
                                 {layers[key].name}
                             </span>
