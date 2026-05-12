@@ -54,6 +54,12 @@ const Header: React.FC<HeaderProps> = ({
 
                 {user && (
                     <div className="flex items-center gap-3 pl-4 border-l border-white/20">
+                        <div className="hidden md:block text-right">
+                            <p className="text-[10px] text-yellow-300 font-bold uppercase tracking-widest">
+                                {user.role === 'admin' ? 'Admin Bapperida' : 
+                                 user.role === 'user' ? 'Staff Perencana' : 'Viewer Umum'}
+                            </p>
+                        </div>
                         {/* User Icon Only - No Menu */}
                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center border border-white/30 shadow-inner">
                             <UserIcon size={18} />
