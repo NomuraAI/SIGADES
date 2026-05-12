@@ -410,11 +410,18 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                             layer.on({
                                 mouseover: (e) => {
                                     const l = e.target;
-                                    l.setStyle({ fillOpacity: vizMode === 'budget' ? 0.9 : 0.3, weight: 3 });
+                                    // Jika sedang dalam mode visualisasi (bukan default), pertahankan opacity tinggi
+                                    l.setStyle({ 
+                                        fillOpacity: vizMode !== 'default' ? 0.9 : 0.3, 
+                                        weight: 3 
+                                    });
                                 },
                                 mouseout: (e) => {
                                     const l = e.target;
-                                    l.setStyle({ fillOpacity: vizMode === 'budget' ? 0.7 : 0.1, weight: vizMode === 'budget' ? 1 : 2 });
+                                    l.setStyle({ 
+                                        fillOpacity: vizMode !== 'default' ? 0.7 : 0.1, 
+                                        weight: vizMode !== 'default' ? 1 : 2 
+                                    });
                                 }
                             });
                         }}
