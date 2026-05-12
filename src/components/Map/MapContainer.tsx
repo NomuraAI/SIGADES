@@ -129,6 +129,15 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
         return '#94a3b8';                            // No Data - Abu
     };
 
+    const getStuntingColor = (count: number) => {
+        if (count >= 50) return '#7f1d1d'; // Sangat Tinggi (> 50)
+        if (count >= 30) return '#ef4444'; // Tinggi (30-50)
+        if (count >= 15) return '#f97316'; // Sedang (15-30)
+        if (count >= 5) return '#eab308';  // Rendah (5-15)
+        if (count > 0) return '#22c55e';   // Sangat Rendah (1-5)
+        return '#94a3b8';                  // Tidak ada data
+    };
+
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -339,9 +348,9 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                                 weight = 1;
                             } else if (vizMode === 'stunting') {
                                 value = villageProjects[0]?.jumlahBalitaStunting || 0;
-                                // Logika pewarnaan gradien stunting (bisa ditambahkan fungsi getColor jika perlu)
-                                fillColor = value > 50 ? '#b91c1c' : value > 20 ? '#f59e0b' : '#22c55e';
-                                fillOpacity = 0.6;
+                                fillColor = getStuntingColor(value);
+                                fillOpacity = 0.7;
+                                weight = 1;
                             } else if (vizMode === 'poverty') {
                                 value = villageProjects[0]?.jumlahAngkaKemiskinan || 0;
                                 fillColor = value > 200 ? '#ea580c' : value > 100 ? '#f59e0b' : '#3b82f6';
@@ -552,8 +561,28 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
 
                 {vizMode === 'stunting' && (
                     <div className="mt-1 pt-2 border-t border-slate-200">
-                        <div className="flex justify-between text-[9px] mb-1"><span>Rendah</span><span>Tinggi</span></div>
-                        <div className="h-2 w-full rounded-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-600"></div>
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#7f1d1d]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">&gt; 50 Kasus</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#ef4444]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">30 - 50 Kasus</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#f97316]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">15 - 30 Kasus</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#eab308]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">5 - 15 Kasus</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#22c55e]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">1 - 5 Kasus</span>
+                            </div>
+                        </div>
                     </div>
                 )}
 
