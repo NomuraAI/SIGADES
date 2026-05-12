@@ -49,8 +49,8 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, user, onLogout }) => {
                             </button>
                             
                             {/* Dropdown Menu */}
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 hidden group-hover:block animate-in fade-in slide-in-from-top-2 duration-200">
-                                <div className="px-4 py-2 md:hidden border-b border-slate-100 mb-1">
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-2xl border border-slate-200 py-2 hidden group-hover:block lg:group-hover:block animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="px-4 py-2 border-b border-slate-100 mb-1">
                                     <p className="text-xs font-bold text-slate-800">{user.name}</p>
                                     <p className="text-[10px] text-slate-500 uppercase">{user.role}</p>
                                 </div>
@@ -59,10 +59,19 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, user, onLogout }) => {
                                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 transition-colors"
                                 >
                                     <LogOut size={16} />
-                                    <span className="font-semibold">Keluar Sistem</span>
+                                    <span className="font-bold">Keluar Sistem</span>
                                 </button>
                             </div>
                         </div>
+
+                        {/* Direct Logout for small screens or quick access */}
+                        <button 
+                            onClick={onLogout}
+                            className="flex lg:hidden items-center justify-center p-2 text-white hover:bg-white/10 rounded-lg transition-all"
+                            title="Keluar"
+                        >
+                            <LogOut size={20} />
+                        </button>
                     </div>
                 )}
 

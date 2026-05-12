@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Building2, Activity, MessageSquareWarning, Settings, X, Edit2, Check, Search, PieChart } from 'lucide-react';
+import { MapPin, Building2, Activity, MessageSquareWarning, Settings, X, Edit2, Check, Search, PieChart, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { User } from '../../types';
@@ -223,6 +223,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <span className="relative z-10 text-sm tracking-wide">{item.label}</span>
                                 </div>
                             ))}
+
+                            <div className="pt-4 mt-4 border-t border-white/10">
+                                <div
+                                    onClick={onLogout}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 cursor-pointer text-rose-300 hover:bg-rose-500/20 hover:text-rose-100 group"
+                                >
+                                    <span className="group-hover:scale-110 transition-transform duration-300">
+                                        <LogOut size={22} strokeWidth={1.5} />
+                                    </span>
+                                    <span className="text-sm font-semibold tracking-wide">Keluar Sistem</span>
+                                </div>
+                            </div>
                         </nav>
 
                         <div className="p-4 z-10">
