@@ -227,10 +227,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <div className="pt-4 mt-4 border-t border-white/10">
                                 <div
                                     onClick={onLogout}
-                                    className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 cursor-pointer text-rose-300 hover:bg-rose-500/20 hover:text-rose-100 group"
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 cursor-pointer text-white/90 hover:bg-rose-500/20 hover:text-white group"
                                 >
                                     <span className="group-hover:scale-110 transition-transform duration-300">
-                                        <LogOut size={22} strokeWidth={1.5} />
+                                        <LogOut size={22} strokeWidth={1.5} className="text-rose-400 group-hover:text-rose-300" />
                                     </span>
                                     <span className="text-sm font-semibold tracking-wide">Keluar Sistem</span>
                                 </div>
