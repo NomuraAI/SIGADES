@@ -462,7 +462,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {budgetData.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(1000, budgetData.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="99%" height={500}>
                                         <BarChart data={budgetData} margin={{ top: 20, right: 30, left: 40, bottom: 100 }} layout="horizontal">
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -486,7 +486,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {povertyData.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, povertyData.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="99%" height={500}>
                                         <BarChart data={povertyData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -508,7 +508,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {stuntingData.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, stuntingData.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="99%" height={500}>
                                         <BarChart data={stuntingData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -531,7 +531,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {povertyDataLowest.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, povertyDataLowest.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="99%" height={500}>
                                         <BarChart data={povertyDataLowest} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -554,7 +554,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {stuntingDataLowest.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, stuntingDataLowest.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="99%" height={500}>
                                         <BarChart data={stuntingDataLowest} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -576,7 +576,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {densityData.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, densityData.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="99%" height={500}>
                                         <BarChart data={densityData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -597,7 +597,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         </div>
                         <div className="h-[400px] flex flex-col md:flex-row items-center justify-center">
                             <div className="w-full md:w-2/3 h-full">
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="99%" height={400}>
                                     <PieChart>
                                         <Pie
                                             data={potentialData}
