@@ -16,6 +16,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
   const [error, setError] = useState('');
   const [captcha, setCaptcha] = useState({ question: '', answer: 0 });
   const [captchaInput, setCaptchaInput] = useState('');
+  const [isRobotChecked, setIsRobotChecked] = useState(false);
 
   const generateCaptcha = () => {
     const num1 = Math.floor(Math.random() * 10) + 1;
@@ -35,6 +36,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    if (!isRobotChecked) {
+      setError('Silakan verifikasi bahwa Anda bukan robot.');
+      setIsLoading(false);
+      return;
+    }
 
     if (parseInt(captchaInput) !== captcha.answer) {
       setError('Jawaban CAPTCHA salah.');
@@ -135,43 +142,71 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
                 />
               </div>
 
-              {/* CAPTCHA Section */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sky-400/70 text-[10px] uppercase tracking-[0.2em] font-bold ml-1">Verifikasi Keamanan</label>
-                  <button 
-                    type="button"
-                    onClick={generateCaptcha}
-                    className="text-sky-400 hover:text-sky-300 transition-colors flex items-center space-x-1 group/refresh"
+              {/* Verification Section */}
+              <div className="space-y-4">
+                {/* I'm not a robot checkbox */}
+                <div 
+                  onClick={() => setIsRobotChecked(!isRobotChecked)}
+                  className={`flex items-center space-x-3 bg-[#030a12] border ${isRobotChecked ? 'border-sky-400 bg-sky-400/5 shadow-[0_0_15px_rgba(56,189,248,0.1)]' : 'border-sky-500/30'} rounded-xl p-4 cursor-pointer transition-all hover:border-sky-400 group/robot`}
+                >
+                  <div className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-all duration-300 ${isRobotChecked ? 'bg-sky-500 border-sky-500' : 'border-sky-500/30 bg-[#030a12]'}`}>
+                    {isRobotChecked && (
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                        <ShieldCheck className="w-4 h-4 text-white" />
+                      </motion.div>
+                    )}
+                  </div>
+                  <span className={`text-sm font-bold tracking-widest uppercase transition-colors ${isRobotChecked ? 'text-sky-300' : 'text-sky-500/60'}`}>
+                    Saya bukan robot
+                  </span>
+                  <div className="ml-auto opacity-40 group-hover/robot:opacity-100 transition-opacity">
+                    <img src="/Logo Lobar Blue.png" alt="Captcha" className="w-5 h-5 grayscale group-hover/robot:grayscale-0 transition-all" />
+                  </div>
+                </div>
+
+                {/* Math CAPTCHA Section - Revealed after checking robot box */}
+                {isRobotChecked && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    className="space-y-3 overflow-hidden pt-2 border-t border-sky-500/10"
                   >
-                    <span className="text-[10px] uppercase tracking-widest font-bold">Ganti Soal</span>
-                    <RefreshCcw className="w-3 h-3 group-hover/refresh:rotate-180 transition-transform duration-500" />
-                  </button>
-                </div>
-                
-                <div className="flex space-x-3">
-                  <div className="flex-1 bg-[#030a12] border border-sky-500/30 rounded-xl flex items-center justify-center p-3 relative overflow-hidden">
-                    {/* Captcha Noise background */}
-                    <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #38bdf8 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
-                    <span className="text-2xl font-black text-white tracking-[0.3em] italic select-none drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">
-                      {captcha.question}
-                    </span>
-                  </div>
-                  
-                  <div className="relative w-1/3">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400">
-                      <Hash className="w-4 h-4" />
+                    <div className="flex items-center justify-between">
+                      <label className="text-sky-400/70 text-[10px] uppercase tracking-[0.2em] font-bold ml-1">Verifikasi Keamanan Tambahan</label>
+                      <button 
+                        type="button"
+                        onClick={generateCaptcha}
+                        className="text-sky-400 hover:text-sky-300 transition-colors flex items-center space-x-1 group/refresh"
+                      >
+                        <span className="text-[10px] uppercase tracking-widest font-bold">Ganti Soal</span>
+                        <RefreshCcw className="w-3 h-3 group-hover/refresh:rotate-180 transition-transform duration-500" />
+                      </button>
                     </div>
-                    <input
-                      type="number"
-                      value={captchaInput}
-                      onChange={(e) => setCaptchaInput(e.target.value)}
-                      placeholder="?"
-                      className="w-full bg-[#030a12] border border-sky-500/30 rounded-xl py-3.5 pl-9 pr-2 text-white placeholder:text-sky-500/40 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400/50 transition-all text-center font-bold"
-                      required
-                    />
-                  </div>
-                </div>
+                    
+                    <div className="flex space-x-3">
+                      <div className="flex-1 bg-[#030a12] border border-sky-500/30 rounded-xl flex items-center justify-center p-3 relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #38bdf8 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                        <span className="text-2xl font-black text-white tracking-[0.3em] italic select-none drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">
+                          {captcha.question}
+                        </span>
+                      </div>
+                      
+                      <div className="relative w-1/3">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-400">
+                          <Hash className="w-4 h-4" />
+                        </div>
+                        <input
+                          type="number"
+                          value={captchaInput}
+                          onChange={(e) => setCaptchaInput(e.target.value)}
+                          placeholder="?"
+                          className="w-full bg-[#030a12] border border-sky-500/30 rounded-xl py-3.5 pl-9 pr-2 text-white placeholder:text-sky-500/40 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400/50 transition-all text-center font-bold"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
 
