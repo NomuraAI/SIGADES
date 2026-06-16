@@ -253,7 +253,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         jumlahPenduduk: cleanPenduduk,
                         jumlahAngkaKemiskinan: cleanNumber(kemiskinanVal),
                         jumlahBalitaStunting: cleanNumber(stuntingVal),
-                        kepadatanPenduduk: cleanNumber(kepadatanVal),
+                        kepadatanPenduduk: kepadatanVal !== undefined ? cleanNumber(kepadatanVal) : undefined,
                         potensiDesa: row.potensi_desa || row.potensi || '',
                         keterangan: row.keterangan || '',
                         paguSemula: cleanNumber(row.pagu_semula),
@@ -304,8 +304,17 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         const existing = existingMap.get(key);
 
                         if (existing) {
-                            // UPDATE: Use existing ID
-                            upsertList.push({ ...newRow, id: existing.id });
+                            // UPDATE: Merge existing with newRow to prevent erasing data not present in new Excel (like coordinates)
+                            const mergedRow = { ...existing };
+                            Object.keys(newRow).forEach((key) => {
+                                const newVal = (newRow as any)[key];
+                                // Only overwrite if the new value is meaningful (not null, undefined, or empty string)
+                                if (newVal !== null && newVal !== undefined && newVal !== '') {
+                                    (mergedRow as any)[key] = newVal;
+                                }
+                            });
+                            
+                            upsertList.push({ ...mergedRow, id: existing.id, dataVersion: targetVersion });
                             updateCount++;
                         } else {
                             // INSERT: No ID (or let DB gen)

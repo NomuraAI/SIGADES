@@ -2,9 +2,43 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ProjectData } from '../../types';
 import { getProjectService } from '../../services/projectService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
-import { Loader2, Filter, DollarSign, Building2, Wallet, LayoutDashboard, BarChart3, PieChart as PieChartIcon, Users, Baby, Sprout } from 'lucide-react';
-import PilarAlokasiCard from './PilarAlokasiCard';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, Treemap } from 'recharts';
+import { Loader2, Filter, DollarSign, Building2, Wallet, LayoutDashboard, BarChart3, PieChart as PieChartIcon, Users, Baby, Sprout, Target } from 'lucide-react';
+import PilarAlokasiCard, { mapDBPilarToId } from './PilarAlokasiCard';
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
+
+const formatRupiah = (val: number) => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(val);
+};
+
+const CustomPilarTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        let total = 0;
+        payload.forEach((p: any) => { total += p.value; });
+        return (
+            <div className="bg-white p-3 border border-slate-200 rounded-lg shadow-xl min-w-[200px]">
+                <p className="font-bold text-slate-800 text-sm mb-2 pb-2 border-b border-slate-100">{label}</p>
+                {payload.map((entry: any, index: number) => (
+                    <div key={`item-${index}`} className="flex justify-between items-center gap-4 mb-1">
+                        <span className="text-xs font-medium" style={{ color: entry.color }}>{entry.name}:</span>
+                        <span className="text-xs font-bold text-slate-700">{formatRupiah(entry.value)}</span>
+                    </div>
+                ))}
+                <div className="flex justify-between items-center gap-4 mt-2 pt-2 border-t border-slate-100">
+                    <span className="text-xs font-bold text-slate-500">Total:</span>
+                    <span className="text-xs font-black text-lobar-blue">{formatRupiah(total)}</span>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
 
 interface BreakdownAnggaranPageProps {
     selectedVersion: string;
@@ -19,6 +53,10 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
     const [filterKecamatan, setFilterKecamatan] = useState<string>('');
     const [filterBudget, setFilterBudget] = useState<'all' | 'above1M' | 'below1M'>('all');
 
+    // Analyzer State
+    const [analyzerKecamatan, setAnalyzerKecamatan] = useState<string>('');
+    const [analyzerDesa, setAnalyzerDesa] = useState<string>('');
+
     // Refs for scrolling
     const sectionStatsRef = useRef<HTMLDivElement>(null);
     const sectionFiltersRef = useRef<HTMLDivElement>(null);
@@ -29,6 +67,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
     const sectionStuntingLowestChartRef = useRef<HTMLDivElement>(null);
     const sectionDensityChartRef = useRef<HTMLDivElement>(null);
     const sectionPotentialChartRef = useRef<HTMLDivElement>(null);
+    const sectionPilarTreemapRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         fetchData();
@@ -72,17 +111,51 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
         return kecs.sort();
     }, [data]);
 
+    // Analyzer: Get unique Desa based on selected analyzerKecamatan
+    const analyzerAvailableDesa = useMemo(() => {
+        if (!analyzerKecamatan) return [];
+        const desas = data.filter(d => d.kecamatan === analyzerKecamatan).map(d => d.desaKelurahan).filter(Boolean) as string[];
+        return [...new Set(desas)].sort();
+    }, [data, analyzerKecamatan]);
+
+    // Analyzer: Get Data for selected Kecamatan & Desa
+    const analyzerData = useMemo(() => {
+        if (!analyzerKecamatan || !analyzerDesa) return null;
+        
+        let filtered = data.filter(d => d.kecamatan === analyzerKecamatan);
+        
+        if (analyzerDesa !== 'ALL') {
+            filtered = filtered.filter(d => d.desaKelurahan === analyzerDesa);
+        }
+        
+        let totalPagu = 0;
+        const pilarPagu: Record<string, number> = { sdm: 0, infrastruktur: 0, ekonomi: 0, sosial: 0 };
+        
+        filtered.forEach(item => {
+            const val = Number(item.paguAnggaran || 0);
+            totalPagu += val;
+            const pId = mapDBPilarToId(item.pilar);
+            if (pId) pilarPagu[pId] += val;
+        });
+
+        return { totalPagu, pilarPagu };
+    }, [data, analyzerKecamatan, analyzerDesa]);
+
+    // Apply global Kecamatan filter
+    const filteredData = useMemo(() => {
+        let result = data;
+        if (filterKecamatan) {
+            result = result.filter(item => item.kecamatan === filterKecamatan);
+        }
+        return result;
+    }, [data, filterKecamatan]);
+
     // Aggregate Data based on filters
     // 1. Budget Data (Existing)
     const budgetData = useMemo(() => {
-        let filtered = data;
-        if (filterKecamatan) {
-            filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
-        }
-
         const desaGroups: { [key: string]: { total: number, originalName: string } } = {};
 
-        filtered.forEach(item => {
+        filteredData.forEach(item => {
             const rawName = item.desaKelurahan || 'Lainnya';
             const normalizedKey = rawName.replace(/\s+/g, ' ').trim().toUpperCase();
 
@@ -109,12 +182,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
     // 2. Poverty Data (Top 20)
     const povertyData = useMemo(() => {
-        let filtered = data;
-        if (filterKecamatan) filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
-
         const desaGroups: { [key: string]: { val: number, name: string } } = {};
 
-        filtered.forEach(item => {
+        filteredData.forEach(item => {
             const key = (item.desaKelurahan || 'Lainnya').trim().toUpperCase();
             if (!desaGroups[key]) desaGroups[key] = { val: 0, name: item.desaKelurahan || 'Lainnya' };
             // Assuming each row is a project, usually poverty stats are per Desa, so we usually take the value from one row?
@@ -131,12 +201,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
     // 3. Stunting Data (Top 20)
     const stuntingData = useMemo(() => {
-        let filtered = data;
-        if (filterKecamatan) filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
-
         const desaGroups: { [key: string]: { val: number, name: string } } = {};
 
-        filtered.forEach(item => {
+        filteredData.forEach(item => {
             const key = (item.desaKelurahan || 'Lainnya').trim().toUpperCase();
             if (!desaGroups[key]) desaGroups[key] = { val: 0, name: item.desaKelurahan || 'Lainnya' };
             desaGroups[key].val = Math.max(desaGroups[key].val, item.jumlahBalitaStunting || 0);
@@ -149,12 +216,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
     // 3.b Poverty Data (Lowest 20)
     const povertyDataLowest = useMemo(() => {
-        let filtered = data;
-        if (filterKecamatan) filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
-
         const desaGroups: { [key: string]: { val: number, name: string } } = {};
 
-        filtered.forEach(item => {
+        filteredData.forEach(item => {
             const key = (item.desaKelurahan || 'Lainnya').trim().toUpperCase();
             if (!desaGroups[key]) desaGroups[key] = { val: 0, name: item.desaKelurahan || 'Lainnya' };
             desaGroups[key].val = Math.max(desaGroups[key].val, item.jumlahAngkaKemiskinan || 0);
@@ -170,12 +234,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
     // 3.c Stunting Data (Lowest 20)
     const stuntingDataLowest = useMemo(() => {
-        let filtered = data;
-        if (filterKecamatan) filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
-
         const desaGroups: { [key: string]: { val: number, name: string } } = {};
 
-        filtered.forEach(item => {
+        filteredData.forEach(item => {
             const key = (item.desaKelurahan || 'Lainnya').trim().toUpperCase();
             if (!desaGroups[key]) desaGroups[key] = { val: 0, name: item.desaKelurahan || 'Lainnya' };
             desaGroups[key].val = Math.max(desaGroups[key].val, item.jumlahBalitaStunting || 0);
@@ -188,12 +249,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
     // 3.d Population Density Data (Top 20)
     const densityData = useMemo(() => {
-        let filtered = data;
-        if (filterKecamatan) filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
-
         const desaGroups: { [key: string]: { val: number, name: string } } = {};
 
-        filtered.forEach(item => {
+        filteredData.forEach(item => {
             const key = (item.desaKelurahan || 'Lainnya').trim().toUpperCase();
             if (!desaGroups[key]) desaGroups[key] = { val: 0, name: item.desaKelurahan || 'Lainnya' };
             // Use padded 0 if undefined
@@ -207,11 +265,8 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
     // 4. Potential Data (Pie Chart)
     const potentialData = useMemo(() => {
-        let filtered = data;
-        if (filterKecamatan) filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
-
         const counts: { [key: string]: number } = {};
-        filtered.forEach(item => {
+        filteredData.forEach(item => {
             const p = (item.potensiDesa || 'Tidak Ada Data').trim();
             // Simple Clean: Capitalize first word
             const label = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
@@ -225,24 +280,77 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
             value: counts[key],
             fill: COLORS[index % COLORS.length]
         })).sort((a, b) => b.value - a.value); // Sort for better pie visual
-    }, [data, filterKecamatan]);
+    }, [filteredData]);
+
+    // 4.b Pilar Distribution Data (Pie Chart)
+    const pilarPieData = useMemo(() => {
+        const pilarPagu: Record<string, number> = {
+            ekonomi: 0, sdm: 0, infrastruktur: 0, sosial: 0
+        };
+
+        filteredData.forEach(item => {
+            const val = Number(item.paguAnggaran || 0);
+            const pilarId = mapDBPilarToId(item.pilar);
+            if (pilarId) pilarPagu[pilarId] += val;
+        });
+
+        const pilarNames: any = {
+            sdm: 'Peningkatan SDM',
+            infrastruktur: 'Infrastruktur Dasar',
+            ekonomi: 'Penguatan Ekonomi',
+            sosial: 'Sosial & Kelembagaan'
+        };
+        const PIE_COLORS: any = {
+            sdm: '#3b82f6',
+            infrastruktur: '#10b981',
+            ekonomi: '#f59e0b',
+            sosial: '#64748b'
+        };
+
+        return Object.keys(pilarPagu)
+            .filter(key => pilarPagu[key] > 0)
+            .map(key => ({
+                name: pilarNames[key],
+                value: pilarPagu[key],
+                fill: PIE_COLORS[key]
+            }));
+    }, [filteredData]);
+
+    // 5. Stacked Bar Data (OPD -> Pilar)
+    const pilarBarData = useMemo(() => {
+        const opdMap: { [opd: string]: any } = {};
+
+        filteredData.forEach(item => {
+            const opd = (item.perangkatDaerah || 'Lainnya').replace('DINAS ', 'D. ').replace('BADAN ', 'B. ');
+            const val = item.paguAnggaran || 0;
+            const pilarId = mapDBPilarToId(item.pilar) || 'lainnya';
+
+            if (!opdMap[opd]) {
+                opdMap[opd] = { name: opd, total: 0, ekonomi: 0, sdm: 0, infrastruktur: 0, sosial: 0, lainnya: 0 };
+            }
+            opdMap[opd][pilarId] += val;
+            opdMap[opd].total += val;
+        });
+
+        // Convert to array, sort by total descending, take top 20
+        return Object.values(opdMap)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 20);
+    }, [filteredData]);
 
 
     const stats = useMemo(() => {
         const totalBudget = budgetData.reduce((acc, curr) => acc + curr.total, 0);
-        const totalDesa = budgetData.length; // Actually distinct desas from budget grouping
-        const above1MCount = budgetData.filter(d => d.total >= 1000000000).length;
-
-        // Sum of MAX per desa to avoid duplicate counting of poverty/stunting if rows are duplicated
-        const totalPoverty = povertyData.reduce((acc, curr) => acc + curr.val, 0); // Note: this is top 20 sum only? No wait, povertyData is top 20. 
-        // We want GLOBAL sum for stats. Re-calc global unique.
+        
+        // Exclude 'Lainnya' (empty desa rows) from the village counts
+        const validDesaBudget = budgetData.filter(d => d.name && d.name.toLowerCase() !== 'lainnya');
+        const totalDesa = validDesaBudget.length; 
+        const above1MCount = validDesaBudget.filter(d => d.total >= 1000000000).length;
 
         // Helper for global sums based on current filter
         const uniqueDesaMap: { [k: string]: any } = {};
-        let filtered = data;
-        if (filterKecamatan) filtered = filtered.filter(item => item.kecamatan === filterKecamatan);
 
-        filtered.forEach(item => {
+        filteredData.forEach(item => {
             const k = (item.desaKelurahan || '').trim().toUpperCase();
             if (!uniqueDesaMap[k]) uniqueDesaMap[k] = { pov: 0, stunt: 0 };
             uniqueDesaMap[k].pov = Math.max(uniqueDesaMap[k].pov, item.jumlahAngkaKemiskinan || 0);
@@ -324,46 +432,13 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                 </div>
             </div>
 
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 custom-scrollbar scroll-smooth">
-                <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 pt-4 md:pt-6">
+            {/* Main Content Area */}
+            <div className="flex-1 w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col min-h-0 overflow-y-auto">
+                <div className="flex-none w-full space-y-8">
+                    {/* PILAR ALOKASI CARD - NOW DYNAMIC */}
+                    <PilarAlokasiCard filterYear={filterYear} data={filteredData} />
 
-                    {/* Section 0: Info Card Blueprint */}
-                    <PilarAlokasiCard filterYear={filterYear} />
-
-                    {/* Navigation Pills */}
-                    <div className="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-sm py-2 -mx-4 px-4 md:-mx-6 md:px-6">
-                        <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm overflow-x-auto custom-scrollbar w-full">
-                            <button onClick={() => scrollToSection(sectionStatsRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-lobar-blue hover:bg-slate-50 rounded-lg transition-all">
-                                <LayoutDashboard size={14} /> Ringkasan
-                            </button>
-                            <button onClick={() => scrollToSection(sectionFiltersRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-lobar-blue hover:bg-slate-50 rounded-lg transition-all">
-                                <Filter size={14} /> Filter
-                            </button>
-                            <button onClick={() => scrollToSection(sectionBudgetChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-lobar-blue hover:bg-slate-50 rounded-lg transition-all">
-                                <BarChart3 size={14} /> Anggaran
-                            </button>
-                            <button onClick={() => scrollToSection(sectionPovertyChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
-                                <Users size={14} /> Kemiskinan (Tertinggi)
-                            </button>
-                            <button onClick={() => scrollToSection(sectionPovertyLowestChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all">
-                                <Users size={14} /> Kemiskinan (Terendah)
-                            </button>
-                            <button onClick={() => scrollToSection(sectionStuntingChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all">
-                                <Baby size={14} /> Stunting (Tertinggi)
-                            </button>
-                            <button onClick={() => scrollToSection(sectionStuntingLowestChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all">
-                                <Baby size={14} /> Stunting (Terendah)
-                            </button>
-                            <button onClick={() => scrollToSection(sectionDensityChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all">
-                                <Users size={14} /> Kepadatan Penduduk
-                            </button>
-                            <button onClick={() => scrollToSection(sectionPotentialChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all">
-                                <PieChartIcon size={14} /> Potensi
-                            </button>
-                        </div>
-                    </div>
-
+                    {/* Quick Navigation Pills removed as per user request */}
                     {/* Section 1: Stats Cards */}
                     <div ref={sectionStatsRef} className="scroll-mt-32 grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Row 1 */}
@@ -421,30 +496,91 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         </div>
                     </div>
 
-                    {/* Section 2: Filters */}
-                    <div ref={sectionFiltersRef} className="scroll-mt-32 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-center sticky top-0 z-20">
-                        <div className="flex items-center gap-2">
-                            <div className="bg-slate-100 p-2 rounded-lg text-slate-500"><Filter size={18} /></div>
-                            <div className="flex flex-col">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Kecamatan</label>
-                                <select className="bg-transparent font-bold text-slate-700 outline-none cursor-pointer min-w-[150px]" value={filterKecamatan} onChange={(e) => setFilterKecamatan(e.target.value)}>
-                                    <option value="">Semua Kecamatan</option>
+                    {/* Section: Pilar Analyzer Spesifik Desa */}
+                    <div className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col mb-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Target className="text-indigo-500" /> Analisis Pilar Spesifik Desa</h3>
+                        </div>
+                        
+                        {/* Analyzer Filters */}
+                        <div className="flex flex-wrap gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div className="flex flex-col w-full md:w-auto">
+                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">Pilih Kecamatan</label>
+                                <select 
+                                    className="bg-white border border-slate-300 rounded-lg px-4 py-2 font-bold text-slate-700 outline-none focus:border-lobar-blue focus:ring-2 focus:ring-blue-100 min-w-[200px]" 
+                                    value={analyzerKecamatan} 
+                                    onChange={(e) => {
+                                        setAnalyzerKecamatan(e.target.value);
+                                        setAnalyzerDesa(''); // reset desa
+                                    }}
+                                >
+                                    <option value="" disabled>-- Pilih Kecamatan --</option>
                                     {uniqueKecamatan.map(kec => (<option key={kec} value={kec}>{kec}</option>))}
                                 </select>
                             </div>
-                        </div>
-                        <div className="w-px h-10 bg-slate-200 mx-2 hidden md:block"></div>
-                        <div className="flex items-center gap-2">
-                            <div className="bg-slate-100 p-2 rounded-lg text-slate-500"><DollarSign size={18} /></div>
-                            <div className="flex flex-col">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Filter Anggaran</label>
-                                <select className="bg-transparent font-bold text-slate-700 outline-none cursor-pointer min-w-[150px]" value={filterBudget} onChange={(e) => setFilterBudget(e.target.value as any)}>
-                                    <option value="all">Semua Anggaran</option>
-                                    <option value="above1M">Di Atas 1 Miliar</option>
-                                    <option value="below1M">Di Bawah 1 Miliar</option>
+                            <div className="flex flex-col w-full md:w-auto">
+                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">Pilih Desa</label>
+                                <select 
+                                    className="bg-white border border-slate-300 rounded-lg px-4 py-2 font-bold text-slate-700 outline-none focus:border-lobar-blue focus:ring-2 focus:ring-blue-100 min-w-[200px]" 
+                                    value={analyzerDesa} 
+                                    onChange={(e) => setAnalyzerDesa(e.target.value)}
+                                    disabled={!analyzerKecamatan}
+                                >
+                                    <option value="" disabled>-- Pilih Desa --</option>
+                                    <option value="ALL">Semua Desa (Total Kecamatan)</option>
+                                    {analyzerAvailableDesa.map(desa => (<option key={desa} value={desa}>{desa}</option>))}
                                 </select>
                             </div>
                         </div>
+
+                        {/* Analyzer Results */}
+                        {!analyzerData ? (
+                            <div className="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-slate-400">
+                                <Target size={48} className="mb-2 opacity-50" />
+                                <p className="font-medium text-sm">Pilih Kecamatan dan Desa untuk melihat analisis pilar</p>
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="mb-4">
+                                    <p className="text-sm font-bold text-slate-500 uppercase">
+                                        Total Pagu {analyzerDesa === 'ALL' ? `Kecamatan ${analyzerKecamatan}` : `Desa ${analyzerDesa}`}
+                                    </p>
+                                    <h2 className="text-3xl font-bold text-slate-800">{formatRupiah(analyzerData.totalPagu)}</h2>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    {[
+                                        { id: 'sdm', label: 'Peningkatan SDM', color: 'bg-blue-500', lightColor: 'bg-blue-50', textColor: 'text-blue-500' },
+                                        { id: 'infrastruktur', label: 'Infrastruktur Dasar', color: 'bg-emerald-500', lightColor: 'bg-emerald-50', textColor: 'text-emerald-500' },
+                                        { id: 'ekonomi', label: 'Penguatan Ekonomi', color: 'bg-amber-500', lightColor: 'bg-amber-50', textColor: 'text-amber-500' },
+                                        { id: 'sosial', label: 'Sosial & Kelembagaan', color: 'bg-slate-500', lightColor: 'bg-slate-50', textColor: 'text-slate-500' }
+                                    ].map(pilar => {
+                                        const pagu = analyzerData.pilarPagu[pilar.id] || 0;
+                                        const percent = analyzerData.totalPagu > 0 ? (pagu / analyzerData.totalPagu) * 100 : 0;
+                                        
+                                        return (
+                                            <div key={pilar.id} className="border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
+                                                <div>
+                                                    <div className={`w-8 h-8 rounded-full mb-3 flex items-center justify-center ${pilar.lightColor} ${pilar.textColor}`}>
+                                                        <Target size={16} />
+                                                    </div>
+                                                    <h4 className="font-bold text-slate-700 text-sm mb-1">{pilar.label}</h4>
+                                                    <p className="text-lg font-bold text-slate-900 mb-2">{formatRupiah(pagu)}</p>
+                                                </div>
+                                                <div>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-xs font-bold text-slate-400">Porsi</span>
+                                                        <span className={`text-xs font-bold ${pilar.textColor}`}>{percent.toFixed(1)}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                        <div className={`h-full ${pilar.color} rounded-full`} style={{ width: `${percent}%` }}></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Section 3: Budget Analysis */}
@@ -470,6 +606,33 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                 </div>
                             </div>
                         ) : <div className="h-64 flex items-center justify-center text-slate-400">Data tidak tersedia</div>}
+                    </div>
+
+                    {/* Section 3.b: Stacked Bar Distribusi Pilar */}
+                    <div ref={sectionPilarTreemapRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Target className="text-indigo-600" /> Distribusi Pilar per OPD (Top 20)</h3>
+                            <div className="text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1 rounded-full">Berdasarkan Pagu Anggaran</div>
+                        </div>
+                        {pilarBarData.length > 0 ? (
+                            <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                <div style={{ minWidth: Math.max(1000, pilarBarData.length * 60), height: 500 }}>
+                                    <ResponsiveContainer width="99%" height={500}>
+                                        <BarChart data={pilarBarData} margin={{ top: 20, right: 30, left: 40, bottom: 100 }} layout="horizontal">
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                            <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                            <YAxis tickFormatter={(val) => `Rp ${(val / 1000000000).toFixed(1)} M`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <Tooltip content={<CustomPilarTooltip />} cursor={{ fill: '#f1f5f9' }} />
+                                            <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
+                                            <Bar dataKey="sdm" name="Peningkatan Kualitas SDM" stackId="a" fill="#3b82f6" />
+                                            <Bar dataKey="infrastruktur" name="Infrastruktur Dasar" stackId="a" fill="#10b981" />
+                                            <Bar dataKey="ekonomi" name="Penguatan Ekonomi Desa" stackId="a" fill="#f59e0b" />
+                                            <Bar dataKey="sosial" name="Sosial & Kelembagaan" stackId="a" fill="#64748b" />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        ) : <div className="h-64 flex items-center justify-center text-slate-400">Data pilar tidak tersedia</div>}
                     </div>
 
                     {/* Section 4: Poverty Analysis */}
@@ -584,54 +747,81 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         ) : <div className="h-64 flex items-center justify-center text-slate-400">Data tidak tersedia</div>}
                     </div>
 
-                    {/* Section 6: Potential Analysis (Pie) */}
-                    <div ref={sectionPotentialChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Sprout className="text-green-500" /> Distribusi Potensi Desa</h3>
-                        </div>
-                        <div className="h-[400px] flex flex-col md:flex-row items-center justify-center">
-                            <div className="w-full md:w-2/3 h-full">
-                                <ResponsiveContainer width="99%" height={400}>
-                                    <PieChart>
-                                        <Pie
-                                            data={potentialData}
-                                            cx="50%"
-                                            cy="50%"
-                                            labelLine={false}
-                                            label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
-                                                const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-                                                const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
-                                                const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
-                                                return percent > 0.05 ? (
-                                                    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12} fontWeight="bold">
-                                                        {`${(percent * 100).toFixed(0)}%`}
-                                                    </text>
-                                                ) : null;
-                                            }}
-                                            outerRadius={150}
-                                            fill="#8884d8"
-                                            dataKey="value"
-                                        >
-                                            {potentialData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                    {/* Section 6 & 7: Pie Charts (Potensi & Pilar) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 scroll-mt-32" ref={sectionPotentialChartRef}>
+                        {/* Potensi Desa */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Sprout className="text-green-500" /> Distribusi Potensi Desa</h3>
                             </div>
-                            <div className="w-full md:w-1/3 p-4">
-                                <h4 className="font-bold text-slate-600 mb-3 text-sm uppercase">Kategori Potensi</h4>
-                                <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                                    {potentialData.map((entry, index) => (
-                                        <div key={index} className="flex items-center justify-between text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.fill }}></div>
-                                                <span className="text-slate-600">{entry.name || 'Lainnya'}</span>
-                                            </div>
-                                            <span className="font-bold text-slate-800">{entry.value}</span>
-                                        </div>
-                                    ))}
+                            <div className="h-[400px] flex flex-col items-center justify-center">
+                                <div className="w-full h-full">
+                                    <ResponsiveContainer width="99%" height={400}>
+                                        <PieChart>
+                                            <Pie
+                                                data={potentialData}
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={false}
+                                                outerRadius={120}
+                                                fill="#8884d8"
+                                                dataKey="value"
+                                                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                                    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                                    const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+                                                    const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+                                                    return percent > 0.05 ? (
+                                                        <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="12" fontWeight="bold">
+                                                            {`${(percent * 100).toFixed(0)}%`}
+                                                        </text>
+                                                    ) : null;
+                                                }}
+                                            >
+                                                {potentialData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}
+                                            </Pie>
+                                            <Tooltip formatter={(value: number) => [`${value} Desa`, 'Jumlah']} />
+                                            <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px' }} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Distribusi Pilar */}
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Target className="text-indigo-500" /> Distribusi Anggaran Pilar {filterKecamatan ? `(${filterKecamatan})` : ''}</h3>
+                            </div>
+                            <div className="h-[400px] flex flex-col items-center justify-center">
+                                <div className="w-full h-full">
+                                    <ResponsiveContainer width="99%" height={400}>
+                                        <PieChart>
+                                            <Pie
+                                                data={pilarPieData}
+                                                cx="50%"
+                                                cy="50%"
+                                                labelLine={false}
+                                                innerRadius={60}
+                                                outerRadius={120}
+                                                fill="#8884d8"
+                                                dataKey="value"
+                                                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                                                    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                                    const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+                                                    const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+                                                    return percent > 0.05 ? (
+                                                        <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="12" fontWeight="bold">
+                                                            {`${(percent * 100).toFixed(0)}%`}
+                                                        </text>
+                                                    ) : null;
+                                                }}
+                                            >
+                                                {pilarPieData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.fill} />))}
+                                            </Pie>
+                                            <Tooltip formatter={(value: number) => [formatRupiah(value), 'Pagu Anggaran']} />
+                                            <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
                                 </div>
                             </div>
                         </div>

@@ -61,6 +61,17 @@ const pillars = [
     }
 ];
 
+// Mapping for matching DB values to our pillar IDs
+export const mapDBPilarToId = (dbPilar: string) => {
+    if (!dbPilar) return null;
+    const lower = dbPilar.toLowerCase();
+    if (lower.includes('ekonomi')) return 'ekonomi';
+    if (lower.includes('sdm')) return 'sdm';
+    if (lower.includes('infrastruktur')) return 'infrastruktur';
+    if (lower.includes('sosial')) return 'sosial';
+    return null;
+};
+
 const formatRupiah = (val: number) => {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -81,10 +92,38 @@ const formatShortRupiah = (val: number) => {
 
 interface PilarAlokasiCardProps {
     filterYear: string;
+    data: any[]; // ProjectData array
 }
 
-const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear }) => {
+const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data }) => {
     const [expanded, setExpanded] = useState<string | null>(null);
+
+    // Calculate dynamic values
+    const dynamicData = React.useMemo(() => {
+        let totalPaguGlobal = 0;
+        const pilarPagu: Record<string, number> = {
+            ekonomi: 0, sdm: 0, infrastruktur: 0, sosial: 0
+        };
+
+        data.forEach(item => {
+            const val = Number(item.paguAnggaran || 0);
+            totalPaguGlobal += val;
+            
+            const pilarId = mapDBPilarToId(item.pilar);
+            if (pilarId) {
+                pilarPagu[pilarId] += val;
+            }
+        });
+
+        const pilarStats: Record<string, { pagu: number, percentage: number }> = {};
+        Object.keys(pilarPagu).forEach(key => {
+            const pagu = pilarPagu[key];
+            const percentage = totalPaguGlobal > 0 ? (pagu / totalPaguGlobal) * 100 : 0;
+            pilarStats[key] = { pagu, percentage };
+        });
+
+        return { stats: pilarStats, total: totalPaguGlobal };
+    }, [data]);
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-hidden relative w-full mb-8">
@@ -120,38 +159,46 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear }) => {
                                 <span className={`block text-2xl font-black ${pillar.textColor}`}>{pillar.target}</span>
                             </div>
 
-                            {/* Progres Tahunan */}
-                            <div className="w-full space-y-4">
-                                <div>
-                                    <div className="flex justify-between items-end mb-1">
-                                        <span className="text-xs font-bold text-slate-600">Tahun 2026</span>
-                                        <span className={`text-sm font-black ${pillar.textColor}`}>{pillar.val2026}%</span>
-                                    </div>
-                                    <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden shadow-inner relative">
-                                        <motion.div 
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${Math.min(pillar.val2026, 100)}%` }}
-                                            transition={{ duration: 1, ease: "easeOut" }}
-                                            className={`bg-gradient-to-r ${pillar.color} h-2.5 rounded-full`}
-                                        />
-                                    </div>
-                                </div>
+                                {(() => {
+                                    const dynStats = dynamicData.stats[pillar.id] || { pagu: 0, percentage: 0 };
+                                    const currentPct = dynStats.percentage.toFixed(2);
+                                    
+                                    return (
+                                        <div className="w-full space-y-4">
+                                            {/* Dynamic Current Year Progress */}
+                                            <div>
+                                                <div className="flex justify-between items-end mb-1">
+                                                    <span className="text-xs font-bold text-slate-600">Tahun {filterYear || 'Berjalan'} (Live)</span>
+                                                    <span className={`text-sm font-black ${pillar.textColor}`}>{currentPct}%</span>
+                                                </div>
+                                                <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden shadow-inner relative">
+                                                    <motion.div 
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: `${Math.min(dynStats.percentage, 100)}%` }}
+                                                        transition={{ duration: 1, ease: "easeOut" }}
+                                                        className={`bg-gradient-to-r ${pillar.color} h-2.5 rounded-full`}
+                                                    />
+                                                </div>
+                                            </div>
 
-                                <div>
-                                    <div className="flex justify-between items-end mb-1">
-                                        <span className="text-xs font-bold text-slate-600">Tahun 2027</span>
-                                        <span className={`text-sm font-black ${pillar.textColor}`}>{pillar.val2027}%</span>
-                                    </div>
-                                    <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden shadow-inner relative">
-                                        <motion.div 
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${Math.min(pillar.val2027, 100)}%` }}
-                                            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                                            className={`bg-gradient-to-r ${pillar.color} h-2.5 rounded-full`}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                                            {/* Target Musrenbang (Static comparison if needed, or we can hide it. Let's show it as target comparison) */}
+                                            <div>
+                                                <div className="flex justify-between items-end mb-1">
+                                                    <span className="text-xs font-bold text-slate-600 opacity-60">Plafon {filterYear}</span>
+                                                    <span className={`text-sm font-black text-slate-400`}>{filterYear === '2026' ? pillar.val2026 : pillar.val2027}%</span>
+                                                </div>
+                                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden shadow-inner relative opacity-60">
+                                                    <motion.div 
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: `${Math.min(filterYear === '2026' ? pillar.val2026 : pillar.val2027, 100)}%` }}
+                                                        transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                                                        className={`bg-slate-300 h-1.5 rounded-full`}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                         </motion.div>
 
                         {/* Collapsible Info (Visible on Click) */}
@@ -175,13 +222,13 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear }) => {
                                             </p>
                                             
                                             <div className="border-t border-dashed border-slate-200 pt-3">
-                                                <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pagu Final {filterYear === '2026' || filterYear === '2027' ? filterYear : '2027'} (Musrenbang)</h5>
+                                                <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Alokasi Riil (Live Data)</h5>
                                                 <div className="flex items-baseline gap-1">
                                                     <span className={`text-xl font-black ${pillar.textColor}`}>
-                                                        {formatShortRupiah(filterYear === '2026' ? pillar.pagu2026 : pillar.pagu2027)}
+                                                        {formatShortRupiah(dynamicData.stats[pillar.id]?.pagu || 0)}
                                                     </span>
                                                 </div>
-                                                <span className="text-[10px] text-slate-400 font-medium">{formatRupiah(filterYear === '2026' ? pillar.pagu2026 : pillar.pagu2027)}</span>
+                                                <span className="text-[10px] text-slate-400 font-medium">{formatRupiah(dynamicData.stats[pillar.id]?.pagu || 0)}</span>
                                             </div>
                                         </div>
                                     </div>
