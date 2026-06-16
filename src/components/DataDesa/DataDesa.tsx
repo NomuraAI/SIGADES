@@ -13,9 +13,10 @@ interface DataDesaProps {
     dataSourceMode: 'supabase' | 'local';
     setDataSourceMode: (mode: 'supabase' | 'local') => void;
     user: User | null;
+    filterYear: string;
 }
 
-const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion, onVersionChange, dataSourceMode, setDataSourceMode, user }) => {
+const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion, onVersionChange, dataSourceMode, setDataSourceMode, user, filterYear }) => {
     const isViewer = user?.role === 'viewer';
     const isAdmin = user?.role === 'admin';
     const [searchQuery, setSearchQuery] = useState('');
@@ -75,7 +76,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
 
     useEffect(() => {
         fetchData();
-    }, [selectedVersion, dataSourceMode]); // Refetch when version or mode changes
+    }, [selectedVersion, dataSourceMode, filterYear]); // Refetch when version, mode, or year changes
 
     // Column Toggles
     const toggleColumn = (key: string) => {
@@ -110,7 +111,13 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
 
             while (hasMore) {
                 const result = await service.getAllProjects(selectedVersion || undefined, page, 1000);
-                allData = [...allData, ...result.data];
+                
+                let chunk = result.data;
+                if (filterYear) {
+                    chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
+                }
+                
+                allData = [...allData, ...chunk];
                 hasMore = result.hasMore;
                 page++;
             }

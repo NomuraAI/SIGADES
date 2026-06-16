@@ -9,6 +9,8 @@ interface MainLayoutProps {
     selectedVersion: string;
     availableVersions: string[];
     setSelectedVersion: (version: string) => void;
+    filterYear: string;
+    setFilterYear: (year: string) => void;
     user: User | null;
     onLogout: () => void;
 }
@@ -20,6 +22,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     selectedVersion, 
     availableVersions, 
     setSelectedVersion,
+    filterYear,
+    setFilterYear,
     user,
     onLogout
 }) => {
@@ -32,6 +36,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                     selectedVersion={selectedVersion}
                     availableVersions={availableVersions}
                     setSelectedVersion={setSelectedVersion}
+                    filterYear={filterYear}
+                    setFilterYear={setFilterYear}
                     activePage={activePage}
                     setActivePage={setActivePage}
                 />

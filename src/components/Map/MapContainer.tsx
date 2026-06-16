@@ -29,6 +29,7 @@ const ZOOM = 11;
 interface MapContainerProps {
     selectedProject?: ProjectData | null;
     selectedVersion: string;
+    filterYear: string;
 }
 
 const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectData => ({
@@ -84,7 +85,7 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
     return null;
 };
 
-const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion }) => {
+const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion, filterYear }) => {
 
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
     const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority' | 'kepadatan' | 'budget'>('default');
@@ -206,12 +207,18 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                 }
             }
 
-            const mapped = allData.map(item => mapItemToProjectData(item));
+            let mapped = allData.map(item => mapItemToProjectData(item));
+            
+            // Filter by year if filterYear is active
+            if (filterYear) {
+                mapped = mapped.filter(item => item.dataVersion?.includes(filterYear));
+            }
+            
             setPermanentProjects(mapped);
         };
 
         fetchAllMarkers();
-    }, [selectedVersion]);
+    }, [selectedVersion, filterYear]);
 
     // Fetch Batas Desa GeoJSON
     useEffect(() => {
@@ -234,7 +241,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                         .eq('data_version', selectedVersion);
 
                     if (!error && data) {
-                        relatedProjects = data.map(item => mapItemToProjectData(item));
+                        let filteredData = data.map(item => mapItemToProjectData(item));
+                        if (filterYear) {
+                            filteredData = filteredData.filter(item => item.dataVersion?.includes(filterYear));
+                        }
+                        relatedProjects = filteredData;
                     }
                 }
 

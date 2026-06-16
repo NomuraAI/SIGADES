@@ -11,6 +11,8 @@ interface HeaderProps {
     setSelectedVersion: (version: string) => void;
     activePage: string;
     setActivePage: (page: string) => void;
+    filterYear: string;
+    setFilterYear: (year: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -20,7 +22,9 @@ const Header: React.FC<HeaderProps> = ({
     availableVersions, 
     setSelectedVersion,
     activePage,
-    setActivePage
+    setActivePage,
+    filterYear,
+    setFilterYear
 }) => {
     const menuItems = [
         { id: 'Dashboard Interaktif', label: 'Dashboard', roles: ['admin', 'user', 'viewer'] },

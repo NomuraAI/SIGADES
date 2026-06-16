@@ -26,6 +26,7 @@ const App = () => {
     const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
     const [selectedVersion, setSelectedVersion] = useState<string>('Default');
     const [availableVersions, setAvailableVersions] = useState<string[]>(['Default']);
+    const [filterYear, setFilterYear] = useState<string>('2026');
 
     // Global Data Source Mode
     const [dataSourceMode, setDataSourceMode] = useState<'supabase' | 'local'>(() => {
@@ -98,22 +99,25 @@ const App = () => {
             selectedVersion={selectedVersion}
             availableVersions={availableVersions}
             setSelectedVersion={setSelectedVersion}
+            filterYear={filterYear}
+            setFilterYear={setFilterYear}
             user={user}
             onLogout={handleLogout}
         >
-            {activePage === 'Peta Interaktif' && <MapContainer selectedProject={selectedProject} selectedVersion={selectedVersion} />}
+            {activePage === 'Peta Interaktif' && <MapContainer selectedProject={selectedProject} selectedVersion={selectedVersion} filterYear={filterYear} />}
             {activePage === 'Data Desa' && (
                 <DataDesa
                     onBack={() => setActivePage('Peta Interaktif')}
                     onViewMap={handleViewMap}
                     selectedVersion={selectedVersion}
+                    filterYear={filterYear}
                     onVersionChange={fetchVersions} // Refresh versions after import
                     dataSourceMode={dataSourceMode}
                     setDataSourceMode={setDataSourceMode}
                     user={user}
                 />
             )}
-            {activePage === 'Dashboard Interaktif' && <BreakdownAnggaranPage selectedVersion={selectedVersion} dataSourceMode={dataSourceMode} />}
+            {activePage === 'Dashboard Interaktif' && <BreakdownAnggaranPage selectedVersion={selectedVersion} dataSourceMode={dataSourceMode} filterYear={filterYear} setFilterYear={setFilterYear} />}
 
             {activePage === 'Pengaturan' && (
                 <ComingSoon title={activePage} />

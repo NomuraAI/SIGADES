@@ -9,14 +9,15 @@ import PilarAlokasiCard from './PilarAlokasiCard';
 interface BreakdownAnggaranPageProps {
     selectedVersion: string;
     dataSourceMode: 'supabase' | 'local';
+    filterYear: string;
+    setFilterYear: (year: string) => void;
 }
 
-const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedVersion, dataSourceMode }) => {
+const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedVersion, dataSourceMode, filterYear, setFilterYear }) => {
     const [data, setData] = useState<ProjectData[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterKecamatan, setFilterKecamatan] = useState<string>('');
     const [filterBudget, setFilterBudget] = useState<'all' | 'above1M' | 'below1M'>('all');
-    const [filterYear, setFilterYear] = useState<string>('2026');
 
     // Refs for scrolling
     const sectionStatsRef = useRef<HTMLDivElement>(null);
