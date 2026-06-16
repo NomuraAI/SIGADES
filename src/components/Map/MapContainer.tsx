@@ -26,53 +26,35 @@ L.Marker.prototype.options.icon = DefaultIcon;
 const CENTER: [number, number] = [-8.6756, 116.1157];
 const ZOOM = 11;
 
+import { getProjectService } from '../../services/projectService';
+
 interface MapContainerProps {
     selectedProject?: ProjectData | null;
     selectedVersion: string;
     filterYear: string;
+    dataSourceMode?: 'supabase' | 'local';
 }
 
-const mapItemToProjectData = (item: any, lat?: number, lng?: number): ProjectData => ({
-    id: item.id,
-    aksiPrioritas: item.aksi_prioritas || '',
-    perangkatDaerah: item.perangkat_daerah || '',
-    program: item.program || '',
-    kegiatan: item.kegiatan || '',
-    subKegiatan: item.sub_kegiatan || '',
-    pekerjaan: item.pekerjaan || '',
-    paguAnggaran: item.pagu_anggaran || 0,
-    kodeDesa: item.kode_desa || '',
-    kodeKecamatan: item.kode_kecamatan || '',
-    desaKelurahan: item.desa_kelurahan || item.desa || '',
-    kecamatan: item.kecamatan || '',
-    luasWilayah: item.luas_wilayah !== undefined && item.luas_wilayah !== null ? Number(item.luas_wilayah) : 0,
-    jumlahPenduduk: item.jumlah_penduduk || 0,
-    jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
-    jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
-    kepadatanPenduduk: item.kepadatan_penduduk !== undefined && item.kepadatan_penduduk !== null ? Number(item.kepadatan_penduduk) : 0,
-    potensiDesa: item.potensi_desa || '',
-    keterangan: item.keterangan || '',
-
-    latitude: item.latitude || item.lat || lat,
-    longitude: item.longitude || item.lng || lng
-});
-
-const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: any, projects: ProjectData[]) => void }) => {
+const SearchSyncHandler = ({ onSearchComplete, permanentProjects }: { onSearchComplete: (location: any, projects: ProjectData[]) => void, permanentProjects: ProjectData[] }) => {
     const map = useMap();
 
     useEffect(() => {
-        const handleSearch = async (e: any) => {
-            const searchTerm = e.location.label;
-            const searchKeyword = searchTerm.split(',')[0].trim();
+        const handleSearch = (e: any) => {
+            const searchTerm = e.location.label || '';
+            const searchKeyword = searchTerm.split(',')[0].trim().toLowerCase();
 
-            const { data, error } = await supabase
-                .from('projects')
-                .select('*')
-                .or(`desa_kelurahan.ilike.%${searchKeyword}%,kecamatan.ilike.%${searchKeyword}%`);
+            const foundProjects = permanentProjects.filter(item => 
+                (item.desaKelurahan || '').toLowerCase().includes(searchKeyword) ||
+                (item.kecamatan || '').toLowerCase().includes(searchKeyword)
+            );
 
-            if (!error && data && data.length > 0) {
-                const foundProjects = data.map(item => mapItemToProjectData(item, e.location.y, e.location.x));
-                onSearchComplete(e.location, foundProjects);
+            if (foundProjects.length > 0) {
+                const updatedProjects = foundProjects.map(p => ({
+                    ...p,
+                    latitude: p.latitude || e.location.y,
+                    longitude: p.longitude || e.location.x
+                }));
+                onSearchComplete(e.location, updatedProjects);
             } else {
                 onSearchComplete(e.location, []);
             }
@@ -80,12 +62,12 @@ const SearchSyncHandler = ({ onSearchComplete }: { onSearchComplete: (location: 
 
         map.on('geosearch/showlocation', handleSearch);
         return () => { map.off('geosearch/showlocation', handleSearch); };
-    }, [map, onSearchComplete]);
+    }, [map, onSearchComplete, permanentProjects]);
 
     return null;
 };
 
-const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion, filterYear }) => {
+const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion, filterYear, dataSourceMode = 'supabase' }) => {
 
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
     const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority' | 'kepadatan' | 'budget'>('default');
@@ -174,51 +156,37 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
     // Fetch ALL projects on load (even those without coordinates for budget calculation)
     useEffect(() => {
         const fetchAllMarkers = async () => {
-
-            
-            let allData: any[] = [];
-            let from = 0;
-            const step = 1000;
+            const service = getProjectService(dataSourceMode);
+            let allData: ProjectData[] = [];
+            let page = 0;
+            const pageSize = 1000;
             let hasMore = true;
 
             while (hasMore) {
-                let query = supabase
-                    .from('projects')
-                    .select('*')
-                    .range(from, from + step - 1);
+                try {
+                    const response = await service.getAllProjects(selectedVersion, page, pageSize);
+                    let chunk = response.data;
 
-                if (selectedVersion) {
-                    query = query.eq('data_version', selectedVersion);
-                }
+                    if (filterYear) {
+                        chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
+                    }
 
-                const { data, error } = await query;
-
-                if (error) {
+                    if (chunk && chunk.length > 0) {
+                        allData = [...allData, ...chunk];
+                    }
+                    hasMore = response.hasMore;
+                    page++;
+                } catch (error) {
                     console.error("[MAP DEBUG] Fetch Error:", error);
                     hasMore = false;
-                    break;
-                }
-
-                if (data && data.length > 0) {
-                    allData = [...allData, ...data];
-                    from += step;
-                } else {
-                    hasMore = false;
                 }
             }
 
-            let mapped = allData.map(item => mapItemToProjectData(item));
-            
-            // Filter by year if filterYear is active
-            if (filterYear) {
-                mapped = mapped.filter(item => item.dataVersion?.includes(filterYear));
-            }
-            
-            setPermanentProjects(mapped);
+            setPermanentProjects(allData);
         };
 
         fetchAllMarkers();
-    }, [selectedVersion, filterYear]);
+    }, [selectedVersion, filterYear, dataSourceMode]);
 
     // Fetch Batas Desa GeoJSON
     useEffect(() => {
@@ -234,19 +202,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
             if (selectedProject) {
                 let relatedProjects: ProjectData[] = [];
                 if (selectedProject.desaKelurahan) {
-                    const { data, error } = await supabase
-                        .from('projects')
-                        .select('*')
-                        .eq('desa_kelurahan', selectedProject.desaKelurahan)
-                        .eq('data_version', selectedVersion);
-
-                    if (!error && data) {
-                        let filteredData = data.map(item => mapItemToProjectData(item));
-                        if (filterYear) {
-                            filteredData = filteredData.filter(item => item.dataVersion?.includes(filterYear));
-                        }
-                        relatedProjects = filteredData;
-                    }
+                    relatedProjects = permanentProjects.filter(p => p.desaKelurahan === selectedProject.desaKelurahan);
                 }
 
                 if (relatedProjects.length === 0) {
@@ -288,7 +244,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
             }
         };
         fetchRelatedProjects();
-    }, [selectedProject]);
+    }, [selectedProject, permanentProjects]);
 
     const handleSearchComplete = useCallback((location: any, projects: ProjectData[]) => {
         if (projects.length > 0) {
@@ -508,7 +464,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                     />
                 )}
 
-                <SearchSyncHandler onSearchComplete={handleSearchComplete} />
+                <SearchSyncHandler onSearchComplete={handleSearchComplete} permanentProjects={permanentProjects} />
 
                 {vizMode === 'default' && (activeProjects.length > 0 || permanentProjects.length > 0) && (
                     <ProjectMarkers projects={[...permanentProjects, ...activeProjects]} vizMode={vizMode} />

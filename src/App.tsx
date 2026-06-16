@@ -104,7 +104,7 @@ const App = () => {
             user={user}
             onLogout={handleLogout}
         >
-            {activePage === 'Peta Interaktif' && <MapContainer selectedProject={selectedProject} selectedVersion={selectedVersion} filterYear={filterYear} />}
+            {activePage === 'Peta Interaktif' && <MapContainer selectedProject={selectedProject} selectedVersion={selectedVersion} filterYear={filterYear} dataSourceMode={dataSourceMode} />}
             {activePage === 'Data Desa' && (
                 <DataDesa
                     onBack={() => setActivePage('Peta Interaktif')}
