@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { ProjectData } from '../../types';
 import { getProjectService } from '../../services/projectService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, Treemap } from 'recharts';
-import { Loader2, Filter, DollarSign, Building2, Wallet, LayoutDashboard, BarChart3, PieChart as PieChartIcon, Users, Baby, Sprout, Target } from 'lucide-react';
+import { Loader2, Filter, DollarSign, Building2, Wallet, LayoutDashboard, BarChart3, PieChart as PieChartIcon, Users, Baby, Sprout, Target, ArrowUp } from 'lucide-react';
 import PilarAlokasiCard, { mapDBPilarToId } from './PilarAlokasiCard';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
@@ -74,6 +74,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
     const sectionDensityChartRef = useRef<HTMLDivElement>(null);
     const sectionPotentialChartRef = useRef<HTMLDivElement>(null);
     const sectionPilarTreemapRef = useRef<HTMLDivElement>(null);
+    const sectionPilarChartRef = useRef<HTMLDivElement>(null);
+
+
 
     useEffect(() => {
         fetchData();
@@ -546,8 +549,55 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         </div>
                     </div>
 
+                    {/* Navigation Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div 
+                            onClick={() => sectionPilarChartRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                            className="cursor-pointer bg-gradient-to-br from-indigo-500 to-indigo-700 p-4 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col items-center justify-center text-center group"
+                        >
+                            <div className="bg-white/20 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                <Target className="text-white" size={24} />
+                            </div>
+                            <h4 className="text-white font-bold text-sm">Pilar Spesifik</h4>
+                            <p className="text-indigo-100 text-[10px] mt-1">Analisis Pilar Desa</p>
+                        </div>
+                        
+                        <div 
+                            onClick={() => sectionBudgetChartRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                            className="cursor-pointer bg-gradient-to-br from-lobar-blue to-blue-700 p-4 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col items-center justify-center text-center group"
+                        >
+                            <div className="bg-white/20 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                <BarChart3 className="text-white" size={24} />
+                            </div>
+                            <h4 className="text-white font-bold text-sm">Anggaran per Desa</h4>
+                            <p className="text-blue-100 text-[10px] mt-1">Analisis Anggaran</p>
+                        </div>
+
+                        <div 
+                            onClick={() => sectionPovertyChartRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                            className="cursor-pointer bg-gradient-to-br from-red-500 to-red-700 p-4 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col items-center justify-center text-center group"
+                        >
+                            <div className="bg-white/20 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                <Users className="text-white" size={24} />
+                            </div>
+                            <h4 className="text-white font-bold text-sm">Kemiskinan</h4>
+                            <p className="text-red-100 text-[10px] mt-1">Top 20 Tertinggi</p>
+                        </div>
+
+                        <div 
+                            onClick={() => sectionStuntingChartRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                            className="cursor-pointer bg-gradient-to-br from-orange-400 to-orange-600 p-4 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col items-center justify-center text-center group"
+                        >
+                            <div className="bg-white/20 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                <Baby className="text-white" size={24} />
+                            </div>
+                            <h4 className="text-white font-bold text-sm">Balita Stunting</h4>
+                            <p className="text-orange-100 text-[10px] mt-1">Top 20 Tertinggi</p>
+                        </div>
+                    </div>
+
                     {/* Section: Pilar Analyzer Spesifik Desa (Bar Charts) */}
-                    <div className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col mb-8">
+                    <div ref={sectionPilarChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col mb-8">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Target className="text-indigo-500" /> Analisis Pilar Spesifik Desa</h3>
                         </div>
@@ -971,6 +1021,8 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
                 </div>
             </div>
+
+
         </div>
     );
 };
