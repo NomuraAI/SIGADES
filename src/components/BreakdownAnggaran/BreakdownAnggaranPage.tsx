@@ -54,8 +54,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
     const [filterBudget, setFilterBudget] = useState<'all' | 'above1M' | 'below1M'>('all');
 
     // Analyzer State
-    const [analyzerKecamatan, setAnalyzerKecamatan] = useState<string>('');
-    const [analyzerDesa, setAnalyzerDesa] = useState<string>('');
+    const [analyzerPilar, setAnalyzerPilar] = useState<string>('ALL');
+    const [analyzerKecamatan, setAnalyzerKecamatan] = useState<string>('ALL');
+    const [analyzerDesa, setAnalyzerDesa] = useState<string>('ALL');
 
     // Refs for scrolling
     const sectionStatsRef = useRef<HTMLDivElement>(null);
@@ -113,33 +114,41 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
     // Analyzer: Get unique Desa based on selected analyzerKecamatan
     const analyzerAvailableDesa = useMemo(() => {
-        if (!analyzerKecamatan) return [];
+        if (analyzerKecamatan === 'ALL') {
+            const desas = data.map(d => d.desaKelurahan).filter(Boolean) as string[];
+            return [...new Set(desas)].sort();
+        }
         const desas = data.filter(d => d.kecamatan === analyzerKecamatan).map(d => d.desaKelurahan).filter(Boolean) as string[];
         return [...new Set(desas)].sort();
     }, [data, analyzerKecamatan]);
 
-    // Analyzer: Get Data for selected Kecamatan & Desa
-    const analyzerData = useMemo(() => {
-        if (!analyzerKecamatan || !analyzerDesa) return null;
-        
-        let filtered = data.filter(d => d.kecamatan === analyzerKecamatan);
-        
-        if (analyzerDesa !== 'ALL') {
-            filtered = filtered.filter(d => d.desaKelurahan === analyzerDesa);
-        }
-        
-        let totalPagu = 0;
-        const pilarPagu: Record<string, number> = { sdm: 0, infrastruktur: 0, ekonomi: 0, sosial: 0 };
-        
-        filtered.forEach(item => {
-            const val = Number(item.paguAnggaran || 0);
-            totalPagu += val;
-            const pId = mapDBPilarToId(item.pilar);
-            if (pId) pilarPagu[pId] += val;
+    // Analyzer Data for Bar Charts
+    const analyzerBarData = useMemo(() => {
+        const desaGroups: { [key: string]: { total: number, name: string } } = {};
+
+        data.forEach(item => {
+            if (analyzerKecamatan !== 'ALL' && item.kecamatan !== analyzerKecamatan) return;
+            if (analyzerDesa !== 'ALL' && item.desaKelurahan !== analyzerDesa) return;
+            
+            const pilarId = mapDBPilarToId(item.pilar);
+            if (analyzerPilar !== 'ALL' && pilarId !== analyzerPilar) return;
+
+            const desaName = (item.desaKelurahan || 'Lainnya').trim();
+            if (desaName.toLowerCase() === 'lainnya' || desaName === '') return;
+
+            if (!desaGroups[desaName]) {
+                desaGroups[desaName] = { total: 0, name: desaName };
+            }
+            desaGroups[desaName].total += Number(item.paguAnggaran || 0);
         });
 
-        return { totalPagu, pilarPagu };
-    }, [data, analyzerKecamatan, analyzerDesa]);
+        const sorted = Object.values(desaGroups).sort((a, b) => b.total - a.total);
+        
+        const top20 = sorted.slice(0, 20);
+        const bottom20 = [...sorted].sort((a, b) => a.total - b.total).slice(0, 20);
+
+        return { top20, bottom20 };
+    }, [data, analyzerKecamatan, analyzerDesa, analyzerPilar]);
 
     // Apply global Kecamatan filter
     const filteredData = useMemo(() => {
@@ -496,7 +505,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         </div>
                     </div>
 
-                    {/* Section: Pilar Analyzer Spesifik Desa */}
+                    {/* Section: Pilar Analyzer Spesifik Desa (Bar Charts) */}
                     <div className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col mb-8">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Target className="text-indigo-500" /> Analisis Pilar Spesifik Desa</h3>
@@ -505,82 +514,94 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {/* Analyzer Filters */}
                         <div className="flex flex-wrap gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <div className="flex flex-col w-full md:w-auto">
-                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">Pilih Kecamatan</label>
+                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">1. Pilar</label>
+                                <select 
+                                    className="bg-white border border-slate-300 rounded-lg px-4 py-2 font-bold text-slate-700 outline-none focus:border-lobar-blue focus:ring-2 focus:ring-blue-100 min-w-[200px]" 
+                                    value={analyzerPilar} 
+                                    onChange={(e) => setAnalyzerPilar(e.target.value)}
+                                >
+                                    <option value="ALL">Semua Pilar</option>
+                                    <option value="sdm">Peningkatan SDM</option>
+                                    <option value="infrastruktur">Infrastruktur Dasar</option>
+                                    <option value="ekonomi">Penguatan Ekonomi</option>
+                                    <option value="sosial">Sosial & Kelembagaan</option>
+                                </select>
+                            </div>
+                            <div className="flex flex-col w-full md:w-auto">
+                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">2. Kecamatan</label>
                                 <select 
                                     className="bg-white border border-slate-300 rounded-lg px-4 py-2 font-bold text-slate-700 outline-none focus:border-lobar-blue focus:ring-2 focus:ring-blue-100 min-w-[200px]" 
                                     value={analyzerKecamatan} 
                                     onChange={(e) => {
                                         setAnalyzerKecamatan(e.target.value);
-                                        setAnalyzerDesa(''); // reset desa
+                                        setAnalyzerDesa('ALL'); // reset desa
                                     }}
                                 >
-                                    <option value="" disabled>-- Pilih Kecamatan --</option>
+                                    <option value="ALL">Semua Kecamatan</option>
                                     {uniqueKecamatan.map(kec => (<option key={kec} value={kec}>{kec}</option>))}
                                 </select>
                             </div>
                             <div className="flex flex-col w-full md:w-auto">
-                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">Pilih Desa</label>
+                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">3. Desa</label>
                                 <select 
                                     className="bg-white border border-slate-300 rounded-lg px-4 py-2 font-bold text-slate-700 outline-none focus:border-lobar-blue focus:ring-2 focus:ring-blue-100 min-w-[200px]" 
                                     value={analyzerDesa} 
                                     onChange={(e) => setAnalyzerDesa(e.target.value)}
-                                    disabled={!analyzerKecamatan}
                                 >
-                                    <option value="" disabled>-- Pilih Desa --</option>
-                                    <option value="ALL">Semua Desa (Total Kecamatan)</option>
+                                    <option value="ALL">Semua Desa</option>
                                     {analyzerAvailableDesa.map(desa => (<option key={desa} value={desa}>{desa}</option>))}
                                 </select>
                             </div>
                         </div>
 
-                        {/* Analyzer Results */}
-                        {!analyzerData ? (
-                            <div className="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-xl border border-dashed border-slate-300 text-slate-400">
-                                <Target size={48} className="mb-2 opacity-50" />
-                                <p className="font-medium text-sm">Pilih Kecamatan dan Desa untuk melihat analisis pilar</p>
+                        {/* Analyzer Results - Top 20 & Bottom 20 */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* 20 Tertinggi */}
+                            <div className="flex flex-col">
+                                <h4 className="text-md font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                    20 Tertinggi
+                                </h4>
+                                {analyzerBarData.top20.length > 0 ? (
+                                    <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                        <div style={{ minWidth: 500, height: 400 }}>
+                                            <ResponsiveContainer width="99%" height={400}>
+                                                <BarChart data={analyzerBarData.top20} margin={{ top: 20, right: 30, left: 20, bottom: 80 }} layout="horizontal">
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                                    <YAxis tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} width={80} />
+                                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
+                                                    <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                ) : <div className="h-48 flex items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-xl">Data tidak tersedia</div>}
                             </div>
-                        ) : (
-                            <div>
-                                <div className="mb-4">
-                                    <p className="text-sm font-bold text-slate-500 uppercase">
-                                        Total Pagu {analyzerDesa === 'ALL' ? `Kecamatan ${analyzerKecamatan}` : `Desa ${analyzerDesa}`}
-                                    </p>
-                                    <h2 className="text-3xl font-bold text-slate-800">{formatRupiah(analyzerData.totalPagu)}</h2>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                    {[
-                                        { id: 'sdm', label: 'Peningkatan SDM', color: 'bg-blue-500', lightColor: 'bg-blue-50', textColor: 'text-blue-500' },
-                                        { id: 'infrastruktur', label: 'Infrastruktur Dasar', color: 'bg-emerald-500', lightColor: 'bg-emerald-50', textColor: 'text-emerald-500' },
-                                        { id: 'ekonomi', label: 'Penguatan Ekonomi', color: 'bg-amber-500', lightColor: 'bg-amber-50', textColor: 'text-amber-500' },
-                                        { id: 'sosial', label: 'Sosial & Kelembagaan', color: 'bg-slate-500', lightColor: 'bg-slate-50', textColor: 'text-slate-500' }
-                                    ].map(pilar => {
-                                        const pagu = analyzerData.pilarPagu[pilar.id] || 0;
-                                        const percent = analyzerData.totalPagu > 0 ? (pagu / analyzerData.totalPagu) * 100 : 0;
-                                        
-                                        return (
-                                            <div key={pilar.id} className="border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-                                                <div>
-                                                    <div className={`w-8 h-8 rounded-full mb-3 flex items-center justify-center ${pilar.lightColor} ${pilar.textColor}`}>
-                                                        <Target size={16} />
-                                                    </div>
-                                                    <h4 className="font-bold text-slate-700 text-sm mb-1">{pilar.label}</h4>
-                                                    <p className="text-lg font-bold text-slate-900 mb-2">{formatRupiah(pagu)}</p>
-                                                </div>
-                                                <div>
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <span className="text-xs font-bold text-slate-400">Porsi</span>
-                                                        <span className={`text-xs font-bold ${pilar.textColor}`}>{percent.toFixed(1)}%</span>
-                                                    </div>
-                                                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                                        <div className={`h-full ${pilar.color} rounded-full`} style={{ width: `${percent}%` }}></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+
+                            {/* 20 Terendah */}
+                            <div className="flex flex-col">
+                                <h4 className="text-md font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    20 Terendah
+                                </h4>
+                                {analyzerBarData.bottom20.length > 0 ? (
+                                    <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                        <div style={{ minWidth: 500, height: 400 }}>
+                                            <ResponsiveContainer width="99%" height={400}>
+                                                <BarChart data={analyzerBarData.bottom20} margin={{ top: 20, right: 30, left: 20, bottom: 80 }} layout="horizontal">
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                                    <YAxis tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} width={80} />
+                                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
+                                                    <Bar dataKey="total" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                ) : <div className="h-48 flex items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-xl">Data tidak tersedia</div>}
                             </div>
-                        )}
+                        </div>
                     </div>
 
                     {/* Section 3: Budget Analysis */}
