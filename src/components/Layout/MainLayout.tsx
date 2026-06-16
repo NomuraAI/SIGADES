@@ -1,6 +1,5 @@
 import React from 'react';
 import Header from './Header';
-import FloatingMenu from './FloatingMenu';
 import { User } from '../../types';
 
 interface MainLayoutProps {
@@ -33,18 +32,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                     selectedVersion={selectedVersion}
                     availableVersions={availableVersions}
                     setSelectedVersion={setSelectedVersion}
+                    activePage={activePage}
+                    setActivePage={setActivePage}
                 />
 
                 <main className="flex-1 relative overflow-y-auto overflow-x-hidden bg-slate-50 min-h-0 pb-24 md:pb-0">
                     {children}
                 </main>
-
-                <FloatingMenu 
-                    activeItem={activePage}
-                    setActiveItem={setActivePage}
-                    user={user}
-                    onLogout={onLogout}
-                />
             </div>
         </div>
     );

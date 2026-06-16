@@ -113,7 +113,7 @@ const App = () => {
                     user={user}
                 />
             )}
-            {activePage === 'Dashboard Interaktif' && <BreakdownAnggaranPage selectedVersion={selectedVersion} />}
+            {activePage === 'Dashboard Interaktif' && <BreakdownAnggaranPage selectedVersion={selectedVersion} dataSourceMode={dataSourceMode} />}
 
             {activePage === 'Pengaturan' && (
                 <ComingSoon title={activePage} />

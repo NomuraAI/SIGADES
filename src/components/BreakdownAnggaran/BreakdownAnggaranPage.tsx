@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ProjectData } from '../../types';
+import { getProjectService } from '../../services/projectService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { Loader2, Filter, DollarSign, Building2, Wallet, LayoutDashboard, BarChart3, PieChart as PieChartIcon, Users, Baby, Sprout } from 'lucide-react';
+import PilarAlokasiCard from './PilarAlokasiCard';
 
 interface BreakdownAnggaranPageProps {
     selectedVersion: string;
+    dataSourceMode: 'supabase' | 'local';
 }
 
-const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedVersion }) => {
+const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedVersion, dataSourceMode }) => {
     const [data, setData] = useState<ProjectData[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterKecamatan, setFilterKecamatan] = useState<string>('');
     const [filterBudget, setFilterBudget] = useState<'all' | 'above1M' | 'below1M'>('all');
+    const [filterYear, setFilterYear] = useState<string>('2026');
 
     // Refs for scrolling
     const sectionStatsRef = useRef<HTMLDivElement>(null);
@@ -27,65 +31,33 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
     useEffect(() => {
         fetchData();
-    }, [selectedVersion]);
+    }, [selectedVersion, filterYear]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            let allData: any[] = [];
+            const service = getProjectService(dataSourceMode);
+            let allData: ProjectData[] = [];
             let page = 0;
             const pageSize = 1000;
             let hasMore = true;
 
             while (hasMore) {
-                let query = supabase
-                    .from('projects')
-                    .select('*')
-                    .range(page * pageSize, (page + 1) * pageSize - 1);
-
-                if (selectedVersion) {
-                    query = query.eq('data_version', selectedVersion);
+                const response = await service.getAllProjects(selectedVersion, page, pageSize);
+                
+                let chunk = response.data;
+                if (filterYear) {
+                    chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
                 }
-
-                const { data: chunk, error } = await query;
-
-                if (error) throw error;
 
                 if (chunk && chunk.length > 0) {
                     allData = [...allData, ...chunk];
-                    if (chunk.length < pageSize) hasMore = false;
-                    page++;
-                } else {
-                    hasMore = false;
                 }
+                hasMore = response.hasMore;
+                page++;
             }
 
-            const projects = allData;
-
-            const mappedData: ProjectData[] = (projects || []).map(item => ({
-                id: item.id,
-                aksiPrioritas: item.aksi_prioritas || '',
-                perangkatDaerah: item.perangkat_daerah || '',
-                program: item.program || '',
-                kegiatan: item.kegiatan || '',
-                subKegiatan: item.sub_kegiatan || '',
-                pekerjaan: item.pekerjaan || '',
-                paguAnggaran: item.pagu_anggaran || 0,
-                kodeDesa: item.kode_desa || '',
-                desaKelurahan: item.desa_kelurahan || item.desa || '',
-                kodeKecamatan: item.kode_kecamatan || '',
-                kecamatan: item.kecamatan || '',
-                luasWilayah: item.luas_wilayah || '',
-                jumlahPenduduk: item.jumlah_penduduk || 0,
-                jumlahAngkaKemiskinan: item.jumlah_angka_kemiskinan || 0,
-                jumlahBalitaStunting: item.jumlah_balita_stunting || 0,
-                kepadatanPenduduk: item.kepadatan_penduduk !== undefined && item.kepadatan_penduduk !== null ? Number(item.kepadatan_penduduk) : 0,
-                keterangan: item.keterangan || '',
-                potensiDesa: item.potensi_desa || '',
-                latitude: item.latitude || item.lat || null,
-                longitude: item.longitude || item.lng || null
-            }));
-            setData(mappedData);
+            setData(allData);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -327,41 +299,26 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
         <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
             {/* Sticky Header Section */}
             <div className="flex-none pt-4 md:pt-6 px-4 md:px-6 pb-2 z-30 bg-slate-50 border-b border-slate-100">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-3 md:mb-4">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 md:gap-4 mb-4">
                     <div>
                         <h1 className="text-xl md:text-2xl font-bold text-slate-800">Dashboard Interaktif</h1>
-                        <p className="text-slate-500 text-xs md:text-sm">Analisis distribusi anggaran dan statistik proyek desa</p>
+                        <p className="text-lobar-blue text-sm md:text-base font-bold mt-1">Pilar Alokasi Indikatif : Komposisi 1 Miliar Per Desa</p>
+                        <p className="text-slate-500 text-xs md:text-sm mt-1 max-w-2xl font-medium">
+                            Struktur alokasi yang dikunci untuk menjamin keseimbangan absolut antara pembangunan fisik dan pembangunan manusia.
+                        </p>
                     </div>
 
-                    {/* Navigation Pills */}
-                    <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm overflow-x-auto custom-scrollbar">
-                        <button onClick={() => scrollToSection(sectionStatsRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-lobar-blue hover:bg-slate-50 rounded-lg transition-all">
-                            <LayoutDashboard size={14} /> Ringkasan
-                        </button>
-                        <button onClick={() => scrollToSection(sectionFiltersRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-lobar-blue hover:bg-slate-50 rounded-lg transition-all">
-                            <Filter size={14} /> Filter
-                        </button>
-                        <button onClick={() => scrollToSection(sectionBudgetChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-lobar-blue hover:bg-slate-50 rounded-lg transition-all">
-                            <BarChart3 size={14} /> Anggaran
-                        </button>
-                        <button onClick={() => scrollToSection(sectionPovertyChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
-                            <Users size={14} /> Kemiskinan (Tertinggi)
-                        </button>
-                        <button onClick={() => scrollToSection(sectionPovertyLowestChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all">
-                            <Users size={14} /> Kemiskinan (Terendah)
-                        </button>
-                        <button onClick={() => scrollToSection(sectionStuntingChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all">
-                            <Baby size={14} /> Stunting (Tertinggi)
-                        </button>
-                        <button onClick={() => scrollToSection(sectionStuntingLowestChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all">
-                            <Baby size={14} /> Stunting (Terendah)
-                        </button>
-                        <button onClick={() => scrollToSection(sectionDensityChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all">
-                            <Users size={14} /> Kepadatan Penduduk
-                        </button>
-                        <button onClick={() => scrollToSection(sectionPotentialChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all">
-                            <PieChartIcon size={14} /> Potensi
-                        </button>
+                    {/* Tahun Tabulasi */}
+                    <div className="flex bg-slate-200/50 p-1 rounded-xl shadow-inner overflow-x-auto custom-scrollbar max-w-[50vw]">
+                        {['2026', '2027', '2028', '2029', '2030'].map(year => (
+                            <button
+                                key={year}
+                                onClick={() => setFilterYear(year)}
+                                className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${filterYear === year ? 'bg-white text-lobar-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                {year}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -369,6 +326,42 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
             {/* Scrollable Content Area */}
             <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 custom-scrollbar scroll-smooth">
                 <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 pt-4 md:pt-6">
+
+                    {/* Section 0: Info Card Blueprint */}
+                    <PilarAlokasiCard />
+
+                    {/* Navigation Pills */}
+                    <div className="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-sm py-2 -mx-4 px-4 md:-mx-6 md:px-6">
+                        <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm overflow-x-auto custom-scrollbar w-full">
+                            <button onClick={() => scrollToSection(sectionStatsRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-lobar-blue hover:bg-slate-50 rounded-lg transition-all">
+                                <LayoutDashboard size={14} /> Ringkasan
+                            </button>
+                            <button onClick={() => scrollToSection(sectionFiltersRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-lobar-blue hover:bg-slate-50 rounded-lg transition-all">
+                                <Filter size={14} /> Filter
+                            </button>
+                            <button onClick={() => scrollToSection(sectionBudgetChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-lobar-blue hover:bg-slate-50 rounded-lg transition-all">
+                                <BarChart3 size={14} /> Anggaran
+                            </button>
+                            <button onClick={() => scrollToSection(sectionPovertyChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all">
+                                <Users size={14} /> Kemiskinan (Tertinggi)
+                            </button>
+                            <button onClick={() => scrollToSection(sectionPovertyLowestChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-all">
+                                <Users size={14} /> Kemiskinan (Terendah)
+                            </button>
+                            <button onClick={() => scrollToSection(sectionStuntingChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all">
+                                <Baby size={14} /> Stunting (Tertinggi)
+                            </button>
+                            <button onClick={() => scrollToSection(sectionStuntingLowestChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all">
+                                <Baby size={14} /> Stunting (Terendah)
+                            </button>
+                            <button onClick={() => scrollToSection(sectionDensityChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all">
+                                <Users size={14} /> Kepadatan Penduduk
+                            </button>
+                            <button onClick={() => scrollToSection(sectionPotentialChartRef)} className="whitespace-nowrap flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all">
+                                <PieChartIcon size={14} /> Potensi
+                            </button>
+                        </div>
+                    </div>
 
                     {/* Section 1: Stats Cards */}
                     <div ref={sectionStatsRef} className="scroll-mt-32 grid grid-cols-1 md:grid-cols-3 gap-4">
