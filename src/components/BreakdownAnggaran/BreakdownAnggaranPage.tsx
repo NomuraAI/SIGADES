@@ -329,7 +329,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                 <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 pt-4 md:pt-6">
 
                     {/* Section 0: Info Card Blueprint */}
-                    <PilarAlokasiCard />
+                    <PilarAlokasiCard filterYear={filterYear} />
 
                     {/* Navigation Pills */}
                     <div className="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-sm py-2 -mx-4 px-4 md:-mx-6 md:px-6">

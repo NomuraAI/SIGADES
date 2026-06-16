@@ -35,7 +35,10 @@ const mapDbRowToProject = (item: any): ProjectData => ({
     kepadatanPenduduk: item.kepadatan_penduduk !== undefined && item.kepadatan_penduduk !== null ? Number(item.kepadatan_penduduk) : undefined,
     latitude: item.latitude || item.lat || null,
     longitude: item.longitude || item.lng || null,
-    dataVersion: item.data_version || 'Default'
+    dataVersion: item.data_version || 'Default',
+    paguSemula: item.pagu_semula || undefined,
+    penurunanPagu: item.penurunan_pagu || undefined,
+    pilar: item.pilar || ''
 });
 
 // Helper to map ProjectData to DB row
@@ -60,7 +63,10 @@ const mapProjectToDbRow = (item: Partial<ProjectData>) => ({
     keterangan: item.keterangan,
     latitude: item.latitude,
     longitude: item.longitude,
-    data_version: item.dataVersion
+    data_version: item.dataVersion,
+    pagu_semula: item.paguSemula,
+    penurunan_pagu: item.penurunanPagu,
+    pilar: item.pilar
 });
 
 export class SupabaseProjectService implements ProjectService {

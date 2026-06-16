@@ -21,6 +21,9 @@ export interface ProjectData {
     keterangan: string;
     kepadatanPenduduk?: number;
     dataVersion?: string;
+    paguSemula?: number;
+    penurunanPagu?: number;
+    pilar?: string;
 }
 
 export type UserRole = 'admin' | 'user' | 'viewer';

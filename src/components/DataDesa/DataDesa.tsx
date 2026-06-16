@@ -61,6 +61,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         { key: 'kepadatanPenduduk', label: 'Kepadatan (jiwa/km²)', align: 'center' },
         { key: 'potensiDesa', label: 'Potensi Desa', align: 'left' },
         { key: 'keterangan', label: 'Keterangan', align: 'left' },
+        { key: 'paguSemula', label: 'Pagu Semula', align: 'right' },
+        { key: 'penurunanPagu', label: 'Penurunan Pagu', align: 'right' },
+        { key: 'pilar', label: 'Pilar', align: 'left' },
         { key: 'latitude', label: 'Latitude', align: 'center' },
         { key: 'longitude', label: 'Longitude', align: 'center' },
     ];
@@ -69,6 +72,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
 
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importVersionName, setImportVersionName] = useState('');
+    const [importYear, setImportYear] = useState(filterYear);
     const [fileToImport, setFileToImport] = useState<File | null>(null);
     const [importMode, setImportMode] = useState<'replace' | 'update'>('replace');
 
@@ -153,13 +157,16 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         if (e.target.files && e.target.files[0]) {
             setFileToImport(e.target.files[0]);
             setIsImportModalOpen(true);
-            setImportVersionName(selectedVersion); // Default to current
+            // Default to current version name stripped of year if it ends with one
+            const stripped = selectedVersion.replace(/\s\d{4}$/, '');
+            setImportVersionName(stripped); 
+            setImportYear(filterYear);
         }
     };
 
     const processImport = async () => {
         if (!fileToImport) return;
-        const targetVersion = importVersionName.trim() || 'Default';
+        const targetVersion = `${importVersionName.trim() || 'Skenario'} ${importYear}`.trim();
 
         // Confirmation (Adjusted for mode)
         const actionText = importMode === 'update' ? 'MEMPERBARUI (Smart Update)' : 'MENAMBAHKAN/MENIMPA';
@@ -249,6 +256,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         kepadatanPenduduk: cleanNumber(kepadatanVal),
                         potensiDesa: row.potensi_desa || row.potensi || '',
                         keterangan: row.keterangan || '',
+                        paguSemula: cleanNumber(row.pagu_semula),
+                        penurunanPagu: cleanNumber(row.penurunan_pagu),
+                        pilar: row.pilar || null,
                         latitude: cleanFloat(row.latitude || row.lat || row.llatitude),
                         longitude: cleanFloat(row.longitude || row.long || row.lng),
                         dataVersion: targetVersion
@@ -756,6 +766,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                     )}
                                     {visibleColumns.includes('potensiDesa') && <td className="px-3 py-2.5 text-slate-600">{item.potensiDesa || '-'}</td>}
                                     {visibleColumns.includes('keterangan') && <td className="px-3 py-2.5 text-slate-500 max-w-xs truncate" title={item.keterangan}>{item.keterangan || '-'}</td>}
+                                    {visibleColumns.includes('paguSemula') && <td className="px-3 py-2.5 text-right font-bold text-slate-600">{item.paguSemula !== undefined ? formatRupiah(item.paguSemula) : '-'}</td>}
+                                    {visibleColumns.includes('penurunanPagu') && <td className="px-3 py-2.5 text-right font-bold text-red-600">{item.penurunanPagu !== undefined ? formatRupiah(item.penurunanPagu) : '-'}</td>}
+                                    {visibleColumns.includes('pilar') && <td className="px-3 py-2.5 text-slate-600">{item.pilar || '-'}</td>}
                                     {visibleColumns.includes('latitude') && <td className="px-3 py-2.5 text-slate-500">{item.latitude || '-'}</td>}
                                     {visibleColumns.includes('longitude') && <td className="px-3 py-2.5 text-slate-500">{item.longitude || '-'}</td>}
 
@@ -902,6 +915,9 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Keterangan</label>
                                     <textarea className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm transition-all" rows={2} value={(isEditModalOpen ? editingItem?.keterangan : newItem.keterangan) || ''} onChange={(e) => isEditModalOpen ? setEditingItem({ ...editingItem!, keterangan: e.target.value }) : setNewItem({ ...newItem, keterangan: e.target.value })} placeholder="Tambahkan catatan jika perlu..." />
                                 </div>
+                                <FormField label="Pagu Semula" type="number" value={(isEditModalOpen ? editingItem?.paguSemula : newItem.paguSemula) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, paguSemula: Number(val) }) : setNewItem({ ...newItem, paguSemula: Number(val) })} />
+                                <FormField label="Penurunan Pagu" type="number" value={(isEditModalOpen ? editingItem?.penurunanPagu : newItem.penurunanPagu) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, penurunanPagu: Number(val) }) : setNewItem({ ...newItem, penurunanPagu: Number(val) })} />
+                                <FormField label="Pilar" value={(isEditModalOpen ? editingItem?.pilar : newItem.pilar) || ''} onChange={(val) => isEditModalOpen ? setEditingItem({ ...editingItem!, pilar: val }) : setNewItem({ ...newItem, pilar: val })} />
                             </div>
                         </div>
                         <div className="p-5 border-t bg-slate-50 flex justify-end gap-3">
@@ -999,15 +1015,26 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                             <h3 className="text-lg font-bold text-slate-800 mb-4">Konfigurasi Impor</h3>
 
                             <div className="mb-4">
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Versi / Skenario</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Skenario</label>
                                 <input
                                     type="text"
                                     value={importVersionName}
                                     onChange={(e) => setImportVersionName(e.target.value)}
-                                    placeholder="Contoh: APBD Perubahan 2026"
-                                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm"
+                                    placeholder="Contoh: Hasil Musrenbang"
+                                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm mb-3"
                                 />
-                                <p className="text-[10px] text-slate-400 mt-1">Masukkan nama baru untuk membuat versi data baru.</p>
+                                
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tahun Tabulasi</label>
+                                <select
+                                    value={importYear}
+                                    onChange={(e) => setImportYear(e.target.value)}
+                                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm bg-white"
+                                >
+                                    {['2026', '2027', '2028', '2029', '2030'].map(year => (
+                                        <option key={year} value={year}>{year}</option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-slate-400 mt-2">Versi dataset akhir akan menjadi: <strong>{importVersionName.trim() || 'Skenario'} {importYear}</strong></p>
                             </div>
 
                             <div className="mb-6">

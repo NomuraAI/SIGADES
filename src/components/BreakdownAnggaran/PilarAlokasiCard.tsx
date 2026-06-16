@@ -11,8 +11,9 @@ const pillars = [
         textColor: 'text-amber-700',
         borderColor: 'border-amber-200',
         target: '30-40%',
-        val2026: 6.15,
+        val2026: 11.62,
         val2027: 18.0,
+        pagu2026: 1119408740,
         pagu2027: 24748573314,
         description: 'BUMDes, Alat produksi UMKM, Desa Wisata, Dukungan Pertanian/Perikanan'
     },
@@ -24,8 +25,9 @@ const pillars = [
         textColor: 'text-blue-700',
         borderColor: 'border-blue-200',
         target: '20-25%',
-        val2026: 29.39,
+        val2026: 52.31,
         val2027: 52.3,
+        pagu2026: 5040198840,
         pagu2027: 71929522233.65,
         description: 'Intervensi Stunting, Posyandu, Beasiswa, Pelatihan Keterampilan Kerja'
     },
@@ -37,8 +39,9 @@ const pillars = [
         textColor: 'text-emerald-700',
         borderColor: 'border-emerald-200',
         target: '20-25%',
-        val2026: 60.03,
+        val2026: 33.88,
         val2027: 23.68,
+        pagu2026: 3264477920,
         pagu2027: 32563536989,
         description: 'Jalan lingkungan, Irigasi kecil, Air bersih, Sanitasi/Rutilahu'
     },
@@ -50,8 +53,9 @@ const pillars = [
         textColor: 'text-slate-700',
         borderColor: 'border-slate-200',
         target: '10-15%',
-        val2026: 4.42,
+        val2026: 2.19,
         val2027: 6.01,
+        pagu2026: 211125000,
         pagu2027: 8264204253,
         description: 'Kapasitas Pemdes, Karang Taruna, Perlindungan sosial komunitas'
     }
@@ -75,7 +79,11 @@ const formatShortRupiah = (val: number) => {
     return formatRupiah(val);
 };
 
-const PilarAlokasiCard = () => {
+interface PilarAlokasiCardProps {
+    filterYear: string;
+}
+
+const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear }) => {
     const [expanded, setExpanded] = useState<string | null>(null);
 
     return (
@@ -167,13 +175,13 @@ const PilarAlokasiCard = () => {
                                             </p>
                                             
                                             <div className="border-t border-dashed border-slate-200 pt-3">
-                                                <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pagu Final 2027 (Musrenbang)</h5>
+                                                <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pagu Final {filterYear === '2026' || filterYear === '2027' ? filterYear : '2027'} (Musrenbang)</h5>
                                                 <div className="flex items-baseline gap-1">
                                                     <span className={`text-xl font-black ${pillar.textColor}`}>
-                                                        {formatShortRupiah(pillar.pagu2027)}
+                                                        {formatShortRupiah(filterYear === '2026' ? pillar.pagu2026 : pillar.pagu2027)}
                                                     </span>
                                                 </div>
-                                                <span className="text-[10px] text-slate-400 font-medium">{formatRupiah(pillar.pagu2027)}</span>
+                                                <span className="text-[10px] text-slate-400 font-medium">{formatRupiah(filterYear === '2026' ? pillar.pagu2026 : pillar.pagu2027)}</span>
                                             </div>
                                         </div>
                                     </div>
