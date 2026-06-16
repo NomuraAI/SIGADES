@@ -113,11 +113,11 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
     };
 
     const getStuntingColor = (count: number) => {
-        if (count >= 50) return '#ef4444'; // Sangat Tinggi (> 50) - Merah
-        if (count >= 30) return '#f97316'; // Tinggi (30-50) - Oranye
-        if (count >= 15) return '#facc15'; // Sedang (15-30) - Kuning
-        if (count >= 5) return '#a3e635';  // Rendah (5-15) - Lime
-        if (count > 0) return '#4ade80';   // Sangat Rendah (1-5) - Hijau
+        if (count >= 100) return '#7f1d1d'; // Ekstrem (> 100) - Merah Pekat
+        if (count >= 50) return '#ef4444'; // Sangat Tinggi (50-100) - Merah
+        if (count >= 25) return '#f97316'; // Tinggi (25-50) - Oranye
+        if (count >= 10) return '#facc15'; // Sedang (10-25) - Kuning
+        if (count > 0) return '#4ade80';   // Rendah (1-10) - Hijau
         return '#94a3b8';                  // Tidak ada data
     };
 
@@ -606,24 +606,24 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                     <div className="mt-1 pt-2 border-t border-slate-200">
                         <div className="flex flex-col gap-1.5">
                             <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-[#7f1d1d]"></div>
+                                <span className="text-[9px] font-bold text-slate-600">&gt; 100 Kasus</span>
+                            </div>
+                            <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#ef4444]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">&gt; 50 Kasus</span>
+                                <span className="text-[9px] font-bold text-slate-600">50 - 100 Kasus</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#f97316]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">30 - 50 Kasus</span>
+                                <span className="text-[9px] font-bold text-slate-600">25 - 50 Kasus</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#facc15]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">15 - 30 Kasus</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded bg-[#a3e635]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">5 - 15 Kasus</span>
+                                <span className="text-[9px] font-bold text-slate-600">10 - 25 Kasus</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded bg-[#4ade80]"></div>
-                                <span className="text-[9px] font-bold text-slate-600">1 - 5 Kasus</span>
+                                <span className="text-[9px] font-bold text-slate-600">1 - 10 Kasus</span>
                             </div>
                         </div>
                     </div>
