@@ -58,6 +58,11 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
     const [analyzerKecamatan, setAnalyzerKecamatan] = useState<string>('ALL');
     const [analyzerDesa, setAnalyzerDesa] = useState<string>('ALL');
 
+    // Budget Chart State
+    const [budgetChartPilar, setBudgetChartPilar] = useState<string>('ALL');
+    const [budgetChartKecamatan, setBudgetChartKecamatan] = useState<string>('ALL');
+    const [budgetChartDesa, setBudgetChartDesa] = useState<string>('ALL');
+
     // Refs for scrolling
     const sectionStatsRef = useRef<HTMLDivElement>(null);
     const sectionFiltersRef = useRef<HTMLDivElement>(null);
@@ -188,6 +193,42 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
         return result.sort((a, b) => b.total - a.total);
     }, [data, filterKecamatan, filterBudget]);
+
+    const budgetAvailableDesa = useMemo(() => {
+        if (budgetChartKecamatan === 'ALL') {
+            const desas = data.map(d => d.desaKelurahan).filter(Boolean) as string[];
+            return [...new Set(desas)].sort();
+        }
+        const desas = data.filter(d => d.kecamatan === budgetChartKecamatan).map(d => d.desaKelurahan).filter(Boolean) as string[];
+        return [...new Set(desas)].sort();
+    }, [data, budgetChartKecamatan]);
+
+    const budgetBarData = useMemo(() => {
+        const desaGroups: { [key: string]: { total: number, name: string } } = {};
+
+        data.forEach(item => {
+            if (budgetChartKecamatan !== 'ALL' && item.kecamatan !== budgetChartKecamatan) return;
+            if (budgetChartDesa !== 'ALL' && item.desaKelurahan !== budgetChartDesa) return;
+            
+            const pilarId = mapDBPilarToId(item.pilar);
+            if (budgetChartPilar !== 'ALL' && pilarId !== budgetChartPilar) return;
+
+            const desaName = (item.desaKelurahan || 'Lainnya').trim();
+            if (desaName.toLowerCase() === 'lainnya' || desaName === '') return;
+
+            if (!desaGroups[desaName]) {
+                desaGroups[desaName] = { total: 0, name: desaName };
+            }
+            desaGroups[desaName].total += Number(item.paguAnggaran || 0);
+        });
+
+        const sorted = Object.values(desaGroups).sort((a, b) => b.total - a.total);
+        
+        const top20 = sorted.slice(0, 20);
+        const bottom20 = [...sorted].sort((a, b) => a.total - b.total).slice(0, 20);
+
+        return { top20, bottom20 };
+    }, [data, budgetChartKecamatan, budgetChartDesa, budgetChartPilar]);
 
     // 2. Poverty Data (Top 20)
     const povertyData = useMemo(() => {
@@ -605,28 +646,105 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                     </div>
 
                     {/* Section 3: Budget Analysis */}
-                    <div ref={sectionBudgetChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
+                    <div ref={sectionBudgetChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col mb-8">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><BarChart3 className="text-lobar-blue" /> Analisis Anggaran per Desa</h3>
-                            <div className="text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1 rounded-full">{filterKecamatan || 'Semua Wilayah'}</div>
                         </div>
-                        {budgetData.length > 0 ? (
-                            <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
-                                <div style={{ minWidth: Math.max(1000, budgetData.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="99%" height={500}>
-                                        <BarChart data={budgetData} margin={{ top: 20, right: 30, left: 40, bottom: 100 }} layout="horizontal">
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                            <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
-                                            <YAxis tickFormatter={(val) => `Rp ${(val / 1000000000).toFixed(1)} M`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                                            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                                            <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={50}>
-                                                {budgetData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.total >= 1000000000 ? '#16a34a' : '#f59e0b'} />))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
+
+                        {/* Budget Chart Filters */}
+                        <div className="flex flex-wrap gap-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div className="flex flex-col w-full md:w-auto">
+                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">1. Pilar</label>
+                                <select 
+                                    className="bg-white border border-slate-300 rounded-lg px-4 py-2 font-bold text-slate-700 outline-none focus:border-lobar-blue focus:ring-2 focus:ring-blue-100 min-w-[200px]" 
+                                    value={budgetChartPilar} 
+                                    onChange={(e) => setBudgetChartPilar(e.target.value)}
+                                >
+                                    <option value="ALL">Semua Pilar</option>
+                                    <option value="sdm">Peningkatan SDM</option>
+                                    <option value="infrastruktur">Infrastruktur Dasar</option>
+                                    <option value="ekonomi">Penguatan Ekonomi</option>
+                                    <option value="sosial">Sosial & Kelembagaan</option>
+                                </select>
                             </div>
-                        ) : <div className="h-64 flex items-center justify-center text-slate-400">Data tidak tersedia</div>}
+                            <div className="flex flex-col w-full md:w-auto">
+                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">2. Kecamatan</label>
+                                <select 
+                                    className="bg-white border border-slate-300 rounded-lg px-4 py-2 font-bold text-slate-700 outline-none focus:border-lobar-blue focus:ring-2 focus:ring-blue-100 min-w-[200px]" 
+                                    value={budgetChartKecamatan} 
+                                    onChange={(e) => {
+                                        setBudgetChartKecamatan(e.target.value);
+                                        setBudgetChartDesa('ALL'); // reset desa
+                                    }}
+                                >
+                                    <option value="ALL">Semua Kecamatan</option>
+                                    {uniqueKecamatan.map(kec => (<option key={kec} value={kec}>{kec}</option>))}
+                                </select>
+                            </div>
+                            <div className="flex flex-col w-full md:w-auto">
+                                <label className="text-xs font-bold text-slate-500 mb-1 uppercase">3. Desa</label>
+                                <select 
+                                    className="bg-white border border-slate-300 rounded-lg px-4 py-2 font-bold text-slate-700 outline-none focus:border-lobar-blue focus:ring-2 focus:ring-blue-100 min-w-[200px]" 
+                                    value={budgetChartDesa} 
+                                    onChange={(e) => setBudgetChartDesa(e.target.value)}
+                                >
+                                    <option value="ALL">Semua Desa</option>
+                                    {budgetAvailableDesa.map(desa => (<option key={desa} value={desa}>{desa}</option>))}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* 20 Tertinggi */}
+                            <div className="flex flex-col">
+                                <h4 className="text-md font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                                    20 Tertinggi
+                                </h4>
+                                {budgetBarData.top20.length > 0 ? (
+                                    <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                        <div style={{ minWidth: 500, height: 400 }}>
+                                            <ResponsiveContainer width="99%" height={400}>
+                                                <BarChart data={budgetBarData.top20} margin={{ top: 20, right: 30, left: 20, bottom: 80 }} layout="horizontal">
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                                    <YAxis tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} width={80} />
+                                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
+                                                    <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                                                        {budgetBarData.top20.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.total >= 1000000000 ? '#16a34a' : '#f59e0b'} />))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                ) : <div className="h-48 flex items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-xl">Data tidak tersedia</div>}
+                            </div>
+
+                            {/* 20 Terendah */}
+                            <div className="flex flex-col">
+                                <h4 className="text-md font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                    20 Terendah
+                                </h4>
+                                {budgetBarData.bottom20.length > 0 ? (
+                                    <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                        <div style={{ minWidth: 500, height: 400 }}>
+                                            <ResponsiveContainer width="99%" height={400}>
+                                                <BarChart data={budgetBarData.bottom20} margin={{ top: 20, right: 30, left: 20, bottom: 80 }} layout="horizontal">
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
+                                                    <YAxis tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} width={80} />
+                                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
+                                                    <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                                                        {budgetBarData.bottom20.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.total >= 1000000000 ? '#16a34a' : '#f59e0b'} />))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                ) : <div className="h-48 flex items-center justify-center text-slate-400 border border-dashed border-slate-200 rounded-xl">Data tidak tersedia</div>}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Section 3.b: Stacked Bar Distribusi Pilar */}
