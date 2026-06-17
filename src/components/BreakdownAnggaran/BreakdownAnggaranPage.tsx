@@ -196,10 +196,14 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
             const rawName = item.desaKelurahan || 'Lainnya';
             const normalizedKey = rawName.replace(/\s+/g, ' ').trim().toUpperCase();
             if (!desaGroups[normalizedKey]) {
-                desaGroups[normalizedKey] = { kemiskinan: 0, stunting: 0, pagu: 0, name: rawName.trim() };
+                desaGroups[normalizedKey] = { 
+                    kemiskinan: Number(item.jumlahAngkaKemiskinan || 0), 
+                    stunting: Number(item.jumlahBalitaStunting || 0), 
+                    pagu: 0, 
+                    name: rawName.trim() 
+                };
             }
-            desaGroups[normalizedKey].kemiskinan += Number(item.jumlahAngkaKemiskinan || 0);
-            desaGroups[normalizedKey].stunting += Number(item.jumlahBalitaStunting || 0);
+            // Anggaran diakumulasikan karena desa memiliki banyak program
             desaGroups[normalizedKey].pagu += Number(item.paguAnggaran || 0);
         });
         return Object.values(desaGroups).filter(d => d.name !== 'Lainnya' && (d.kemiskinan > 0 || d.stunting > 0));
