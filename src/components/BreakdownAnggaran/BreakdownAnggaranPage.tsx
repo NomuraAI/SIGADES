@@ -489,7 +489,17 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
             <div className="flex-1 w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col min-h-0 overflow-y-auto">
                 <div className="flex-none w-full space-y-8">
                     {/* PILAR ALOKASI CARD - NOW DYNAMIC */}
-                    <PilarAlokasiCard filterYear={filterYear} data={filteredData} />
+                    <PilarAlokasiCard 
+                        filterYear={filterYear} 
+                        data={filteredData} 
+                        onScrollToAnalyzer={(pilarId) => {
+                            setAnalyzerPilar(pilarId);
+                            // Add a small delay to ensure React state updates before scrolling
+                            setTimeout(() => {
+                                sectionPilarChartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 100);
+                        }}
+                    />
 
                     {/* Quick Navigation Pills removed as per user request */}
                     {/* Section 1: Stats Cards */}

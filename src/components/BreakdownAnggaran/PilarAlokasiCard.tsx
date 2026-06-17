@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, Info, ChevronDown } from 'lucide-react';
+import { Target, Info, ChevronDown, X, Maximize2, ArrowDown } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const pillars = [
     {
@@ -93,16 +94,22 @@ const formatShortRupiah = (val: number) => {
 interface PilarAlokasiCardProps {
     filterYear: string;
     data: any[]; // ProjectData array
+    onScrollToAnalyzer?: (pilarId: string) => void;
 }
 
-const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data }) => {
+const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data, onScrollToAnalyzer }) => {
     const [expanded, setExpanded] = useState<string | null>(null);
+    const [modalPillar, setModalPillar] = useState<string | null>(null);
 
     // Calculate dynamic values
     const dynamicData = React.useMemo(() => {
         let totalPaguGlobal = 0;
         const pilarPagu: Record<string, number> = {
             ekonomi: 0, sdm: 0, infrastruktur: 0, sosial: 0
+        };
+
+        const desaGroupsPerPilar: Record<string, Record<string, { name: string, total: number }>> = {
+            ekonomi: {}, sdm: {}, infrastruktur: {}, sosial: {}
         };
 
         data.forEach(item => {
@@ -112,14 +119,26 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data })
             const pilarId = mapDBPilarToId(item.pilar);
             if (pilarId) {
                 pilarPagu[pilarId] += val;
+
+                const desaName = (item.desaKelurahan || 'Lainnya').trim();
+                if (desaName.toLowerCase() !== 'lainnya' && desaName !== '') {
+                    if (!desaGroupsPerPilar[pilarId][desaName]) {
+                        desaGroupsPerPilar[pilarId][desaName] = { name: desaName, total: 0 };
+                    }
+                    desaGroupsPerPilar[pilarId][desaName].total += val;
+                }
             }
         });
 
-        const pilarStats: Record<string, { pagu: number, percentage: number }> = {};
+        const pilarStats: Record<string, { pagu: number, percentage: number, topDesa: any[], allDesa: any[] }> = {};
         Object.keys(pilarPagu).forEach(key => {
             const pagu = pilarPagu[key];
             const percentage = totalPaguGlobal > 0 ? (pagu / totalPaguGlobal) * 100 : 0;
-            pilarStats[key] = { pagu, percentage };
+            
+            const allDesa = Object.values(desaGroupsPerPilar[key]).sort((a, b) => b.total - a.total);
+            const topDesa = allDesa.slice(0, 5);
+
+            pilarStats[key] = { pagu, percentage, topDesa, allDesa };
         });
 
         return { stats: pilarStats, total: totalPaguGlobal };
@@ -236,6 +255,59 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data })
                                                 </div>
                                                 <span className="text-[10px] text-slate-400 font-medium">{formatRupiah(dynamicData.stats[pillar.id]?.pagu || 0)}</span>
                                             </div>
+
+                                            {/* Mini Chart Top 5 */}
+                                            {dynamicData.stats[pillar.id]?.topDesa?.length > 0 && (
+                                                <div className="mt-4 pt-3 border-t border-dashed border-slate-200">
+                                                    <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Top 5 Desa Penerima</h5>
+                                                    <div className="space-y-2">
+                                                        {dynamicData.stats[pillar.id].topDesa.map((desa: any, idx: number) => {
+                                                            const maxVal = dynamicData.stats[pillar.id].topDesa[0].total;
+                                                            const pct = maxVal > 0 ? (desa.total / maxVal) * 100 : 0;
+                                                            return (
+                                                                <div key={idx} className="relative">
+                                                                    <div className="flex justify-between text-[10px] font-bold mb-0.5 relative z-10">
+                                                                        <span className="text-slate-600 truncate max-w-[120px]" title={desa.name}>{desa.name}</span>
+                                                                        <span className={pillar.textColor}>{formatShortRupiah(desa.total)}</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                                        <motion.div 
+                                                                            initial={{ width: 0 }}
+                                                                            animate={{ width: `${pct}%` }}
+                                                                            transition={{ duration: 0.5, delay: idx * 0.1 }}
+                                                                            className={`bg-gradient-to-r ${pillar.color} h-1.5 rounded-full`}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+
+                                                    {/* Action Buttons */}
+                                                    <div className="mt-4 grid grid-cols-2 gap-2">
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setModalPillar(pillar.id);
+                                                            }}
+                                                            className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 transition-colors"
+                                                        >
+                                                            <Maximize2 size={12} />
+                                                            Pop-up
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if(onScrollToAnalyzer) onScrollToAnalyzer(pillar.id);
+                                                            }}
+                                                            className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 transition-colors"
+                                                        >
+                                                            <ArrowDown size={12} />
+                                                            Scroll Ke Bawah
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </motion.div>
@@ -245,6 +317,92 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data })
                     </motion.div>
                 ))}
             </div>
+
+            {/* Modal untuk Full Chart */}
+            <AnimatePresence>
+                {modalPillar && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+                        onClick={() => setModalPillar(null)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-800">Distribusi Alokasi per Desa</h3>
+                                    <p className="text-sm font-medium text-slate-500">
+                                        Pilar: {pillars.find(p => p.id === modalPillar)?.title}
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={() => setModalPillar(null)}
+                                    className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 min-h-[400px]">
+                                {(() => {
+                                    const dataToShow = dynamicData.stats[modalPillar]?.allDesa || [];
+                                    const pillarInfo = pillars.find(p => p.id === modalPillar);
+                                    
+                                    if(dataToShow.length === 0) return <div className="h-full flex items-center justify-center text-slate-400">Data tidak tersedia</div>;
+
+                                    return (
+                                        <div style={{ minWidth: 600, height: Math.max(400, dataToShow.length * 30) }}>
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={dataToShow} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} layout="vertical">
+                                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                                                    <XAxis type="number" tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                                    <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                                    <Tooltip 
+                                                        cursor={{ fill: '#f1f5f9' }}
+                                                        content={({ active, payload }) => {
+                                                            if (active && payload && payload.length) {
+                                                                // Use text color class mapping
+                                                                const txtColor = modalPillar === 'ekonomi' ? '#b45309' : 
+                                                                               modalPillar === 'sdm' ? '#1d4ed8' : 
+                                                                               modalPillar === 'infrastruktur' ? '#047857' : '#334155';
+                                                                return (
+                                                                    <div className="bg-white p-3 border border-slate-200 shadow-xl rounded-xl">
+                                                                        <p className="font-bold text-slate-800 mb-1">{payload[0].payload.name}</p>
+                                                                        <p className="font-bold text-lg" style={{ color: txtColor }}>
+                                                                            {formatRupiah(payload[0].value as number)}
+                                                                        </p>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        }}
+                                                    />
+                                                    <Bar dataKey="total" radius={[0, 4, 4, 0]} barSize={20}>
+                                                        {dataToShow.map((entry: any, index: number) => (
+                                                            <Cell key={`cell-${index}`} fill={
+                                                                modalPillar === 'ekonomi' ? '#f59e0b' : 
+                                                                modalPillar === 'sdm' ? '#3b82f6' : 
+                                                                modalPillar === 'infrastruktur' ? '#10b981' : '#64748b'
+                                                            } />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
