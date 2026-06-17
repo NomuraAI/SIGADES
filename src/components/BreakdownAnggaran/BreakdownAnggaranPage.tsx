@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ProjectData } from '../../types';
 import { getProjectService } from '../../services/projectService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, Treemap } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, Treemap, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { Loader2, Filter, DollarSign, Building2, Wallet, LayoutDashboard, BarChart3, PieChart as PieChartIcon, Users, Baby, Sprout, Target, ArrowUp } from 'lucide-react';
+import { motion } from 'framer-motion';
 import PilarAlokasiCard, { mapDBPilarToId } from './PilarAlokasiCard';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
@@ -15,6 +16,23 @@ const formatRupiah = (val: number) => {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(val);
+};
+
+const CustomScatterTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        return (
+            <div className="bg-white/95 backdrop-blur-md p-4 border border-slate-200/50 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] min-w-[200px]">
+                <p className="font-bold text-slate-800 text-sm mb-3 pb-2 border-b border-slate-100">{data.name}</p>
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center gap-4"><span className="text-xs font-medium text-slate-500"><Users size={12} className="inline mr-1 text-red-500"/>Kemiskinan:</span> <span className="text-xs font-bold text-slate-800">{data.kemiskinan}</span></div>
+                    <div className="flex justify-between items-center gap-4"><span className="text-xs font-medium text-slate-500"><Baby size={12} className="inline mr-1 text-orange-500"/>Stunting:</span> <span className="text-xs font-bold text-slate-800">{data.stunting}</span></div>
+                    <div className="flex justify-between items-center gap-4"><span className="text-xs font-medium text-slate-500"><Wallet size={12} className="inline mr-1 text-blue-500"/>Pagu:</span> <span className="text-xs font-bold text-lobar-blue">{formatRupiah(data.pagu)}</span></div>
+                </div>
+            </div>
+        );
+    }
+    return null;
 };
 
 const CustomPilarTooltip = ({ active, payload, label }: any) => {
@@ -171,6 +189,21 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
         }
         return result;
     }, [data, filterKecamatan, filterDesa]);
+
+    const scatterData = useMemo(() => {
+        const desaGroups: { [key: string]: { kemiskinan: number, stunting: number, pagu: number, name: string } } = {};
+        filteredData.forEach(item => {
+            const rawName = item.desaKelurahan || 'Lainnya';
+            const normalizedKey = rawName.replace(/\s+/g, ' ').trim().toUpperCase();
+            if (!desaGroups[normalizedKey]) {
+                desaGroups[normalizedKey] = { kemiskinan: 0, stunting: 0, pagu: 0, name: rawName.trim() };
+            }
+            desaGroups[normalizedKey].kemiskinan += Number(item.jumlahAngkaKemiskinan || 0);
+            desaGroups[normalizedKey].stunting += Number(item.jumlahBalitaStunting || 0);
+            desaGroups[normalizedKey].pagu += Number(item.paguAnggaran || 0);
+        });
+        return Object.values(desaGroups).filter(d => d.name !== 'Lainnya' && (d.kemiskinan > 0 || d.stunting > 0));
+    }, [filteredData]);
 
     const availableGlobalDesa = useMemo(() => {
         if (!filterKecamatan) return [];
@@ -572,102 +605,137 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                 }}
                             />
 
-                            {/* GRAFIK CAPAIAN 4 PILAR */}
-                            <div className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px] mb-8">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                        <Target className="text-lobar-blue" />
-                                        Capaian Pondasi 4 Pilar {filterDesa ? `- Desa ${filterDesa}` : filterKecamatan ? `- Kec. ${filterKecamatan}` : ''}
-                                    </h3>
-                                </div>
-                                    <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
-                                        <div style={{ minWidth: 600, height: 400 }}>
-                                            <ResponsiveContainer width="99%" height={400}>
-                                                <BarChart 
-                                                    data={[
-                                                        { name: 'Penguatan Ekonomi', total: pilarPieData.find(d => d.name === 'Penguatan Ekonomi')?.value || 0 },
-                                                        { name: 'Peningkatan SDM', total: pilarPieData.find(d => d.name === 'Peningkatan SDM')?.value || 0 },
-                                                        { name: 'Infrastruktur Dasar', total: pilarPieData.find(d => d.name === 'Infrastruktur Dasar')?.value || 0 },
-                                                        { name: 'Sosial & Kelembagaan', total: pilarPieData.find(d => d.name === 'Sosial & Kelembagaan')?.value || 0 }
-                                                    ]} 
-                                                    margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-                                                >
-                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }} />
-                                                    <YAxis tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} width={80} />
-                                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                                    <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                                                        { [
-                                                            { fill: '#f59e0b' },
-                                                            { fill: '#3b82f6' },
-                                                            { fill: '#10b981' },
-                                                            { fill: '#64748b' }
-                                                        ].map((entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                                                        ))}
-                                                    </Bar>
-                                                </BarChart>
-                                            </ResponsiveContainer>
+                            {/* GRAFIK CAPAIAN 4 PILAR - SIDE BY SIDE */}
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+                                {/* Bar Chart */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.1 }}
+                                    className="scroll-mt-32 bg-white/70 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 relative flex flex-col overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300"
+                                >
+                                    <div className="flex items-center justify-between mb-6 relative z-10">
+                                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                            <Target className="text-lobar-blue" />
+                                            Capaian Pondasi 4 Pilar {filterDesa ? `- Desa ${filterDesa}` : filterKecamatan ? `- Kec. ${filterKecamatan}` : ''}
+                                        </h3>
+                                    </div>
+                                    <div className="w-full h-[400px] flex items-center justify-center relative z-10">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart 
+                                                data={[
+                                                    { name: 'Penguatan Ekonomi', total: pilarPieData.find(d => d.name === 'Penguatan Ekonomi')?.value || 0 },
+                                                    { name: 'Peningkatan SDM', total: pilarPieData.find(d => d.name === 'Peningkatan SDM')?.value || 0 },
+                                                    { name: 'Infrastruktur Dasar', total: pilarPieData.find(d => d.name === 'Infrastruktur Dasar')?.value || 0 },
+                                                    { name: 'Sosial & Kelembagaan', total: pilarPieData.find(d => d.name === 'Sosial & Kelembagaan')?.value || 0 }
+                                                ]} 
+                                                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                                            >
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }} />
+                                                <YAxis tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} width={80} />
+                                                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                                <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                                                    { [
+                                                        { fill: '#f59e0b' },
+                                                        { fill: '#3b82f6' },
+                                                        { fill: '#10b981' },
+                                                        { fill: '#64748b' }
+                                                    ].map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </motion.div>
+
+                                {/* Radar Chart */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: 0.2 }}
+                                    className="scroll-mt-32 bg-white/70 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 relative flex flex-col overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300"
+                                >
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-lobar-blue/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                                    <div className="flex items-center justify-between mb-6 relative z-10">
+                                        <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                            <Target className="text-lobar-blue" />
+                                            Keseimbangan 4 Pilar {filterDesa ? `- Desa ${filterDesa}` : filterKecamatan ? `- Kec. ${filterKecamatan}` : ''}
+                                        </h3>
+                                    </div>
+                                    <div className="w-full h-[320px] flex items-center justify-center relative z-10 mb-2">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                                                { name: 'Ekonomi', total: pilarPieData.find(d => d.name === 'Penguatan Ekonomi')?.value || 0, fullMark: Math.max(...pilarPieData.map(d=>d.value), 1) },
+                                                { name: 'SDM', total: pilarPieData.find(d => d.name === 'Peningkatan SDM')?.value || 0, fullMark: Math.max(...pilarPieData.map(d=>d.value), 1) },
+                                                { name: 'Infrastruktur', total: pilarPieData.find(d => d.name === 'Infrastruktur Dasar')?.value || 0, fullMark: Math.max(...pilarPieData.map(d=>d.value), 1) },
+                                                { name: 'Sosial', total: pilarPieData.find(d => d.name === 'Sosial & Kelembagaan')?.value || 0, fullMark: Math.max(...pilarPieData.map(d=>d.value), 1) }
+                                            ]}>
+                                                <PolarGrid stroke="#e2e8f0" />
+                                                <PolarAngleAxis dataKey="name" tick={{ fill: '#475569', fontSize: 13, fontWeight: 'bold' }} />
+                                                <PolarRadiusAxis angle={30} domain={[0, 'auto']} tickFormatter={(val) => `Rp ${(val / 1000000).toFixed(0)}Jt`} tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                                                <Radar name="Realisasi Pagu" dataKey="total" stroke="#3b82f6" strokeWidth={3} fill="#3b82f6" fillOpacity={0.5} />
+                                                <Tooltip formatter={(value: number) => formatRupiah(value)} />
+                                            </RadarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="mt-auto pt-4 border-t border-slate-100/60 relative z-10">
+                                        <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                                            <strong className="text-slate-700">Panduan Membaca:</strong> Semakin luas area grafik ditarik ke suatu sudut, semakin besar porsi anggaran di pilar tersebut. Keseimbangan bentuk jaring merepresentasikan pemerataan fokus pembangunan di 4 fondasi utama:
+                                        </p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[10px]">
+                                            <div className="flex items-start gap-2"><div className="w-2 h-2 mt-0.5 shrink-0 rounded-full bg-[#f59e0b]"></div><span className="text-slate-600"><strong>Ekonomi:</strong> BUMDes & Ketahanan Pangan</span></div>
+                                            <div className="flex items-start gap-2"><div className="w-2 h-2 mt-0.5 shrink-0 rounded-full bg-[#3b82f6]"></div><span className="text-slate-600"><strong>SDM:</strong> Edukasi & Penurunan Stunting</span></div>
+                                            <div className="flex items-start gap-2"><div className="w-2 h-2 mt-0.5 shrink-0 rounded-full bg-[#10b981]"></div><span className="text-slate-600"><strong>Infrastruktur:</strong> Fisik, Jalan & Sanitasi</span></div>
+                                            <div className="flex items-start gap-2"><div className="w-2 h-2 mt-0.5 shrink-0 rounded-full bg-[#64748b]"></div><span className="text-slate-600"><strong>Sosial:</strong> Bantuan & Pemberdayaan</span></div>
                                         </div>
+                                    </div>
+                                </motion.div>
+                            </div>
+
+                            {/* Section 1: Stats Cards (Bento Box) */}
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
+                                ref={sectionStatsRef} className="scroll-mt-32 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+                            >
+                                {/* Total Anggaran (Takes 2 cols) */}
+                                <div className="lg:col-span-2 bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-white relative overflow-hidden transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] duration-300 flex flex-col justify-between">
+                                    <div className="absolute -top-4 -right-4 p-4 opacity-10 rotate-12 scale-150"><Wallet size={80} /></div>
+                                    <p className="text-blue-100 text-xs font-bold uppercase mb-2 tracking-wider">Total Anggaran (Pagu)</p>
+                                    <h3 className="text-3xl font-black">{formatRupiah(stats.totalBudget)}</h3>
+                                </div>
+
+                                {/* Jumlah Desa & Status Capaian */}
+                                <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-center transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                    <p className="text-slate-400 text-[10px] font-bold uppercase mb-1 tracking-wider">Jumlah Desa Tersalur</p>
+                                    <div className="flex items-end gap-2">
+                                        <h3 className="text-3xl font-black text-slate-800">{stats.totalDesa}</h3>
+                                        <span className="text-sm text-slate-500 font-medium mb-1">Desa</span>
+                                    </div>
+                                </div>
+                                <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-center transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                    <p className="text-slate-400 text-[10px] font-bold uppercase mb-1 tracking-wider">Tercapai {'>'} 1M</p>
+                                    <div className="flex items-end gap-2">
+                                        <h3 className="text-3xl font-black text-emerald-500">{stats.above1MCount}</h3>
+                                        <span className="text-sm text-slate-500 font-medium mb-1">Desa</span>
                                     </div>
                                 </div>
 
-                    {/* Section 1: Stats Cards */}
-                    <div ref={sectionStatsRef} className="scroll-mt-32 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Row 1 */}
-                        <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-5 rounded-2xl shadow-lg text-white relative overflow-hidden transition-transform hover:-translate-y-1 duration-300">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><Wallet size={64} /></div>
-                            <p className="text-blue-100 text-xs font-bold uppercase mb-1">Total Anggaran</p>
-                            <h3 className="text-2xl font-bold">{formatRupiah(stats.totalBudget)}</h3>
-                        </div>
-
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center transition-transform hover:-translate-y-1 duration-300">
-                            <p className="text-slate-400 text-xs font-bold uppercase mb-1">Jumlah Desa</p>
-                            <div className="flex items-end gap-2">
-                                <h3 className="text-2xl font-bold text-slate-800">{stats.totalDesa}</h3>
-                                <span className="text-sm text-slate-500 mb-1">Desa</span>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center transition-transform hover:-translate-y-1 duration-300">
-                            <p className="text-slate-400 text-xs font-bold uppercase mb-1">Status Capaian {'>'} 1M</p>
-                            <div className="flex items-end gap-2">
-                                <h3 className="text-2xl font-bold text-green-600">{stats.above1MCount}</h3>
-                                <span className="text-sm text-slate-500 mb-1">Desa Tercapai</span>
-                            </div>
-                        </div>
-
-                        {/* Row 2: New Metrics */}
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center transition-transform hover:-translate-y-1 duration-300 border-b-4 border-b-red-500">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <p className="text-slate-400 text-xs font-bold uppercase mb-1">Kemiskinan Desil 1</p>
-                                    <h3 className="text-2xl font-bold text-slate-800">{stats.realTotalPoverty.toLocaleString()} <span className="text-sm text-slate-400 font-normal">Jiwa</span></h3>
+                                {/* Kemiskinan, Stunting, Potensi */}
+                                <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 border-l-4 border-l-red-500 flex flex-col justify-between transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between">Kemiskinan <Users size={14}/></p>
+                                    <h3 className="text-2xl font-black text-slate-800 mt-2">{stats.realTotalPoverty.toLocaleString()} <span className="text-xs text-slate-400 font-medium">Jiwa</span></h3>
                                 </div>
-                                <div className="p-2 bg-red-50 text-red-500 rounded-lg"><Users size={20} /></div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center transition-transform hover:-translate-y-1 duration-300 border-b-4 border-b-orange-500">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <p className="text-slate-400 text-xs font-bold uppercase mb-1">Balita Stunting</p>
-                                    <h3 className="text-2xl font-bold text-slate-800">{stats.realTotalStunting.toLocaleString()} <span className="text-sm text-slate-400 font-normal">Anak</span></h3>
+                                <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 border-l-4 border-l-orange-500 flex flex-col justify-between transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between">Stunting <Baby size={14}/></p>
+                                    <h3 className="text-2xl font-black text-slate-800 mt-2">{stats.realTotalStunting.toLocaleString()} <span className="text-xs text-slate-400 font-medium">Anak</span></h3>
                                 </div>
-                                <div className="p-2 bg-orange-50 text-orange-500 rounded-lg"><Baby size={20} /></div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center transition-transform hover:-translate-y-1 duration-300 border-b-4 border-b-green-500">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <p className="text-slate-400 text-xs font-bold uppercase mb-1">Potensi Desa</p>
-                                    <h3 className="text-2xl font-bold text-slate-800">{potentialData.length} <span className="text-sm text-slate-400 font-normal">Kategori</span></h3>
+                                <div className="lg:col-span-2 bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 border-l-4 border-l-green-500 flex flex-col justify-between transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between">Potensi Desa <Sprout size={14}/></p>
+                                    <h3 className="text-2xl font-black text-slate-800 mt-2">{potentialData.length} <span className="text-xs text-slate-400 font-medium">Kategori Dikelola</span></h3>
                                 </div>
-                                <div className="p-2 bg-green-50 text-green-500 rounded-lg"><Sprout size={20} /></div>
-                            </div>
-                        </div>
-                    </div>
+                            </motion.div>
                         </div>
                     )}
 
@@ -907,6 +975,37 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                     {/* TAB: PROFIL DEMOGRAFI */}
                     {activeTab === 'demografi' && (
                         <div className="space-y-8">
+                            {/* Scatter Plot: Korelasi Demografi vs Anggaran */}
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                                className="scroll-mt-32 bg-white/70 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 relative flex flex-col min-h-[500px]"
+                            >
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <Target className="text-lobar-blue" /> Korelasi Kemiskinan & Stunting vs Pagu Anggaran
+                                    </h3>
+                                    <div className="text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1 rounded-full">Sumbu X: Kemiskinan | Sumbu Y: Stunting | Ukuran: Pagu</div>
+                                </div>
+                                <div className="w-full h-[500px] flex items-center justify-center">
+                                    <ResponsiveContainer width="99%" height="100%">
+                                        <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                            <XAxis type="number" dataKey="kemiskinan" name="Kemiskinan" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <YAxis type="number" dataKey="stunting" name="Stunting" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <ZAxis type="number" dataKey="pagu" range={[50, 400]} name="Pagu Anggaran" />
+                                            <Tooltip content={<CustomScatterTooltip />} cursor={{ strokeDasharray: '3 3' }} />
+                                            <Scatter name="Desa" data={scatterData} fill="#8884d8">
+                                                {scatterData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.stunting > 50 && entry.kemiskinan > 1000 ? '#ef4444' : '#3b82f6'} fillOpacity={0.6} />
+                                                ))}
+                                            </Scatter>
+                                        </ScatterChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </motion.div>
+
                             {/* Section 4: Poverty Analysis */}
                             <div ref={sectionPovertyChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
                         <div className="flex items-center justify-between mb-6">
