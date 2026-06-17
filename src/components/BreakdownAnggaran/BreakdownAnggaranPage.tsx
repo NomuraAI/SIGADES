@@ -51,6 +51,8 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
     const [data, setData] = useState<ProjectData[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterKecamatan, setFilterKecamatan] = useState<string>('');
+    const [filterDesa, setFilterDesa] = useState<string>('');
+    const [activeTab, setActiveTab] = useState<'ringkasan' | 'anggaran' | 'demografi'>('ringkasan');
     const [filterBudget, setFilterBudget] = useState<'all' | 'above1M' | 'below1M'>('all');
 
     // Analyzer State
@@ -158,13 +160,22 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
         return { top20, bottom20 };
     }, [data, analyzerKecamatan, analyzerDesa, analyzerPilar]);
 
-    // Apply global Kecamatan filter
+    // Apply global Kecamatan and Desa filter
     const filteredData = useMemo(() => {
         let result = data;
         if (filterKecamatan) {
             result = result.filter(item => item.kecamatan === filterKecamatan);
         }
+        if (filterDesa) {
+            result = result.filter(item => item.desaKelurahan === filterDesa);
+        }
         return result;
+    }, [data, filterKecamatan, filterDesa]);
+
+    const availableGlobalDesa = useMemo(() => {
+        if (!filterKecamatan) return [];
+        const desas = data.filter(d => d.kecamatan === filterKecamatan).map(d => d.desaKelurahan).filter(Boolean) as string[];
+        return [...new Set(desas)].sort();
     }, [data, filterKecamatan]);
 
     // Aggregate Data based on filters
@@ -485,23 +496,122 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                 </div>
             </div>
 
+            {/* Global Filters & Tabs */}
+            <div className="flex-none px-4 md:px-6 pb-4 z-30 bg-slate-50 border-b border-slate-200">
+                <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+                    {/* Global Filters */}
+                    <div className="flex flex-wrap gap-3 items-center">
+                        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
+                            <Filter size={16} className="text-slate-400" />
+                            <select
+                                className="bg-transparent text-sm font-bold text-slate-700 outline-none"
+                                value={filterKecamatan}
+                                onChange={(e) => {
+                                    setFilterKecamatan(e.target.value);
+                                    setFilterDesa('');
+                                }}
+                            >
+                                <option value="">Semua Kecamatan</option>
+                                {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
+                            <Building2 size={16} className="text-slate-400" />
+                            <select
+                                className="bg-transparent text-sm font-bold text-slate-700 outline-none"
+                                value={filterDesa}
+                                onChange={(e) => setFilterDesa(e.target.value)}
+                                disabled={!filterKecamatan}
+                            >
+                                <option value="">Semua Desa</option>
+                                {availableGlobalDesa.map(desa => <option key={desa} value={desa}>{desa}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex bg-slate-200/50 p-1 rounded-xl shadow-inner overflow-x-auto custom-scrollbar">
+                        <button
+                            onClick={() => setActiveTab('ringkasan')}
+                            className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'ringkasan' ? 'bg-white text-lobar-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Ringkasan Eksekutif
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('anggaran')}
+                            className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'anggaran' ? 'bg-white text-lobar-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Analisis Anggaran
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('demografi')}
+                            className={`px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'demografi' ? 'bg-white text-lobar-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Profil Demografi
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Main Content Area */}
             <div className="flex-1 w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col min-h-0 overflow-y-auto">
                 <div className="flex-none w-full space-y-8">
-                    {/* PILAR ALOKASI CARD - NOW DYNAMIC */}
-                    <PilarAlokasiCard 
-                        filterYear={filterYear} 
-                        data={filteredData} 
-                        onScrollToAnalyzer={(pilarId) => {
-                            setAnalyzerPilar(pilarId);
-                            // Add a small delay to ensure React state updates before scrolling
-                            setTimeout(() => {
-                                sectionPilarChartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }, 100);
-                        }}
-                    />
+                    {/* TAB: RINGKASAN EKSEKUTIF */}
+                    {activeTab === 'ringkasan' && (
+                        <div className="space-y-8">
+                            {/* PILAR ALOKASI CARD - NOW DYNAMIC */}
+                            <PilarAlokasiCard 
+                                filterYear={filterYear} 
+                                data={filteredData} 
+                                onScrollToAnalyzer={(pilarId) => {
+                                    setAnalyzerPilar(pilarId);
+                                    setActiveTab('anggaran');
+                                    setTimeout(() => {
+                                        sectionPilarChartRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }, 100);
+                                }}
+                            />
 
-                    {/* Quick Navigation Pills removed as per user request */}
+                            {/* GRAFIK CAPAIAN 4 PILAR */}
+                            <div className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px] mb-8">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <Target className="text-lobar-blue" />
+                                        Capaian Pondasi 4 Pilar {filterDesa ? `- Desa ${filterDesa}` : filterKecamatan ? `- Kec. ${filterKecamatan}` : ''}
+                                    </h3>
+                                </div>
+                                    <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+                                        <div style={{ minWidth: 600, height: 400 }}>
+                                            <ResponsiveContainer width="99%" height={400}>
+                                                <BarChart 
+                                                    data={[
+                                                        { name: 'Penguatan Ekonomi', total: pilarPieData.find(d => d.name === 'Penguatan Ekonomi')?.value || 0 },
+                                                        { name: 'Peningkatan SDM', total: pilarPieData.find(d => d.name === 'Peningkatan SDM')?.value || 0 },
+                                                        { name: 'Infrastruktur Dasar', total: pilarPieData.find(d => d.name === 'Infrastruktur Dasar')?.value || 0 },
+                                                        { name: 'Sosial & Kelembagaan', total: pilarPieData.find(d => d.name === 'Sosial & Kelembagaan')?.value || 0 }
+                                                    ]} 
+                                                    margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                                                >
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                    <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }} />
+                                                    <YAxis tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} width={80} />
+                                                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                                                    <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                                                        { [
+                                                            { fill: '#f59e0b' },
+                                                            { fill: '#3b82f6' },
+                                                            { fill: '#10b981' },
+                                                            { fill: '#64748b' }
+                                                        ].map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </div>
+
                     {/* Section 1: Stats Cards */}
                     <div ref={sectionStatsRef} className="scroll-mt-32 grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Row 1 */}
@@ -558,56 +668,14 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                             </div>
                         </div>
                     </div>
-
-                    {/* Navigation Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div 
-                            onClick={() => sectionPilarChartRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                            className="cursor-pointer bg-gradient-to-br from-indigo-500 to-indigo-700 p-4 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col items-center justify-center text-center group"
-                        >
-                            <div className="bg-white/20 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
-                                <Target className="text-white" size={24} />
-                            </div>
-                            <h4 className="text-white font-bold text-sm">Pilar Spesifik</h4>
-                            <p className="text-indigo-100 text-[10px] mt-1">Analisis Pilar Desa</p>
                         </div>
-                        
-                        <div 
-                            onClick={() => sectionBudgetChartRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                            className="cursor-pointer bg-gradient-to-br from-lobar-blue to-blue-700 p-4 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col items-center justify-center text-center group"
-                        >
-                            <div className="bg-white/20 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
-                                <BarChart3 className="text-white" size={24} />
-                            </div>
-                            <h4 className="text-white font-bold text-sm">Anggaran per Desa</h4>
-                            <p className="text-blue-100 text-[10px] mt-1">Analisis Anggaran</p>
-                        </div>
+                    )}
 
-                        <div 
-                            onClick={() => sectionPovertyChartRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                            className="cursor-pointer bg-gradient-to-br from-red-500 to-red-700 p-4 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col items-center justify-center text-center group"
-                        >
-                            <div className="bg-white/20 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
-                                <Users className="text-white" size={24} />
-                            </div>
-                            <h4 className="text-white font-bold text-sm">Kemiskinan</h4>
-                            <p className="text-red-100 text-[10px] mt-1">Top 20 Tertinggi</p>
-                        </div>
-
-                        <div 
-                            onClick={() => sectionStuntingChartRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                            className="cursor-pointer bg-gradient-to-br from-orange-400 to-orange-600 p-4 rounded-xl shadow-md hover:shadow-lg transition-all hover:-translate-y-1 flex flex-col items-center justify-center text-center group"
-                        >
-                            <div className="bg-white/20 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
-                                <Baby className="text-white" size={24} />
-                            </div>
-                            <h4 className="text-white font-bold text-sm">Balita Stunting</h4>
-                            <p className="text-orange-100 text-[10px] mt-1">Top 20 Tertinggi</p>
-                        </div>
-                    </div>
-
-                    {/* Section: Pilar Analyzer Spesifik Desa (Bar Charts) */}
-                    <div ref={sectionPilarChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col mb-8">
+                    {/* TAB: ANALISIS ANGGARAN */}
+                    {activeTab === 'anggaran' && (
+                        <div className="space-y-8">
+                            {/* Section: Pilar Analyzer Spesifik Desa (Bar Charts) */}
+                            <div ref={sectionPilarChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col mb-8">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Target className="text-indigo-500" /> Analisis Pilar Spesifik Desa</h3>
                         </div>
@@ -833,9 +901,14 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                             </div>
                         ) : <div className="h-64 flex items-center justify-center text-slate-400">Data pilar tidak tersedia</div>}
                     </div>
+                        </div>
+                    )}
 
-                    {/* Section 4: Poverty Analysis */}
-                    <div ref={sectionPovertyChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
+                    {/* TAB: PROFIL DEMOGRAFI */}
+                    {activeTab === 'demografi' && (
+                        <div className="space-y-8">
+                            {/* Section 4: Poverty Analysis */}
+                            <div ref={sectionPovertyChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Users className="text-red-500" /> Analisis Kemiskinan Desil 1 (Top 20 Tertinggi)</h3>
                         </div>
@@ -1025,6 +1098,8 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                             </div>
                         </div>
                     </div>
+                        </div>
+                    )}
 
                     {/* Bottom Padding */}
                     <div className="h-20"></div>
