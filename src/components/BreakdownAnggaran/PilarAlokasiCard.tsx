@@ -164,20 +164,23 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data })
                                     const currentPct = dynStats.percentage.toFixed(2);
                                     
                                     return (
-                                        <div className="w-full space-y-4">
+                                        <div className="w-full space-y-3">
                                             {/* Dynamic Current Year Progress */}
                                             <div>
                                                 <div className="flex justify-between items-end mb-1">
                                                     <span className="text-xs font-bold text-slate-600">Tahun {filterYear || 'Berjalan'} (Live)</span>
                                                     <span className={`text-sm font-black ${pillar.textColor}`}>{currentPct}%</span>
                                                 </div>
-                                                <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden shadow-inner relative">
+                                                <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden shadow-inner relative mb-1">
                                                     <motion.div 
                                                         initial={{ width: 0 }}
                                                         animate={{ width: `${Math.min(dynStats.percentage, 100)}%` }}
                                                         transition={{ duration: 1, ease: "easeOut" }}
                                                         className={`bg-gradient-to-r ${pillar.color} h-2.5 rounded-full`}
                                                     />
+                                                </div>
+                                                <div className="text-[10px] font-bold text-slate-500 text-left">
+                                                    {formatShortRupiah(dynStats.pagu || 0)}
                                                 </div>
                                             </div>
 
@@ -187,13 +190,16 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data })
                                                     <span className="text-xs font-bold text-slate-600 opacity-60">Plafon {filterYear}</span>
                                                     <span className={`text-sm font-black text-slate-400`}>{filterYear === '2026' ? pillar.val2026 : pillar.val2027}%</span>
                                                 </div>
-                                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden shadow-inner relative opacity-60">
+                                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden shadow-inner relative opacity-60 mb-1">
                                                     <motion.div 
                                                         initial={{ width: 0 }}
                                                         animate={{ width: `${Math.min(filterYear === '2026' ? pillar.val2026 : pillar.val2027, 100)}%` }}
                                                         transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
                                                         className={`bg-slate-300 h-1.5 rounded-full`}
                                                     />
+                                                </div>
+                                                <div className="text-[10px] font-bold text-slate-400 text-left">
+                                                    {formatShortRupiah(filterYear === '2026' ? pillar.pagu2026 : pillar.pagu2027)}
                                                 </div>
                                             </div>
                                         </div>
