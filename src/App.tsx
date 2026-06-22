@@ -40,6 +40,33 @@ const App = () => {
         }
     }, [dataSourceMode, step]); // Refetch when mode changes or app starts
 
+    // Sync filterYear when selectedVersion changes
+    useEffect(() => {
+        if (selectedVersion) {
+            const match = selectedVersion.match(/\b(202[0-9]|2030)\b/);
+            if (match && match[0] !== filterYear) {
+                setFilterYear(match[0]);
+            }
+        }
+    }, [selectedVersion]);
+
+    // Sync selectedVersion when filterYear changes
+    useEffect(() => {
+        if (availableVersions.length > 0) {
+            const baseName = selectedVersion.replace(/\s\d{4}$/, '').trim() || 'Default';
+            const targetVersion = `${baseName} ${filterYear}`.trim();
+            
+            if (availableVersions.includes(targetVersion) && selectedVersion !== targetVersion) {
+                setSelectedVersion(targetVersion);
+            } else if (!selectedVersion.includes(filterYear)) {
+                const fallback = availableVersions.find(v => v.includes(filterYear));
+                if (fallback && fallback !== selectedVersion) {
+                    setSelectedVersion(fallback);
+                }
+            }
+        }
+    }, [filterYear, availableVersions]);
+
     const fetchVersions = async (newSelectedVersion?: string) => {
         try {
             console.log('Fetching versions... Mode:', dataSourceMode);
@@ -47,6 +74,11 @@ const App = () => {
             const versions = await service.getUniqueVersions();
 
             console.log('Unique versions:', versions);
+
+            if (newSelectedVersion && !versions.includes(newSelectedVersion)) {
+                versions.push(newSelectedVersion);
+                versions.sort();
+            }
 
             if (versions.length > 0) {
                 setAvailableVersions(versions);

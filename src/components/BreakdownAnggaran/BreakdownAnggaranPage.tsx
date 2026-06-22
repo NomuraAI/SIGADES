@@ -125,6 +125,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                 hasMore = response.hasMore;
                 page++;
             }
+            
+            console.log(`[Breakdown] Fetch complete. selectedVersion: ${selectedVersion}, filterYear: ${filterYear}`);
+            console.log(`[Breakdown] Total raw data rows fetched: ${allData.length}`);
 
             setData(allData);
         } catch (error) {
@@ -552,7 +555,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                 }}
                             >
                                 <option value="">Semua Kecamatan</option>
-                                {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec}</option>)}
+                                {uniqueKecamatan.map(kec => <option key={kec} value={kec}>{kec.toUpperCase()}</option>)}
                             </select>
                         </div>
                         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
@@ -792,7 +795,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                     }}
                                 >
                                     <option value="ALL">Semua Kecamatan</option>
-                                    {uniqueKecamatan.map(kec => (<option key={kec} value={kec}>{kec}</option>))}
+                                    {uniqueKecamatan.map(kec => (<option key={kec} value={kec}>{kec.toUpperCase()}</option>))}
                                 </select>
                             </div>
                             <div className="flex flex-col w-full md:w-auto">
@@ -891,7 +894,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                     }}
                                 >
                                     <option value="ALL">Semua Kecamatan</option>
-                                    {uniqueKecamatan.map(kec => (<option key={kec} value={kec}>{kec}</option>))}
+                                    {uniqueKecamatan.map(kec => (<option key={kec} value={kec}>{kec.toUpperCase()}</option>))}
                                 </select>
                             </div>
                             <div className="flex flex-col w-full md:w-auto">

@@ -184,7 +184,10 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                 const ws = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(ws);
 
-                if (jsonData.length === 0) return;
+                if (jsonData.length === 0) {
+                    alert("File Excel kosong atau format tidak sesuai. Tidak ada baris data yang ditemukan.");
+                    return;
+                }
 
                 setLoading(true);
 
@@ -637,7 +640,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                         >
                             <option value="">Semua Kecamatan</option>
                             {uniqueKecamatan.map(kec => (
-                                <option key={kec} value={kec}>{kec}</option>
+                                <option key={kec} value={kec}>{kec.toUpperCase()}</option>
                             ))}
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
