@@ -79,8 +79,56 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
     // dataSourceMode is now from props
 
     useEffect(() => {
+        let isMounted = true;
+
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const service = getProjectService(dataSourceMode);
+
+                // Note: ProjectService handles pagination internally differently, 
+                // but for now we'll just fetch all data as the UI expects it fully loaded for client-side filtering 
+                // OR we rely on the service to return what it can.
+                // The existing logic fetched ALL data in pages. Let's try to fetch all here too.
+
+                let allData: ProjectData[] = [];
+                let page = 0;
+                let hasMore = true;
+
+                while (hasMore) {
+                    const result = await service.getAllProjects(selectedVersion || undefined, page, 1000);
+                    
+                    let chunk = result.data;
+                    if (filterYear) {
+                        chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
+                    }
+                    
+                    allData = [...allData, ...chunk];
+                    hasMore = result.hasMore;
+                    page++;
+                }
+
+                if (isMounted) {
+                    setData(allData);
+                }
+            } catch (error) {
+                if (isMounted) {
+                    console.error('Error fetching data:', error);
+                    alert('Gagal mengambil data. Pastikan koneksi aman.');
+                }
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
         fetchData();
-    }, [selectedVersion, dataSourceMode, filterYear]); // Refetch when version, mode, or year changes
+
+        return () => {
+            isMounted = false;
+        };
+    }, [selectedVersion, dataSourceMode, filterYear]);
 
     // Column Toggles
     const toggleColumn = (key: string) => {
@@ -96,42 +144,6 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
             setVisibleColumns(allColumns.map(c => c.key));
         } else {
             setVisibleColumns([]);
-        }
-    };
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const service = getProjectService(dataSourceMode);
-
-            // Note: ProjectService handles pagination internally differently, 
-            // but for now we'll just fetch all data as the UI expects it fully loaded for client-side filtering 
-            // OR we rely on the service to return what it can.
-            // The existing logic fetched ALL data in pages. Let's try to fetch all here too.
-
-            let allData: ProjectData[] = [];
-            let page = 0;
-            let hasMore = true;
-
-            while (hasMore) {
-                const result = await service.getAllProjects(selectedVersion || undefined, page, 1000);
-                
-                let chunk = result.data;
-                if (filterYear) {
-                    chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
-                }
-                
-                allData = [...allData, ...chunk];
-                hasMore = result.hasMore;
-                page++;
-            }
-
-            setData(allData);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            alert('Gagal mengambil data. Pastikan koneksi aman.');
-        } finally {
-            setLoading(false);
         }
     };
 

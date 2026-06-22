@@ -99,43 +99,54 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
 
 
     useEffect(() => {
-        fetchData();
-    }, [selectedVersion, filterYear]);
+        let isMounted = true;
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const service = getProjectService(dataSourceMode);
-            let allData: ProjectData[] = [];
-            let page = 0;
-            const pageSize = 1000;
-            let hasMore = true;
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const service = getProjectService(dataSourceMode);
+                let allData: ProjectData[] = [];
+                let page = 0;
+                const pageSize = 1000;
+                let hasMore = true;
 
-            while (hasMore) {
-                const response = await service.getAllProjects(selectedVersion, page, pageSize);
+                while (hasMore) {
+                    const response = await service.getAllProjects(selectedVersion, page, pageSize);
+                    
+                    let chunk = response.data;
+                    if (filterYear) {
+                        chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
+                    }
+
+                    if (chunk && chunk.length > 0) {
+                        allData = [...allData, ...chunk];
+                    }
+                    hasMore = response.hasMore;
+                    page++;
+                }
                 
-                let chunk = response.data;
-                if (filterYear) {
-                    chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
+                if (isMounted) {
+                    console.log(`[Breakdown] Fetch complete. selectedVersion: ${selectedVersion}, filterYear: ${filterYear}`);
+                    console.log(`[Breakdown] Total raw data rows fetched: ${allData.length}`);
+                    setData(allData);
                 }
-
-                if (chunk && chunk.length > 0) {
-                    allData = [...allData, ...chunk];
+            } catch (error) {
+                if (isMounted) {
+                    console.error('Error fetching data:', error);
                 }
-                hasMore = response.hasMore;
-                page++;
+            } finally {
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
-            
-            console.log(`[Breakdown] Fetch complete. selectedVersion: ${selectedVersion}, filterYear: ${filterYear}`);
-            console.log(`[Breakdown] Total raw data rows fetched: ${allData.length}`);
+        };
 
-            setData(allData);
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        fetchData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [selectedVersion, filterYear, dataSourceMode]);
 
     // Get unique Kecamatans
     const uniqueKecamatan = useMemo(() => {
