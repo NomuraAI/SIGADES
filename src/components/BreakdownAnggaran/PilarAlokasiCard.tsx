@@ -155,11 +155,11 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data, o
                 <Target size={200} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10 pt-2 items-start">
+            <div className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 relative z-10 pt-2 items-start pb-4 snap-x custom-scrollbar">
                 {pillars.map((pillar) => (
                     <motion.div 
                         key={pillar.id}
-                        className={`relative rounded-xl border-2 ${pillar.borderColor} ${pillar.bgLight} overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer flex flex-col`}
+                        className={`flex-none w-[85%] md:w-auto snap-center relative rounded-xl border-2 ${pillar.borderColor} ${pillar.bgLight} overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer flex flex-col`}
                         onClick={() => setExpanded(expanded === pillar.id ? null : pillar.id)}
                         layout
                     >
