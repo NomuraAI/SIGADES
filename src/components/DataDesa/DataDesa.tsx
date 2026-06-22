@@ -14,16 +14,20 @@ interface DataDesaProps {
     setDataSourceMode: (mode: 'supabase' | 'local') => void;
     user: User | null;
     filterYear: string;
+    globalData: ProjectData[];
+    isGlobalLoading: boolean;
+    refreshData: () => void;
 }
 
-const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion, onVersionChange, dataSourceMode, setDataSourceMode, user, filterYear }) => {
+const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion, onVersionChange, dataSourceMode, setDataSourceMode, user, filterYear, globalData, isGlobalLoading, refreshData }) => {
     const isViewer = user?.role === 'viewer';
     const isAdmin = user?.role === 'admin';
     const [searchQuery, setSearchQuery] = useState('');
     const [searchMode, setSearchMode] = useState<'desa' | 'kecamatan'>('desa');
     const [filterOPD, setFilterOPD] = useState('');
-    const [data, setData] = useState<ProjectData[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const data = globalData;
+    const loading = isGlobalLoading || isProcessing;
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -77,58 +81,6 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
     const [importMode, setImportMode] = useState<'replace' | 'update'>('replace');
 
     // dataSourceMode is now from props
-
-    useEffect(() => {
-        let isMounted = true;
-
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const service = getProjectService(dataSourceMode);
-
-                // Note: ProjectService handles pagination internally differently, 
-                // but for now we'll just fetch all data as the UI expects it fully loaded for client-side filtering 
-                // OR we rely on the service to return what it can.
-                // The existing logic fetched ALL data in pages. Let's try to fetch all here too.
-
-                let allData: ProjectData[] = [];
-                let page = 0;
-                let hasMore = true;
-
-                while (hasMore) {
-                    const result = await service.getAllProjects(selectedVersion || undefined, page, 1000);
-                    
-                    let chunk = result.data;
-                    if (filterYear) {
-                        chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
-                    }
-                    
-                    allData = [...allData, ...chunk];
-                    hasMore = result.hasMore;
-                    page++;
-                }
-
-                if (isMounted) {
-                    setData(allData);
-                }
-            } catch (error) {
-                if (isMounted) {
-                    console.error('Error fetching data:', error);
-                    alert('Gagal mengambil data. Pastikan koneksi aman.');
-                }
-            } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        fetchData();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [selectedVersion, dataSourceMode, filterYear]);
 
     // Column Toggles
     const toggleColumn = (key: string) => {
@@ -201,7 +153,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                     return;
                 }
 
-                setLoading(true);
+                setIsProcessing(true);
 
                 // Parse Excel Rows
                 const parsedRows = jsonData.map((rawRow: any) => {
@@ -359,14 +311,14 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                     onVersionChange(targetVersion);
                 } else {
                     // Manual trigger fetch if version didn't change but data did
-                    fetchData();
+                    refreshData();
                 }
 
             } catch (error: any) {
                 console.error('Import error:', error);
                 alert('Gagal impor: ' + error.message);
             } finally {
-                setLoading(false);
+                setIsProcessing(false);
             }
         };
         reader.readAsArrayBuffer(fileToImport);
@@ -394,7 +346,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
             }
             setIsEditModalOpen(false);
             setIsAddModalOpen(false);
-            fetchData();
+            refreshData();
         } catch (error) {
             console.error('Error saving:', error);
             alert('Gagal menyimpan data.');
@@ -440,7 +392,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
 
         try {
             await service.deleteProject(itemToDelete);
-            fetchData();
+            refreshData();
             setIsDeleteModalOpen(false);
             setItemToDelete(null);
         } catch (error: any) {
@@ -453,17 +405,17 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         if (!window.confirm('Yakin ingin menghapus SEMUA data Local Storage? Data tidak bisa dikembalikan.')) return;
 
         try {
-            setLoading(true);
+            setIsProcessing(true);
             const service = getProjectService('local');
             await service.clearAllProjects();
             alert('Data Local berhasil dikosongkan.');
-            fetchData();
+            refreshData();
             if (onVersionChange) onVersionChange('Default'); // Reset version filter
         } catch (error: any) {
             console.error(error);
             alert('Gagal reset: ' + error.message);
         } finally {
-            setLoading(false);
+            setIsProcessing(false);
         }
     };
 

@@ -33,6 +33,7 @@ interface MapContainerProps {
     selectedVersion: string;
     filterYear: string;
     dataSourceMode?: 'supabase' | 'local';
+    globalData: ProjectData[];
 }
 
 const SearchSyncHandler = ({ onSearchComplete, permanentProjects }: { onSearchComplete: (location: any, projects: ProjectData[]) => void, permanentProjects: ProjectData[] }) => {
@@ -67,7 +68,7 @@ const SearchSyncHandler = ({ onSearchComplete, permanentProjects }: { onSearchCo
     return null;
 };
 
-const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion, filterYear, dataSourceMode = 'supabase' }) => {
+const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVersion, filterYear, dataSourceMode = 'supabase', globalData }) => {
 
     const [activeLayer, setActiveLayer] = useState<'streets' | 'satellite' | 'terrain'>('streets');
     const [vizMode, setVizMode] = useState<'default' | 'stunting' | 'poverty' | 'priority' | 'kepadatan' | 'budget'>('default');
@@ -80,7 +81,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
     const [showBatasDesa, setShowBatasDesa] = useState(true);
     const mapRef = useRef<L.Map>(null);
 
-    const [permanentProjects, setPermanentProjects] = useState<ProjectData[]>([]);
+    const permanentProjects = globalData;
 
     const normalizeName = (name: string) => {
         if (!name) return '';
@@ -152,41 +153,6 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
             minimumFractionDigits: 0
         }).format(value);
     };
-
-    // Fetch ALL projects on load (even those without coordinates for budget calculation)
-    useEffect(() => {
-        const fetchAllMarkers = async () => {
-            const service = getProjectService(dataSourceMode);
-            let allData: ProjectData[] = [];
-            let page = 0;
-            const pageSize = 1000;
-            let hasMore = true;
-
-            while (hasMore) {
-                try {
-                    const response = await service.getAllProjects(selectedVersion, page, pageSize);
-                    let chunk = response.data;
-
-                    if (filterYear) {
-                        chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
-                    }
-
-                    if (chunk && chunk.length > 0) {
-                        allData = [...allData, ...chunk];
-                    }
-                    hasMore = response.hasMore;
-                    page++;
-                } catch (error) {
-                    console.error("[MAP DEBUG] Fetch Error:", error);
-                    hasMore = false;
-                }
-            }
-
-            setPermanentProjects(allData);
-        };
-
-        fetchAllMarkers();
-    }, [selectedVersion, filterYear, dataSourceMode]);
 
     // Fetch Batas Desa GeoJSON
     useEffect(() => {

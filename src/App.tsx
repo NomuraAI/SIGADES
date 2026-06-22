@@ -33,6 +33,48 @@ const App = () => {
         return (localStorage.getItem('sigades_data_mode') as 'supabase' | 'local') || 'supabase';
     });
 
+    // Global Data State
+    const [globalData, setGlobalData] = useState<ProjectData[]>([]);
+    const [isGlobalLoading, setIsGlobalLoading] = useState(true);
+
+    const fetchGlobalData = React.useCallback(async () => {
+        setIsGlobalLoading(true);
+        try {
+            const service = getProjectService(dataSourceMode);
+            let allData: ProjectData[] = [];
+            let page = 0;
+            const pageSize = 1000;
+            let hasMore = true;
+
+            while (hasMore) {
+                const response = await service.getAllProjects(selectedVersion || undefined, page, pageSize);
+                let chunk = response.data;
+                // Optional: keep filterYear if needed, but since selectedVersion already defines the dataset, 
+                // filtering it here might be redundant if the data is already strictly versioned.
+                // Keeping it to match previous behavior:
+                if (filterYear) {
+                    chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
+                }
+                if (chunk && chunk.length > 0) {
+                    allData = [...allData, ...chunk];
+                }
+                hasMore = response.hasMore;
+                page++;
+            }
+            setGlobalData(allData);
+        } catch (error) {
+            console.error('Error fetching global data:', error);
+        } finally {
+            setIsGlobalLoading(false);
+        }
+    }, [dataSourceMode, selectedVersion, filterYear]);
+
+    useEffect(() => {
+        if (step === 'app') {
+            fetchGlobalData();
+        }
+    }, [fetchGlobalData, step]);
+
     useEffect(() => {
         localStorage.setItem('sigades_data_mode', dataSourceMode);
         if (step === 'app') {
@@ -136,7 +178,15 @@ const App = () => {
             user={user}
             onLogout={handleLogout}
         >
-            {activePage === 'Peta Interaktif' && <MapContainer selectedProject={selectedProject} selectedVersion={selectedVersion} filterYear={filterYear} dataSourceMode={dataSourceMode} />}
+            {activePage === 'Peta Interaktif' && (
+                <MapContainer 
+                    selectedProject={selectedProject} 
+                    selectedVersion={selectedVersion} 
+                    filterYear={filterYear} 
+                    dataSourceMode={dataSourceMode} 
+                    globalData={globalData} 
+                />
+            )}
             {activePage === 'Data Desa' && (
                 <DataDesa
                     onBack={() => setActivePage('Peta Interaktif')}
@@ -147,9 +197,21 @@ const App = () => {
                     dataSourceMode={dataSourceMode}
                     setDataSourceMode={setDataSourceMode}
                     user={user}
+                    globalData={globalData}
+                    isGlobalLoading={isGlobalLoading}
+                    refreshData={fetchGlobalData}
                 />
             )}
-            {activePage === 'Dashboard Interaktif' && <BreakdownAnggaranPage selectedVersion={selectedVersion} dataSourceMode={dataSourceMode} filterYear={filterYear} setFilterYear={setFilterYear} />}
+            {activePage === 'Dashboard Interaktif' && (
+                <BreakdownAnggaranPage 
+                    selectedVersion={selectedVersion} 
+                    dataSourceMode={dataSourceMode} 
+                    filterYear={filterYear} 
+                    setFilterYear={setFilterYear} 
+                    globalData={globalData} 
+                    isGlobalLoading={isGlobalLoading} 
+                />
+            )}
 
             {activePage === 'Pengaturan' && (
                 <ComingSoon title={activePage} />
