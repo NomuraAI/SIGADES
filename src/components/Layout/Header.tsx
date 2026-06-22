@@ -48,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({
                     </div>
 
                     {/* Main Navigation - Desktop */}
-                    <div className="hidden lg:flex items-center bg-white rounded-full p-1 border border-white/10">
+                    <div className="hidden lg:flex items-center bg-white/10 rounded-full p-1 border border-white/10">
                         {menuItems.map(item => (
                             <button
                                 key={item.id}
@@ -63,7 +63,7 @@ const Header: React.FC<HeaderProps> = ({
 
                 <div className="flex items-center gap-3 md:gap-6">
                     {/* Version Selector */}
-                    <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white border border-white/20 rounded-full">
+                    <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 rounded-full">
                         <Database size={14} className="text-yellow-300" />
                         <select
                             value={selectedVersion}
@@ -92,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({
                             {/* Logout Button */}
                             <button 
                                 onClick={onLogout}
-                                className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white hover:bg-rose-500/80 transition-colors flex items-center justify-center border border-white/30 shadow-inner group"
+                                className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 hover:bg-rose-500/80 transition-colors flex items-center justify-center border border-white/30 shadow-inner group"
                                 title="Keluar"
                             >
                                 <UserIcon size={18} className="group-hover:hidden" />

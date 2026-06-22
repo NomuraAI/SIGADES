@@ -60,7 +60,7 @@ const WeatherInfo: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-white border border-white/10 rounded-full ">
+    <div className="flex items-center gap-3 px-4 py-2 bg-white/10 border border-white/10 rounded-full ">
       <div className="text-xl">{weather.code}</div>
       <div className="flex flex-col">
         {isEditing ? (
@@ -70,7 +70,7 @@ const WeatherInfo: React.FC = () => {
               type="text"
               value={manualLocation}
               onChange={(e) => setManualLocation(e.target.value)}
-              className="bg-white text-white text-[10px] rounded px-2 py-0.5 border border-white/20 focus:outline-none w-24"
+              className="bg-transparent text-white text-[10px] rounded px-2 py-0.5 border border-white/20 focus:outline-none w-24"
               placeholder="Kota..."
             />
             <button type="submit" className="text-emerald-400 hover:text-emerald-300"><Check size={12}/></button>

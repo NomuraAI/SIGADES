@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, Info, ChevronDown, X, Maximize2, ArrowDown } from 'lucide-react';
+import { Target, Info, ChevronDown, X, Maximize2, ArrowDown, TrendingUp, GraduationCap, Building, Users } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const pillars = [
     {
         id: 'ekonomi',
         title: 'Penguatan Ekonomi Desa',
+        icon: TrendingUp,
         color: 'from-amber-400 to-amber-600',
         bgLight: 'bg-amber-50',
         textColor: 'text-amber-700',
@@ -21,6 +22,7 @@ const pillars = [
     {
         id: 'sdm',
         title: 'Peningkatan Kualitas SDM',
+        icon: GraduationCap,
         color: 'from-blue-500 to-blue-700',
         bgLight: 'bg-blue-50',
         textColor: 'text-blue-700',
@@ -35,6 +37,7 @@ const pillars = [
     {
         id: 'infrastruktur',
         title: 'Infrastruktur Dasar',
+        icon: Building,
         color: 'from-emerald-500 to-emerald-700',
         bgLight: 'bg-emerald-50',
         textColor: 'text-emerald-700',
@@ -49,6 +52,7 @@ const pillars = [
     {
         id: 'sosial',
         title: 'Sosial & Kelembagaan',
+        icon: Users,
         color: 'from-slate-500 to-slate-700',
         bgLight: 'bg-slate-50',
         textColor: 'text-slate-700',
@@ -161,8 +165,11 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data, o
                     >
                         {/* Header Pillar */}
                         <motion.div layout="position" className={`bg-gradient-to-r ${pillar.color} p-4 text-white min-h-[90px] flex items-center justify-between text-left shadow-inner`}>
-                            <h4 className="font-bold text-sm md:text-base leading-tight drop-shadow-sm pr-2">{pillar.title}</h4>
-                            <div className="bg-white p-1.5 rounded-full flex-shrink-0">
+                            <div className="flex items-center gap-3">
+                                <pillar.icon size={24} className="opacity-80 flex-shrink-0" />
+                                <h4 className="font-bold text-sm md:text-base leading-tight drop-shadow-sm pr-2">{pillar.title}</h4>
+                            </div>
+                            <div className="bg-white/20 p-1.5 rounded-full flex-shrink-0 text-white">
                                 <motion.div animate={{ rotate: expanded === pillar.id ? 180 : 0 }}>
                                     <ChevronDown size={18} />
                                 </motion.div>
