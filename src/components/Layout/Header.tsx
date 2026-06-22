@@ -53,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({
                             <button
                                 key={item.id}
                                 onClick={() => setActivePage(item.id)}
-                                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${activePage === item.id ? 'bg-yellow-400 text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white hover:bg-white'}`}
+                                className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${activePage === item.id ? 'bg-yellow-400 text-slate-900 shadow-sm' : 'text-slate-300 hover:text-white hover:bg-white/20'}`}
                             >
                                 {item.label}
                             </button>
