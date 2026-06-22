@@ -90,7 +90,7 @@ const App = () => {
                 setFilterYear(match[0]);
             }
         }
-    }, [selectedVersion]);
+    }, [selectedVersion, filterYear]);
 
     // Sync selectedVersion when filterYear changes
     useEffect(() => {
@@ -107,7 +107,7 @@ const App = () => {
                 }
             }
         }
-    }, [filterYear, availableVersions]);
+    }, [filterYear, availableVersions, selectedVersion]);
 
     const fetchVersions = async (newSelectedVersion?: string) => {
         try {
@@ -177,6 +177,7 @@ const App = () => {
             setFilterYear={setFilterYear}
             user={user}
             onLogout={handleLogout}
+            dataSourceMode={dataSourceMode}
         >
             {activePage === 'Peta Interaktif' && (
                 <MapContainer 

@@ -13,6 +13,7 @@ interface HeaderProps {
     setActivePage: (page: string) => void;
     filterYear: string;
     setFilterYear: (year: string) => void;
+    dataSourceMode: 'supabase' | 'local';
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -24,7 +25,8 @@ const Header: React.FC<HeaderProps> = ({
     activePage,
     setActivePage,
     filterYear,
-    setFilterYear
+    setFilterYear,
+    dataSourceMode
 }) => {
     const menuItems = [
         { id: 'Dashboard Interaktif', label: 'Dashboard', roles: ['admin', 'user', 'viewer'] },
@@ -40,9 +42,14 @@ const Header: React.FC<HeaderProps> = ({
                     <div className="flex items-center gap-2 md:gap-3">
                         <img src="/logo_lombok_barat.png" alt="Logo Lombok Barat" className="h-8 md:h-12 w-auto drop-shadow-md" />
                         <div>
-                            <h1 className="text-lg md:text-xl font-bold text-white tracking-tight drop-shadow-sm leading-none md:leading-tight">
-                                SIGADES
-                            </h1>
+                            <div className="flex items-center gap-1.5">
+                                <h1 className="text-lg md:text-xl font-bold text-white tracking-tight drop-shadow-sm leading-none md:leading-tight">
+                                    SIGADES
+                                </h1>
+                                <span className={`text-[7px] md:text-[8px] px-1 py-0.5 rounded border font-bold uppercase tracking-wider leading-none select-none ${dataSourceMode === 'supabase' ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-amber-500/40 text-amber-400 bg-amber-500/10'}`}>
+                                    {dataSourceMode === 'supabase' ? 'LIVE' : 'LOKAL'}
+                                </span>
+                            </div>
                             <p className="text-[8px] md:text-xs text-yellow-300 font-medium tracking-wider uppercase">Bapperida LOBAR</p>
                         </div>
                     </div>
@@ -62,6 +69,12 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3 md:gap-6">
+                    {/* DB Mode Indicator - Desktop */}
+                    <div className={`hidden lg:flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full border text-[9px] font-bold uppercase tracking-widest ${dataSourceMode === 'supabase' ? 'border-emerald-500/30 text-emerald-400' : 'border-amber-500/30 text-amber-400'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${dataSourceMode === 'supabase' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                        {dataSourceMode === 'supabase' ? 'LIVE (SUPABASE)' : 'LOKAL'}
+                    </div>
+
                     {/* Version Selector */}
                     <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 rounded-full">
                         <Database size={14} className="text-yellow-300" />

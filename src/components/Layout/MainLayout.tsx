@@ -14,6 +14,7 @@ interface MainLayoutProps {
     setFilterYear: (year: string) => void;
     user: User | null;
     onLogout: () => void;
+    dataSourceMode: 'supabase' | 'local';
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ 
@@ -26,7 +27,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({
     filterYear,
     setFilterYear,
     user,
-    onLogout
+    onLogout,
+    dataSourceMode
 }) => {
     const [showScrollTop, setShowScrollTop] = useState(false);
     const mainRef = useRef<HTMLElement>(null);
@@ -56,6 +58,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                     setFilterYear={setFilterYear}
                     activePage={activePage}
                     setActivePage={setActivePage}
+                    dataSourceMode={dataSourceMode}
                 />
 
                 <main 
