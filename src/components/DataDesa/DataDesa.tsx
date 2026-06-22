@@ -128,6 +128,17 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
         }
     };
 
+    const handleImportYearChange = (newYear: string) => {
+        setImportYear(newYear);
+        setImportVersionName(prev => {
+            const hasYear = prev.match(/\b(202[0-9]|2030)\b/);
+            if (hasYear) {
+                return prev.replace(/\b(202[0-9]|2030)\b/g, newYear);
+            }
+            return prev;
+        });
+    };
+
     const processImport = async () => {
         if (!fileToImport) return;
         const targetVersion = `${importVersionName.trim() || 'Skenario'} ${importYear}`.trim();
@@ -1003,7 +1014,7 @@ const DataDesa: React.FC<DataDesaProps> = ({ onBack, onViewMap, selectedVersion,
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tahun Tabulasi</label>
                                 <select
                                     value={importYear}
-                                    onChange={(e) => setImportYear(e.target.value)}
+                                    onChange={(e) => handleImportYearChange(e.target.value)}
                                     className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-lobar-blue outline-none text-sm bg-white"
                                 >
                                     {['2026', '2027', '2028', '2029', '2030'].map(year => (
