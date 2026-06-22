@@ -14,6 +14,7 @@ interface HeaderProps {
     filterYear: string;
     setFilterYear: (year: string) => void;
     dataSourceMode: 'supabase' | 'local';
+    setDataSourceMode: (mode: 'supabase' | 'local') => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -26,7 +27,8 @@ const Header: React.FC<HeaderProps> = ({
     setActivePage,
     filterYear,
     setFilterYear,
-    dataSourceMode
+    dataSourceMode,
+    setDataSourceMode
 }) => {
     const menuItems = [
         { id: 'Dashboard Interaktif', label: 'Dashboard', roles: ['admin', 'user', 'viewer'] },
@@ -46,9 +48,13 @@ const Header: React.FC<HeaderProps> = ({
                                 <h1 className="text-lg md:text-xl font-bold text-white tracking-tight drop-shadow-sm leading-none md:leading-tight">
                                     SIGADES
                                 </h1>
-                                <span className={`text-[7px] md:text-[8px] px-1 py-0.5 rounded border font-bold uppercase tracking-wider leading-none select-none ${dataSourceMode === 'supabase' ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-amber-500/40 text-amber-400 bg-amber-500/10'}`}>
+                                <button 
+                                    onClick={() => setDataSourceMode(dataSourceMode === 'supabase' ? 'local' : 'supabase')}
+                                    className={`text-[7px] md:text-[8px] px-1 py-0.5 rounded border font-bold uppercase tracking-wider leading-none select-none hover:bg-white/10 transition-all ${dataSourceMode === 'supabase' ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-amber-500/40 text-amber-400 bg-amber-500/10'}`}
+                                    title="Klik untuk mengubah mode database"
+                                >
                                     {dataSourceMode === 'supabase' ? 'LIVE' : 'LOKAL'}
-                                </span>
+                                </button>
                             </div>
                             <p className="text-[8px] md:text-xs text-yellow-300 font-medium tracking-wider uppercase">Bapperida LOBAR</p>
                         </div>
@@ -69,11 +75,15 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3 md:gap-6">
-                    {/* DB Mode Indicator - Desktop */}
-                    <div className={`hidden lg:flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full border text-[9px] font-bold uppercase tracking-widest ${dataSourceMode === 'supabase' ? 'border-emerald-500/30 text-emerald-400' : 'border-amber-500/30 text-amber-400'}`}>
+                    {/* DB Mode Toggle - Desktop */}
+                    <button 
+                        onClick={() => setDataSourceMode(dataSourceMode === 'supabase' ? 'local' : 'supabase')}
+                        className={`hidden lg:flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full border text-[9px] font-bold uppercase tracking-widest hover:bg-white/20 transition-all cursor-pointer ${dataSourceMode === 'supabase' ? 'border-emerald-500/30 text-emerald-400' : 'border-amber-500/30 text-amber-400'}`}
+                        title="Klik untuk mengubah sumber data (LIVE / LOKAL)"
+                    >
                         <span className={`w-1.5 h-1.5 rounded-full ${dataSourceMode === 'supabase' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
                         {dataSourceMode === 'supabase' ? 'LIVE (SUPABASE)' : 'LOKAL'}
-                    </div>
+                    </button>
 
                     {/* Version Selector */}
                     <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 rounded-full">

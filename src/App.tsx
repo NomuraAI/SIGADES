@@ -37,8 +37,21 @@ const App = () => {
     const [globalData, setGlobalData] = useState<ProjectData[]>([]);
     const [isGlobalLoading, setIsGlobalLoading] = useState(true);
 
+    const latestFetchIdRef = useRef(0);
+
     const fetchGlobalData = React.useCallback(async () => {
+        // Skip fetching if selectedVersion year doesn't match filterYear (intermediate state during sync)
+        if (selectedVersion && selectedVersion !== 'Default') {
+            const match = selectedVersion.match(/\b(202[0-9]|2030)\b/);
+            if (match && match[0] !== filterYear) {
+                console.log('Skipping fetch: year mismatch between selectedVersion and filterYear (sync in progress)');
+                return;
+            }
+        }
+
+        const fetchId = ++latestFetchIdRef.current;
         setIsGlobalLoading(true);
+
         try {
             const service = getProjectService(dataSourceMode);
             let allData: ProjectData[] = [];
@@ -48,10 +61,12 @@ const App = () => {
 
             while (hasMore) {
                 const response = await service.getAllProjects(selectedVersion || undefined, page, pageSize);
+                if (fetchId !== latestFetchIdRef.current) {
+                    console.log('Aborting stale fetch...');
+                    return;
+                }
+
                 let chunk = response.data;
-                // Optional: keep filterYear if needed, but since selectedVersion already defines the dataset, 
-                // filtering it here might be redundant if the data is already strictly versioned.
-                // Keeping it to match previous behavior:
                 if (filterYear) {
                     chunk = chunk.filter(item => item.dataVersion?.includes(filterYear));
                 }
@@ -61,11 +76,18 @@ const App = () => {
                 hasMore = response.hasMore;
                 page++;
             }
-            setGlobalData(allData);
+
+            if (fetchId === latestFetchIdRef.current) {
+                setGlobalData(allData);
+            }
         } catch (error) {
-            console.error('Error fetching global data:', error);
+            if (fetchId === latestFetchIdRef.current) {
+                console.error('Error fetching global data:', error);
+            }
         } finally {
-            setIsGlobalLoading(false);
+            if (fetchId === latestFetchIdRef.current) {
+                setIsGlobalLoading(false);
+            }
         }
     }, [dataSourceMode, selectedVersion, filterYear]);
 
@@ -90,30 +112,46 @@ const App = () => {
         const prevVersion = prevVersionRef.current;
         const prevYear = prevYearRef.current;
 
-        prevVersionRef.current = selectedVersion;
-        prevYearRef.current = filterYear;
+        const hasVersions = availableVersions.length > 0 && !availableVersions.includes('Default');
 
         // 1. If version changed, sync year to version
         if (selectedVersion !== prevVersion) {
+            prevVersionRef.current = selectedVersion;
             const match = selectedVersion.match(/\b(202[0-9]|2030)\b/);
             if (match && match[0] !== filterYear) {
                 setFilterYear(match[0]);
-                prevYearRef.current = match[0]; // Update ref to prevent double-sync
+                prevYearRef.current = match[0];
             }
         }
-        // 2. If year changed, sync version to year
-        else if (filterYear !== prevYear && availableVersions.length > 0) {
-            const baseName = selectedVersion.replace(/\s\d{4}$/, '').trim() || 'Default';
-            const targetVersion = `${baseName} ${filterYear}`.trim();
-            
-            if (availableVersions.includes(targetVersion) && selectedVersion !== targetVersion) {
-                setSelectedVersion(targetVersion);
-                prevVersionRef.current = targetVersion; // Update ref
-            } else if (!selectedVersion.includes(filterYear)) {
+        // 2. If year changed, sync version to year (only if versions are loaded)
+        else if (filterYear !== prevYear) {
+            if (hasVersions) {
+                prevYearRef.current = filterYear;
+                const baseName = selectedVersion.replace(/\s\d{4}$/, '').trim() || 'Default';
+                const targetVersion = `${baseName} ${filterYear}`.trim();
+                
+                if (availableVersions.includes(targetVersion) && selectedVersion !== targetVersion) {
+                    setSelectedVersion(targetVersion);
+                    prevVersionRef.current = targetVersion;
+                } else if (!selectedVersion.includes(filterYear)) {
+                    const fallback = availableVersions.find(v => v.includes(filterYear));
+                    if (fallback && fallback !== selectedVersion) {
+                        setSelectedVersion(fallback);
+                        prevVersionRef.current = fallback;
+                    }
+                }
+            }
+        }
+        // 3. If availableVersions just loaded, and we are out of sync, sync now!
+        else if (hasVersions) {
+            const match = selectedVersion.match(/\b(202[0-9]|2030)\b/);
+            const versionYear = match ? match[0] : null;
+            if (versionYear && versionYear !== filterYear) {
                 const fallback = availableVersions.find(v => v.includes(filterYear));
                 if (fallback && fallback !== selectedVersion) {
                     setSelectedVersion(fallback);
-                    prevVersionRef.current = fallback; // Update ref
+                    prevVersionRef.current = fallback;
+                    prevYearRef.current = filterYear;
                 }
             }
         }
@@ -188,6 +226,7 @@ const App = () => {
             user={user}
             onLogout={handleLogout}
             dataSourceMode={dataSourceMode}
+            setDataSourceMode={setDataSourceMode}
         >
             {activePage === 'Peta Interaktif' && (
                 <MapContainer 
