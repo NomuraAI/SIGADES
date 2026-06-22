@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import MainLayout from './components/Layout/MainLayout'
 import MapContainer from './components/Map/MapContainer'
 import DataDesa from './components/DataDesa/DataDesa'
@@ -82,32 +82,42 @@ const App = () => {
         }
     }, [dataSourceMode, step]); // Refetch when mode changes or app starts
 
-    // Sync filterYear when selectedVersion changes
+    // Single ref-based sync to resolve year & version synchronization conflicts
+    const prevVersionRef = useRef(selectedVersion);
+    const prevYearRef = useRef(filterYear);
+
     useEffect(() => {
-        if (selectedVersion) {
+        const prevVersion = prevVersionRef.current;
+        const prevYear = prevYearRef.current;
+
+        prevVersionRef.current = selectedVersion;
+        prevYearRef.current = filterYear;
+
+        // 1. If version changed, sync year to version
+        if (selectedVersion !== prevVersion) {
             const match = selectedVersion.match(/\b(202[0-9]|2030)\b/);
             if (match && match[0] !== filterYear) {
                 setFilterYear(match[0]);
+                prevYearRef.current = match[0]; // Update ref to prevent double-sync
             }
         }
-    }, [selectedVersion, filterYear]);
-
-    // Sync selectedVersion when filterYear changes
-    useEffect(() => {
-        if (availableVersions.length > 0) {
+        // 2. If year changed, sync version to year
+        else if (filterYear !== prevYear && availableVersions.length > 0) {
             const baseName = selectedVersion.replace(/\s\d{4}$/, '').trim() || 'Default';
             const targetVersion = `${baseName} ${filterYear}`.trim();
             
             if (availableVersions.includes(targetVersion) && selectedVersion !== targetVersion) {
                 setSelectedVersion(targetVersion);
+                prevVersionRef.current = targetVersion; // Update ref
             } else if (!selectedVersion.includes(filterYear)) {
                 const fallback = availableVersions.find(v => v.includes(filterYear));
                 if (fallback && fallback !== selectedVersion) {
                     setSelectedVersion(fallback);
+                    prevVersionRef.current = fallback; // Update ref
                 }
             }
         }
-    }, [filterYear, availableVersions, selectedVersion]);
+    }, [selectedVersion, filterYear, availableVersions]);
 
     const fetchVersions = async (newSelectedVersion?: string) => {
         try {
