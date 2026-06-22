@@ -22,7 +22,7 @@ const CustomScatterTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         return (
-            <div className="bg-white/95 backdrop-blur-md p-4 border border-slate-200/50 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] min-w-[200px]">
+            <div className="bg-white  p-4 border border-slate-200/50 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] min-w-[200px]">
                 <p className="font-bold text-slate-800 text-sm mb-3 pb-2 border-b border-slate-100">{data.name}</p>
                 <div className="space-y-2">
                     <div className="flex justify-between items-center gap-4"><span className="text-xs font-medium text-slate-500"><Users size={12} className="inline mr-1 text-red-500"/>Kemiskinan:</span> <span className="text-xs font-bold text-slate-800">{data.kemiskinan}</span></div>
@@ -482,6 +482,9 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                     {data.total !== undefined && (
                         <p className="text-lobar-blue font-bold text-lg mb-1">{formatRupiah(data.total)}</p>
                     )}
+                    {data.totalAll ? (
+                        <p className="text-slate-500 font-bold text-sm mb-1">{((data.total / data.totalAll) * 100).toFixed(1)}% dari Total</p>
+                    ) : null}
                     {data.val !== undefined && (
                         <p className="text-slate-800 font-bold text-lg mb-1">{data.val} Jiwa</p>
                     )}
@@ -612,11 +615,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                             {/* GRAFIK CAPAIAN 4 PILAR - SIDE BY SIDE */}
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
                                 {/* Bar Chart */}
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.1 }}
-                                    className="scroll-mt-32 bg-white/70 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 relative flex flex-col overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300"
+                                <div className="scroll-mt-32 bg-white  rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 relative flex flex-col overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300"
                                 >
                                     <div className="flex items-center justify-between mb-6 relative z-10">
                                         <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -625,21 +624,41 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                         </h3>
                                     </div>
                                     <div className="w-full h-[400px] flex items-center justify-center relative z-10">
-                                        <ResponsiveContainer width="100%" height="100%">
+                                        <ResponsiveContainer minWidth={1} minHeight={1} width="100%" height="100%">
                                             <BarChart 
-                                                data={[
-                                                    { name: 'Penguatan Ekonomi', total: pilarPieData.find(d => d.name === 'Penguatan Ekonomi')?.value || 0 },
-                                                    { name: 'Peningkatan SDM', total: pilarPieData.find(d => d.name === 'Peningkatan SDM')?.value || 0 },
-                                                    { name: 'Infrastruktur Dasar', total: pilarPieData.find(d => d.name === 'Infrastruktur Dasar')?.value || 0 },
-                                                    { name: 'Sosial & Kelembagaan', total: pilarPieData.find(d => d.name === 'Sosial & Kelembagaan')?.value || 0 }
-                                                ]} 
-                                                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                                                data={(() => {
+                                                    const total = pilarPieData.reduce((sum, item) => sum + item.value, 0);
+                                                    return [
+                                                        { name: 'Penguatan Ekonomi', total: pilarPieData.find(d => d.name === 'Penguatan Ekonomi')?.value || 0, totalAll: total },
+                                                        { name: 'Peningkatan SDM', total: pilarPieData.find(d => d.name === 'Peningkatan SDM')?.value || 0, totalAll: total },
+                                                        { name: 'Infrastruktur Dasar', total: pilarPieData.find(d => d.name === 'Infrastruktur Dasar')?.value || 0, totalAll: total },
+                                                        { name: 'Sosial & Kelembagaan', total: pilarPieData.find(d => d.name === 'Sosial & Kelembagaan')?.value || 0, totalAll: total }
+                                                    ];
+                                                })()} 
+                                                margin={{ top: 30, right: 30, left: 20, bottom: 80 }}
                                             >
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                                 <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }} />
                                                 <YAxis tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} width={80} />
                                                 <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                                                <Bar dataKey="total" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                                                <Bar 
+                                                    dataKey="total" 
+                                                    radius={[4, 4, 0, 0]} 
+                                                    maxBarSize={60}
+                                                    label={(props: any) => {
+                                                        const { x, y, width, value, payload } = props;
+                                                        const itemPayload = payload || props || {};
+                                                        if (!itemPayload.totalAll || itemPayload.totalAll === 0) return null;
+                                                        const val = value !== undefined ? value : itemPayload.total;
+                                                        if (val === undefined) return null;
+                                                        const pct = ((val / itemPayload.totalAll) * 100).toFixed(1);
+                                                        return (
+                                                            <text x={x + width / 2} y={y - 10} fill="#64748b" textAnchor="middle" fontSize={12} fontWeight="bold">
+                                                                {pct}%
+                                                            </text>
+                                                        );
+                                                    }}
+                                                >
                                                     { [
                                                         { fill: '#f59e0b' },
                                                         { fill: '#3b82f6' },
@@ -652,14 +671,10 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </div>
-                                </motion.div>
+                                </div>
 
                                 {/* Radar Chart */}
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.2 }}
-                                    className="scroll-mt-32 bg-white/70 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 relative flex flex-col overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300"
+                                <div className="scroll-mt-32 bg-white  rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 relative flex flex-col overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300"
                                 >
                                     <div className="absolute top-0 right-0 w-64 h-64 bg-lobar-blue/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
                                     <div className="flex items-center justify-between mb-6 relative z-10">
@@ -669,7 +684,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                         </h3>
                                     </div>
                                     <div className="w-full h-[320px] flex items-center justify-center relative z-10 mb-2">
-                                        <ResponsiveContainer width="100%" height="100%">
+                                        <ResponsiveContainer minWidth={1} minHeight={1} width="100%" height="100%">
                                             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
                                                 { name: 'Ekonomi', total: pilarPieData.find(d => d.name === 'Penguatan Ekonomi')?.value || 0, fullMark: Math.max(...pilarPieData.map(d=>d.value), 1) },
                                                 { name: 'SDM', total: pilarPieData.find(d => d.name === 'Peningkatan SDM')?.value || 0, fullMark: Math.max(...pilarPieData.map(d=>d.value), 1) },
@@ -695,13 +710,11 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                             <div className="flex items-start gap-2"><div className="w-2 h-2 mt-0.5 shrink-0 rounded-full bg-[#64748b]"></div><span className="text-slate-600"><strong>Sosial:</strong> Bantuan & Pemberdayaan</span></div>
                                         </div>
                                     </div>
-                                </motion.div>
+                                </div>
                             </div>
 
                             {/* Section 1: Stats Cards (Bento Box) */}
-                            <motion.div 
-                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
-                                ref={sectionStatsRef} className="scroll-mt-32 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+                            <div ref={sectionStatsRef} className="scroll-mt-32 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
                             >
                                 {/* Total Anggaran (Takes 2 cols) */}
                                 <div className="lg:col-span-2 bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-white relative overflow-hidden transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] duration-300 flex flex-col justify-between">
@@ -711,14 +724,14 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                 </div>
 
                                 {/* Jumlah Desa & Status Capaian */}
-                                <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-center transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                <div className="bg-white  p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-center transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
                                     <p className="text-slate-400 text-[10px] font-bold uppercase mb-1 tracking-wider">Jumlah Desa Tersalur</p>
                                     <div className="flex items-end gap-2">
                                         <h3 className="text-3xl font-black text-slate-800">{stats.totalDesa}</h3>
                                         <span className="text-sm text-slate-500 font-medium mb-1">Desa</span>
                                     </div>
                                 </div>
-                                <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-center transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                <div className="bg-white  p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-center transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
                                     <p className="text-slate-400 text-[10px] font-bold uppercase mb-1 tracking-wider">Tercapai {'>'} 1M</p>
                                     <div className="flex items-end gap-2">
                                         <h3 className="text-3xl font-black text-emerald-500">{stats.above1MCount}</h3>
@@ -727,19 +740,19 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                 </div>
 
                                 {/* Kemiskinan, Stunting, Potensi */}
-                                <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 border-l-4 border-l-red-500 flex flex-col justify-between transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                <div className="bg-white  p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 border-l-4 border-l-red-500 flex flex-col justify-between transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
                                     <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between">Kemiskinan <Users size={14}/></p>
                                     <h3 className="text-2xl font-black text-slate-800 mt-2">{stats.realTotalPoverty.toLocaleString()} <span className="text-xs text-slate-400 font-medium">Jiwa</span></h3>
                                 </div>
-                                <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 border-l-4 border-l-orange-500 flex flex-col justify-between transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                <div className="bg-white  p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 border-l-4 border-l-orange-500 flex flex-col justify-between transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
                                     <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between">Stunting <Baby size={14}/></p>
                                     <h3 className="text-2xl font-black text-slate-800 mt-2">{stats.realTotalStunting.toLocaleString()} <span className="text-xs text-slate-400 font-medium">Anak</span></h3>
                                 </div>
-                                <div className="lg:col-span-2 bg-white/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 border-l-4 border-l-green-500 flex flex-col justify-between transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
+                                <div className="lg:col-span-2 bg-white  p-6 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 border-l-4 border-l-green-500 flex flex-col justify-between transition-transform hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] duration-300">
                                     <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between">Potensi Desa <Sprout size={14}/></p>
                                     <h3 className="text-2xl font-black text-slate-800 mt-2">{potentialData.length} <span className="text-xs text-slate-400 font-medium">Kategori Dikelola</span></h3>
                                 </div>
-                            </motion.div>
+                            </div>
                         </div>
                     )}
 
@@ -806,7 +819,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                 {analyzerBarData.top20.length > 0 ? (
                                     <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                         <div style={{ minWidth: 500, height: 400 }}>
-                                            <ResponsiveContainer width="99%" height={400}>
+                                            <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={400}>
                                                 <BarChart data={analyzerBarData.top20} margin={{ top: 20, right: 30, left: 20, bottom: 80 }} layout="horizontal">
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                                     <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -829,7 +842,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                 {analyzerBarData.bottom20.length > 0 ? (
                                     <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                         <div style={{ minWidth: 500, height: 400 }}>
-                                            <ResponsiveContainer width="99%" height={400}>
+                                            <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={400}>
                                                 <BarChart data={analyzerBarData.bottom20} margin={{ top: 20, right: 30, left: 20, bottom: 80 }} layout="horizontal">
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                                     <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -904,7 +917,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                 {budgetBarData.top20.length > 0 ? (
                                     <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                         <div style={{ minWidth: 500, height: 400 }}>
-                                            <ResponsiveContainer width="99%" height={400}>
+                                            <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={400}>
                                                 <BarChart data={budgetBarData.top20} margin={{ top: 20, right: 30, left: 20, bottom: 80 }} layout="horizontal">
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                                     <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -929,7 +942,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                 {budgetBarData.bottom20.length > 0 ? (
                                     <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                         <div style={{ minWidth: 500, height: 400 }}>
-                                            <ResponsiveContainer width="99%" height={400}>
+                                            <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={400}>
                                                 <BarChart data={budgetBarData.bottom20} margin={{ top: 20, right: 30, left: 20, bottom: 80 }} layout="horizontal">
                                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                                     <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -956,7 +969,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {pilarBarData.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(1000, pilarBarData.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="99%" height={500}>
+                                    <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={500}>
                                         <BarChart data={pilarBarData} margin={{ top: 20, right: 30, left: 40, bottom: 100 }} layout="horizontal">
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -980,11 +993,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                     {activeTab === 'demografi' && (
                         <div className="space-y-8">
                             {/* Scatter Plot: Korelasi Demografi vs Anggaran */}
-                            <motion.div 
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5 }}
-                                className="scroll-mt-32 bg-white/70 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 relative flex flex-col min-h-[500px]"
+                            <div className="scroll-mt-32 bg-white  rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 p-6 relative flex flex-col min-h-[500px]"
                             >
                                 <div className="flex items-center justify-between mb-6">
                                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -993,7 +1002,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                     <div className="text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1 rounded-full">Sumbu X: Kemiskinan | Sumbu Y: Stunting | Ukuran: Pagu</div>
                                 </div>
                                 <div className="w-full h-[500px] flex items-center justify-center">
-                                    <ResponsiveContainer width="99%" height="100%">
+                                    <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height="100%">
                                         <ScatterChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis type="number" dataKey="kemiskinan" name="Kemiskinan" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
@@ -1008,7 +1017,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                                         </ScatterChart>
                                     </ResponsiveContainer>
                                 </div>
-                            </motion.div>
+                            </div>
 
                             {/* Section 4: Poverty Analysis */}
                             <div ref={sectionPovertyChartRef} className="scroll-mt-32 bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative flex flex-col min-h-[500px]">
@@ -1018,7 +1027,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {povertyData.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, povertyData.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="99%" height={500}>
+                                    <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={500}>
                                         <BarChart data={povertyData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -1040,7 +1049,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {stuntingData.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, stuntingData.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="99%" height={500}>
+                                    <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={500}>
                                         <BarChart data={stuntingData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -1063,7 +1072,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {povertyDataLowest.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, povertyDataLowest.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="99%" height={500}>
+                                    <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={500}>
                                         <BarChart data={povertyDataLowest} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -1086,7 +1095,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {stuntingDataLowest.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, stuntingDataLowest.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="99%" height={500}>
+                                    <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={500}>
                                         <BarChart data={stuntingDataLowest} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -1108,7 +1117,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                         {densityData.length > 0 ? (
                             <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
                                 <div style={{ minWidth: Math.max(800, densityData.length * 60), height: 500 }}>
-                                    <ResponsiveContainer width="99%" height={500}>
+                                    <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={500}>
                                         <BarChart data={densityData} margin={{ top: 20, right: 30, left: 20, bottom: 100 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis dataKey="name" angle={-45} textAnchor="end" interval={0} tick={{ fontSize: 11, fill: '#64748b' }} />
@@ -1131,7 +1140,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                             </div>
                             <div className="h-[400px] flex flex-col items-center justify-center">
                                 <div className="w-full h-full">
-                                    <ResponsiveContainer width="99%" height={400}>
+                                    <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={400}>
                                         <PieChart>
                                             <Pie
                                                 data={potentialData}
@@ -1169,7 +1178,7 @@ const BreakdownAnggaranPage: React.FC<BreakdownAnggaranPageProps> = ({ selectedV
                             </div>
                             <div className="h-[400px] flex flex-col items-center justify-center">
                                 <div className="w-full h-full">
-                                    <ResponsiveContainer width="99%" height={400}>
+                                    <ResponsiveContainer minWidth={1} minHeight={1} width="99%" height={400}>
                                         <PieChart>
                                             <Pie
                                                 data={pilarPieData}

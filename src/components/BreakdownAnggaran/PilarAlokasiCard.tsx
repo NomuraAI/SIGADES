@@ -162,7 +162,7 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data, o
                         {/* Header Pillar */}
                         <motion.div layout="position" className={`bg-gradient-to-r ${pillar.color} p-4 text-white min-h-[90px] flex items-center justify-between text-left shadow-inner`}>
                             <h4 className="font-bold text-sm md:text-base leading-tight drop-shadow-sm pr-2">{pillar.title}</h4>
-                            <div className="bg-white/20 p-1.5 rounded-full flex-shrink-0">
+                            <div className="bg-white p-1.5 rounded-full flex-shrink-0">
                                 <motion.div animate={{ rotate: expanded === pillar.id ? 180 : 0 }}>
                                     <ChevronDown size={18} />
                                 </motion.div>
@@ -172,7 +172,7 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data, o
                         {/* Content Overview (Always visible) */}
                         <motion.div layout="position" className="p-5 flex flex-col items-center flex-1">
                             {/* Target Ringkasan */}
-                            <div className="w-full bg-white/60 rounded-lg p-3 border border-white/50 shadow-sm mb-5 text-center relative overflow-hidden group">
+                            <div className="w-full bg-white rounded-lg p-3 border border-white/50 shadow-sm mb-5 text-center relative overflow-hidden group">
                                 <div className="absolute top-0 left-0 w-1 h-full bg-slate-300 group-hover:bg-lobar-blue transition-colors"></div>
                                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Target Alokasi</span>
                                 <span className={`block text-2xl font-black ${pillar.textColor}`}>{pillar.target}</span>
@@ -203,24 +203,7 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data, o
                                                 </div>
                                             </div>
 
-                                            {/* Target Musrenbang (Static comparison if needed, or we can hide it. Let's show it as target comparison) */}
-                                            <div>
-                                                <div className="flex justify-between items-end mb-1">
-                                                    <span className="text-xs font-bold text-slate-600 opacity-60">Plafon {filterYear}</span>
-                                                    <span className={`text-sm font-black text-slate-400`}>{filterYear === '2026' ? pillar.val2026 : pillar.val2027}%</span>
-                                                </div>
-                                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden shadow-inner relative opacity-60 mb-1">
-                                                    <motion.div 
-                                                        initial={{ width: 0 }}
-                                                        animate={{ width: `${Math.min(filterYear === '2026' ? pillar.val2026 : pillar.val2027, 100)}%` }}
-                                                        transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                                                        className={`bg-slate-300 h-1.5 rounded-full`}
-                                                    />
-                                                </div>
-                                                <div className="text-[10px] font-bold text-slate-400 text-left">
-                                                    {formatShortRupiah(filterYear === '2026' ? pillar.pagu2026 : pillar.pagu2027)}
-                                                </div>
-                                            </div>
+
                                         </div>
                                     );
                                 })()}
@@ -325,7 +308,7 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data, o
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900 "
                         onClick={() => setModalPillar(null)}
                     >
                         <motion.div 
@@ -359,7 +342,7 @@ const PilarAlokasiCard: React.FC<PilarAlokasiCardProps> = ({ filterYear, data, o
 
                                     return (
                                         <div style={{ minWidth: 600, height: Math.max(400, dataToShow.length * 30) }}>
-                                            <ResponsiveContainer width="100%" height="100%">
+                                            <ResponsiveContainer minWidth={1} minHeight={1} width="100%" height="100%">
                                                 <BarChart data={dataToShow} margin={{ top: 20, right: 30, left: 20, bottom: 20 }} layout="vertical">
                                                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
                                                     <XAxis type="number" tickFormatter={(val) => val >= 1000000000 ? `Rp ${(val / 1000000000).toFixed(1)} M` : `Rp ${(val / 1000000).toFixed(0)} Jt`} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />

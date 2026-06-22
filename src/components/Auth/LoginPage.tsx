@@ -93,7 +93,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
           <span className="text-sm tracking-widest uppercase font-bold">Kembali</span>
         </button>
 
-        <div className="bg-[#0f172a]/90 backdrop-blur-xl border border-sky-400/30 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+        <div className="bg-[#0f172a]  border border-sky-400/30 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
           {/* Animated top border */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 via-indigo-500 to-sky-400 animate-gradient-x" />
           

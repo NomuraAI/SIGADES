@@ -513,7 +513,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
                 </div>
 
                 {/* Layer Switcher */}
-                <div className="bg-white/90 backdrop-blur-md p-1.5 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-1.5">
+                <div className="bg-white  p-1.5 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-1.5">
                     {(Object.keys(layers) as Array<keyof typeof layers>).map((key) => (
                         <div key={key} className="group relative">
                             <button
@@ -534,7 +534,7 @@ const MapContainer: React.FC<MapContainerProps> = ({ selectedProject, selectedVe
             </div>
 
             {/* Visualization Mode Switcher (Bottom Left) */}
-            <div className="absolute bottom-10 left-4 z-[400] bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-2 max-w-[200px]">
+            <div className="absolute bottom-10 left-4 z-[400] bg-white  p-2 rounded-xl shadow-2xl border border-white/20 flex flex-col gap-2 max-w-[200px]">
                 <span className="text-[10px] font-bold text-slate-500 uppercase px-1">Mode Visualisasi</span>
                 <div className="flex flex-wrap gap-1">
                     <button

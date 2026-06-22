@@ -54,7 +54,7 @@ const ProjectMarkers: React.FC<ProjectMarkersProps> = ({ projects, vizMode = 'de
             <Popup className="glass-popup" minWidth={220} maxWidth={320}>
                 <div className="w-[260px] sm:min-w-[280px] max-h-[50vh] sm:max-h-[60vh] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-lobar-blue/50">
                     {/* Header dengan Navigasi jika items > 1 */}
-                    <div className="flex justify-between items-start mb-2 border-b pb-2 sticky top-0 bg-white/90 backdrop-blur-sm z-10 pt-1">
+                    <div className="flex justify-between items-start mb-2 border-b pb-2 sticky top-0 bg-white  z-10 pt-1">
                         <div className="flex-1">
                             <h3 className="font-bold text-lg text-lobar-blue leading-tight">Desa {item.desaKelurahan}</h3>
                             <div className="flex flex-col mt-1">

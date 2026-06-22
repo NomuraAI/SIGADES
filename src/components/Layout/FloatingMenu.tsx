@@ -61,7 +61,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
       <motion.div 
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white/20 backdrop-blur-2xl border border-white/40 rounded-full p-2 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex items-center gap-1 md:gap-4 ring-1 ring-white/20"
+        className="bg-white  border border-white/40 rounded-full p-2 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex items-center gap-1 md:gap-4 ring-1 ring-white/20"
       >
         {menuItems.map((item) => (
           <button
@@ -72,7 +72,7 @@ const FloatingMenu: React.FC<FloatingMenuProps> = ({
             {activeItem === item.id && (
               <motion.div 
                 layoutId="floating-active"
-                className="absolute inset-0 bg-white/10 rounded-full border border-white/20"
+                className="absolute inset-0 bg-white rounded-full border border-white/20"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}

@@ -152,7 +152,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 md:hidden"
+                        className="fixed inset-0 bg-black/50  z-30 md:hidden"
                     />
 
                     <motion.aside
@@ -163,10 +163,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                         className="fixed lg:static lg:relative top-0 left-0 h-full w-72 bg-lobar-blue text-white border-r border-white/10 z-40 flex-shrink-0 flex flex-col shadow-2xl overflow-hidden"
                     >
                         {/* Decorative Circle */}
-                        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+                        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-white rounded-full blur-3xl pointer-events-none"></div>
 
                         <div className="flex justify-end p-4 z-10 md:hidden">
-                            <button onClick={onClose} className="p-1 hover:bg-white/10 rounded transition-colors text-white">
+                            <button onClick={onClose} className="p-1 hover:bg-white rounded transition-colors text-white">
                                 <X size={20} />
                             </button>
                         </div>
@@ -182,12 +182,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
 
                         <div className="px-4 pb-2">
-                            <div className="bg-white/10 p-3 rounded-xl border border-white/10">
+                            <div className="bg-white p-3 rounded-xl border border-white/10">
                                 <label className="block text-[10px] uppercase font-bold text-white/60 mb-1">Versi Data / Skenario</label>
                                 <select
                                     value={selectedVersion}
                                     onChange={(e) => setSelectedVersion(e.target.value)}
-                                    className="w-full bg-slate-900/50 text-white text-sm rounded-lg p-2 border border-white/20 outline-none focus:border-lobar-yellow transition-colors"
+                                    className="w-full bg-slate-900 text-white text-sm rounded-lg p-2 border border-white/20 outline-none focus:border-lobar-yellow transition-colors"
                                 >
                                     {availableVersions.map(v => (
                                         <option key={v} value={v} className="bg-slate-800 text-white">{v}</option>
@@ -207,7 +207,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     className={`relative flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 cursor-pointer group overflow-hidden
                                     ${activeItem === item.label
                                             ? 'bg-white text-lobar-blue shadow-lg shadow-black/10 translate-x-1 font-semibold'
-                                            : 'text-white/90 hover:bg-white/10 hover:text-white'}`}
+                                            : 'text-white/90 hover:bg-white hover:text-white'}`}
                                 >
                                     {/* Active Indicator Pilla */}
                                     {activeItem === item.label && (
@@ -239,7 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                         <div className="p-4 z-10">
                             <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-4 border border-white/10 shadow-inner relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8"></div>
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-white rounded-full blur-2xl -mr-8 -mt-8"></div>
                                 <div className="flex justify-between items-start mb-1 relative z-10">
                                     <p className="text-xs text-white/80">Cuaca Wilayah</p>
                                     <button
@@ -268,10 +268,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     type="text"
                                                     value={manualLocation}
                                                     onChange={(e) => setManualLocation(e.target.value)}
-                                                    className="w-full bg-white/10 text-white text-[10px] rounded px-2 py-1 border border-white/20 focus:outline-none focus:border-white/50"
+                                                    className="w-full bg-white text-white text-[10px] rounded px-2 py-1 border border-white/20 focus:outline-none focus:border-white/50"
                                                     placeholder="Cari Kota..."
                                                 />
-                                                <button type="submit" className="bg-white/20 hover:bg-white/30 p-1 rounded text-white transition-colors">
+                                                <button type="submit" className="bg-white hover:bg-white p-1 rounded text-white transition-colors">
                                                     <Check size={12} />
                                                 </button>
                                             </form>
